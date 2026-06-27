@@ -7,7 +7,7 @@ use rocket_dyn_templates::Template;
 
 use crate::models::dict::{get_site_default_locale, get_site_locales};
 use crate::models::load_public_banners_by_code;
-use crate::models::locale::{is_supported_locale, locale_path, normalize_lang};
+use crate::models::locale::{encode_uri_path, is_supported_locale, locale_path, normalize_lang};
 use crate::models::post::{post_to_view, resolve_post_id_from_public_key, PostMeta};
 use crate::models::site_page_context;
 
@@ -91,7 +91,7 @@ pub async fn post_detail_lang(
         let current = format!("/{resolved}/posts/{key}");
         if view.route_path != current {
             return Err(PostDetailError::CanonicalRedirect(Redirect::to(
-                view.route_path,
+                encode_uri_path(&view.route_path),
             )));
         }
     }

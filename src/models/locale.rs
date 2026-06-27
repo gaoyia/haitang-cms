@@ -53,6 +53,29 @@ pub fn locale_path(lang: &str, page_slug: &str) -> String {
     }
 }
 
+/// 将站内路径各段做百分号编码，供 Redirect Location 使用（含中文 slug）
+pub fn encode_uri_path(path: &str) -> String {
+    path.split('/')
+        .map(encode_uri_path_segment)
+        .collect::<Vec<_>>()
+        .join("/")
+}
+
+fn encode_uri_path_segment(segment: &str) -> String {
+    if segment.is_empty() {
+        return String::new();
+    }
+    segment
+        .bytes()
+        .map(|b| match b {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
+                (b as char).to_string()
+            }
+            _ => format!("%{b:02X}"),
+        })
+        .collect()
+}
+
 /// BCP 47 转 HTML lang 属性（如 zh-cn → zh-CN）
 pub fn html_lang_attr(lang: &str) -> String {
     match normalize_lang(lang).as_str() {
@@ -88,4 +111,22 @@ pub fn pick_i18n_row<'a, T>(
         .find(|r| get_lang(r) == lang)
         .or_else(|| rows.iter().find(|r| get_lang(r) == default_lang))
         .or_else(|| rows.first())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn encode_uri_path_keeps_ascii_segments() {
+        assert_eq!(encode_uri_path("/en-us/posts/hello"), "/en-us/posts/hello");
+    }
+
+    #[test]
+    fn encode_uri_path_encodes_unicode_slug() {
+        assert_eq!(
+            encode_uri_path("/en-us/posts/测试测试"),
+            "/en-us/posts/%E6%B5%8B%E8%AF%95%E6%B5%8B%E8%AF%95"
+        );
+    }
 }
