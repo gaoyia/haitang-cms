@@ -28,7 +28,7 @@ pub fn resolve_locale(request_lang: Option<&str>, site_default: &str) -> String 
 /// 解析字典项 `site_locales`（逗号分隔）
 pub fn parse_locale_list(raw: &str) -> Vec<String> {
     raw.split(',')
-        .map(|s| normalize_lang(s))
+        .map(normalize_lang)
         .filter(|s| !s.is_empty())
         .collect()
 }

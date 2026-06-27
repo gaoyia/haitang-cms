@@ -1,12 +1,12 @@
-use rocket::serde::json::Json;
 use rocket::State;
+use rocket::serde::json::Json;
 
 use crate::guards::AdminAuth;
 use crate::models::{
-    categories_to_views, category_detail_view, category_to_view, count_posts_by_category,
-    create_category, delete_category, get_site_default_locale, paginate_vec, upsert_category_i18n,
     ApiResponse, CategoryDetailView, CategoryMeta, CategoryView, CreateCategory, PageResult,
-    UpdateCategory,
+    UpdateCategory, categories_to_views, category_detail_view, category_to_view,
+    count_posts_by_category, create_category, delete_category, get_site_default_locale,
+    paginate_vec, upsert_category_i18n,
 };
 use crate::routes::page::LangPageQuery;
 
@@ -112,11 +112,7 @@ pub async fn update(
 
 /// 删除分类
 #[delete("/api/admin/categories/<id>")]
-pub async fn delete(
-    _auth: AdminAuth,
-    db: &State<toasty::Db>,
-    id: i64,
-) -> Json<ApiResponse<()>> {
+pub async fn delete(_auth: AdminAuth, db: &State<toasty::Db>, id: i64) -> Json<ApiResponse<()>> {
     let mut db = db.inner().clone();
 
     match count_posts_by_category(&mut db, id).await {

@@ -1964,6 +1964,7 @@ dependencies = [
 [[package]]
 name = "rocket"
 version = "0.6.0-dev"
+source = "git+https://github.com/rwf2/Rocket?rev=3a54d079aef060a8f732bd04ea54b0581a604087#3a54d079aef060a8f732bd04ea54b0581a604087"
 dependencies = [
  "async-stream",
  "async-trait",
@@ -2011,6 +2012,7 @@ dependencies = [
 [[package]]
 name = "rocket_codegen"
 version = "0.6.0-dev"
+source = "git+https://github.com/rwf2/Rocket?rev=3a54d079aef060a8f732bd04ea54b0581a604087#3a54d079aef060a8f732bd04ea54b0581a604087"
 dependencies = [
  "devise",
  "glob",
@@ -2026,6 +2028,7 @@ dependencies = [
 [[package]]
 name = "rocket_dyn_templates"
 version = "0.1.0"
+source = "git+https://github.com/rwf2/Rocket?rev=3a54d079aef060a8f732bd04ea54b0581a604087#3a54d079aef060a8f732bd04ea54b0581a604087"
 dependencies = [
  "normpath",
  "notify",
@@ -2037,6 +2040,7 @@ dependencies = [
 [[package]]
 name = "rocket_http"
 version = "0.6.0-dev"
+source = "git+https://github.com/rwf2/Rocket?rev=3a54d079aef060a8f732bd04ea54b0581a604087#3a54d079aef060a8f732bd04ea54b0581a604087"
 dependencies = [
  "cookie",
  "either",
@@ -2622,6 +2626,7 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 [[package]]
 name = "toasty"
 version = "0.7.0"
+source = "git+https://github.com/tokio-rs/toasty?rev=bc4e9100629bf962c68f6bc4a062073aa5b830a7#bc4e9100629bf962c68f6bc4a062073aa5b830a7"
 dependencies = [
  "async-trait",
  "bit-set",
@@ -2644,6 +2649,7 @@ dependencies = [
 [[package]]
 name = "toasty-core"
 version = "0.7.0"
+source = "git+https://github.com/tokio-rs/toasty?rev=bc4e9100629bf962c68f6bc4a062073aa5b830a7#bc4e9100629bf962c68f6bc4a062073aa5b830a7"
 dependencies = [
  "async-trait",
  "bit-set",
@@ -2658,6 +2664,7 @@ dependencies = [
 [[package]]
 name = "toasty-driver-sqlite"
 version = "0.7.0"
+source = "git+https://github.com/tokio-rs/toasty?rev=bc4e9100629bf962c68f6bc4a062073aa5b830a7#bc4e9100629bf962c68f6bc4a062073aa5b830a7"
 dependencies = [
  "async-trait",
  "percent-encoding",
@@ -2674,6 +2681,7 @@ dependencies = [
 [[package]]
 name = "toasty-macros"
 version = "0.7.0"
+source = "git+https://github.com/tokio-rs/toasty?rev=bc4e9100629bf962c68f6bc4a062073aa5b830a7#bc4e9100629bf962c68f6bc4a062073aa5b830a7"
 dependencies = [
  "hashbrown 0.17.1",
  "heck",
@@ -2687,6 +2695,7 @@ dependencies = [
 [[package]]
 name = "toasty-sql"
 version = "0.7.0"
+source = "git+https://github.com/tokio-rs/toasty?rev=bc4e9100629bf962c68f6bc4a062073aa5b830a7#bc4e9100629bf962c68f6bc4a062073aa5b830a7"
 dependencies = [
  "serde_json",
  "toasty-core",

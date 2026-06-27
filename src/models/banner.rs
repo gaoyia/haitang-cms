@@ -83,7 +83,9 @@ impl Banner {
 }
 
 /// 加载轮播图组 ID → 名称映射
-pub async fn load_banner_group_map(db: &mut toasty::Db) -> Result<std::collections::HashMap<i64, String>, String> {
+pub async fn load_banner_group_map(
+    db: &mut toasty::Db,
+) -> Result<std::collections::HashMap<i64, String>, String> {
     let groups = BannerGroup::all()
         .exec(db)
         .await
@@ -93,7 +95,10 @@ pub async fn load_banner_group_map(db: &mut toasty::Db) -> Result<std::collectio
 }
 
 /// 批量转换轮播图视图
-pub async fn banners_to_views(db: &mut toasty::Db, banners: Vec<Banner>) -> Result<Vec<BannerView>, String> {
+pub async fn banners_to_views(
+    db: &mut toasty::Db,
+    banners: Vec<Banner>,
+) -> Result<Vec<BannerView>, String> {
     let map = load_banner_group_map(db).await?;
     Ok(banners
         .into_iter()

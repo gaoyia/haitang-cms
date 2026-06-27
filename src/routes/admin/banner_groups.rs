@@ -1,10 +1,10 @@
-use rocket::serde::json::Json;
 use rocket::State;
+use rocket::serde::json::Json;
 
 use crate::guards::AdminAuth;
 use crate::models::{
-    group_has_banners, ApiResponse, Banner, BannerGroup, BannerGroupView, CreateBannerGroup,
-    UpdateBannerGroup,
+    ApiResponse, Banner, BannerGroup, BannerGroupView, CreateBannerGroup, UpdateBannerGroup,
+    group_has_banners,
 };
 
 /// 获取所有轮播图组
@@ -109,11 +109,7 @@ pub async fn update(
 
 /// 删除轮播图组
 #[delete("/api/admin/banner-groups/<id>")]
-pub async fn delete(
-    _auth: AdminAuth,
-    db: &State<toasty::Db>,
-    id: i64,
-) -> Json<ApiResponse<()>> {
+pub async fn delete(_auth: AdminAuth, db: &State<toasty::Db>, id: i64) -> Json<ApiResponse<()>> {
     let mut db = db.inner().clone();
 
     let group = match BannerGroup::get_by_id(&mut db, &id).await {

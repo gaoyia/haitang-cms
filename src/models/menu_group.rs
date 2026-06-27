@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::admin_sidebar::{is_admin_sidebar_code, ADMIN_SIDEBAR_CODE};
+use super::admin_sidebar::{ADMIN_SIDEBAR_CODE, is_admin_sidebar_code};
 
 /// 菜单组模型（可编辑，不含内置 admin_sidebar）
 #[derive(Debug, toasty::Model)]
@@ -91,10 +91,7 @@ pub fn validate_menu_group_code(code: &str) -> Result<(), String> {
 }
 
 /// 从数据库按 code 查找菜单组
-pub async fn find_menu_group_by_code(
-    db: &mut toasty::Db,
-    code: &str,
-) -> Result<MenuGroup, String> {
+pub async fn find_menu_group_by_code(db: &mut toasty::Db, code: &str) -> Result<MenuGroup, String> {
     if is_admin_sidebar_code(code) {
         return Err("后台侧边栏为内置菜单组".to_string());
     }

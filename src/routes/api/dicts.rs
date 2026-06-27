@@ -1,7 +1,7 @@
-use rocket::serde::json::Json;
 use rocket::State;
+use rocket::serde::json::Json;
 
-use crate::models::{dict_public_views, load_dict_map, ApiResponse, DictPublicView};
+use crate::models::{ApiResponse, DictPublicView, dict_public_views, load_dict_map};
 use crate::routes::lang::LangQuery;
 
 /// 获取全部字典项（公开，已按 lang 解析 value）

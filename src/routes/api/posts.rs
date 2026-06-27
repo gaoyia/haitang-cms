@@ -1,17 +1,15 @@
-use rocket::serde::json::Json;
 use rocket::State;
+use rocket::serde::json::Json;
 
 use crate::models::{
-    categories_to_views, post_to_view, posts_to_views, ApiResponse, CategoryView, PostMeta, PostView,
+    ApiResponse, CategoryView, PostMeta, PostView, categories_to_views, post_to_view,
+    posts_to_views,
 };
 use crate::routes::lang::LangQuery;
 
 /// 获取所有文章列表（公开）
 #[get("/api/posts?<lang..>")]
-pub async fn list(
-    db: &State<toasty::Db>,
-    lang: LangQuery,
-) -> Json<ApiResponse<Vec<PostView>>> {
+pub async fn list(db: &State<toasty::Db>, lang: LangQuery) -> Json<ApiResponse<Vec<PostView>>> {
     let mut db = db.inner().clone();
 
     match PostMeta::all().exec(&mut db).await {
@@ -25,11 +23,7 @@ pub async fn list(
 
 /// 根据 ID 获取单篇文章（公开）
 #[get("/api/posts/<id>?<lang..>")]
-pub async fn get(
-    db: &State<toasty::Db>,
-    id: i64,
-    lang: LangQuery,
-) -> Json<ApiResponse<PostView>> {
+pub async fn get(db: &State<toasty::Db>, id: i64, lang: LangQuery) -> Json<ApiResponse<PostView>> {
     let mut db = db.inner().clone();
 
     match PostMeta::get_by_id(&mut db, &id).await {

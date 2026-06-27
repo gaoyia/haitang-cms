@@ -1,12 +1,12 @@
-use jsonwebtoken::{encode, EncodingKey, Header};
-use rocket::serde::json::Json;
+use bcrypt::{DEFAULT_COST, hash, verify};
+use jsonwebtoken::{EncodingKey, Header, encode};
 use rocket::State;
-use bcrypt::{hash, verify, DEFAULT_COST};
+use rocket::serde::json::Json;
 
 use crate::guards::auth::JwtConfig;
 use crate::models::{
-    all_permission_codes, ApiResponse, Banner, BannerGroup, Claims, find_banner_group_by_code,
-    LoginRequest, LoginResponse, LoginUserInfo, MenuGroup, Role, User, UserRole,
+    ApiResponse, Banner, BannerGroup, Claims, LoginRequest, LoginResponse, LoginUserInfo,
+    MenuGroup, Role, User, UserRole, all_permission_codes, find_banner_group_by_code,
     seed_menu_with_i18n,
 };
 
@@ -59,7 +59,7 @@ pub async fn seed_admin(db: &mut toasty::Db) {
     // 创建默认管理员
     let admin_user = User::create()
         .username("admin")
-        .password_hash(&hash_password("admin123"))
+        .password_hash(hash_password("admin123"))
         .nickname("管理员")
         .email("admin@localhost")
         .status(1i64)
@@ -347,7 +347,10 @@ pub async fn login(
 
 /// 获取当前用户信息（通过 JWT 解析，权限从数据库实时读取）
 #[get("/api/admin/me")]
-pub async fn me(auth: crate::guards::AdminAuth, db: &State<toasty::Db>) -> Json<ApiResponse<LoginUserInfo>> {
+pub async fn me(
+    auth: crate::guards::AdminAuth,
+    db: &State<toasty::Db>,
+) -> Json<ApiResponse<LoginUserInfo>> {
     let mut db = db.inner().clone();
     let role_ids = get_user_role_ids(&mut db, auth.claims.user_id).await;
     let (roles, permissions) = get_roles_info(&mut db, &role_ids).await;

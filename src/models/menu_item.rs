@@ -167,10 +167,8 @@ pub async fn load_merged_menu_items(
 }
 
 pub fn build_menu_tree(items: &[MergedMenuItem], parent_id: i64) -> Vec<MenuView> {
-    let mut nodes: Vec<&MergedMenuItem> = items
-        .iter()
-        .filter(|m| m.parent_id == parent_id)
-        .collect();
+    let mut nodes: Vec<&MergedMenuItem> =
+        items.iter().filter(|m| m.parent_id == parent_id).collect();
     nodes.sort_by_key(|m| m.sort);
 
     nodes

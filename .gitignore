@@ -5,7 +5,5 @@
 /docs/book
 node_modules
 dist
-/vendor/demo
-/vendor/koi-ui
+/vendor
 .cursor
-.cargo

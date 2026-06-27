@@ -1,12 +1,12 @@
-use rocket::serde::json::Json;
 use rocket::State;
+use rocket::serde::json::Json;
 
 use crate::guards::AdminAuth;
 use crate::models::{
-    group_has_menus, is_admin_sidebar_code, validate_menu_group_code, ApiResponse, CreateMenuGroup,
-    MenuGroup, MenuGroupView, UpdateMenuGroup,
+    ApiResponse, CreateMenuGroup, MenuGroup, MenuGroupView, UpdateMenuGroup, group_has_menus,
+    is_admin_sidebar_code, validate_menu_group_code,
 };
-use crate::models::{admin_sidebar_group_view, MenuItemMeta};
+use crate::models::{MenuItemMeta, admin_sidebar_group_view};
 
 /// 获取所有菜单组（含只读后台侧边栏）
 #[get("/api/admin/menu-groups")]
@@ -89,10 +89,10 @@ pub async fn update(
         return Json(ApiResponse::error(403, "后台侧边栏为系统内置，不可修改"));
     }
 
-    if let Some(ref code) = input.code {
-        if let Err(msg) = validate_menu_group_code(code) {
-            return Json(ApiResponse::error(400, msg));
-        }
+    if let Some(ref code) = input.code
+        && let Err(msg) = validate_menu_group_code(code)
+    {
+        return Json(ApiResponse::error(400, msg));
     }
 
     let mut db = db.inner().clone();
@@ -134,11 +134,7 @@ pub async fn update(
 
 /// 删除菜单组
 #[delete("/api/admin/menu-groups/<id>")]
-pub async fn delete(
-    _auth: AdminAuth,
-    db: &State<toasty::Db>,
-    id: i64,
-) -> Json<ApiResponse<()>> {
+pub async fn delete(_auth: AdminAuth, db: &State<toasty::Db>, id: i64) -> Json<ApiResponse<()>> {
     if id == 0 {
         return Json(ApiResponse::error(403, "后台侧边栏为系统内置，不可删除"));
     }

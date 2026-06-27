@@ -43,7 +43,8 @@ async fn rocket() -> _ {
 
     // JWT 密钥配置
     let jwt_config = JwtConfig {
-        secret: std::env::var("JWT_SECRET").unwrap_or_else(|_| "haitang-cms-dev-secret".to_string()),
+        secret: std::env::var("JWT_SECRET")
+            .unwrap_or_else(|_| "haitang-cms-dev-secret".to_string()),
     };
 
     rocket::build()

@@ -167,10 +167,7 @@ fn def_to_view(def: &SidebarDef, children: Vec<MenuView>) -> MenuView {
 }
 
 fn build_sidebar_tree(defs: &[&SidebarDef], parent_id: i64) -> Vec<MenuView> {
-    let mut nodes: Vec<&&SidebarDef> = defs
-        .iter()
-        .filter(|m| m.parent_id == parent_id)
-        .collect();
+    let mut nodes: Vec<&&SidebarDef> = defs.iter().filter(|m| m.parent_id == parent_id).collect();
     nodes.sort_by_key(|m| m.sort);
 
     nodes
@@ -200,9 +197,7 @@ fn prune_empty_groups(nodes: Vec<MenuView>) -> Vec<MenuView> {
 pub fn get_admin_sidebar_nav(permissions: &[String]) -> Vec<MenuView> {
     let visible: Vec<&SidebarDef> = sidebar_defs()
         .iter()
-        .filter(|m| {
-            m.permission.is_empty() || permissions.iter().any(|p| p == m.permission)
-        })
+        .filter(|m| m.permission.is_empty() || permissions.iter().any(|p| p == m.permission))
         .collect();
     prune_empty_groups(build_sidebar_tree(&visible, 0))
 }

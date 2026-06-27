@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use super::dict_meta::DictMeta;
 use super::dict_value::DictValue;
-use super::locale::{pick_i18n_row, resolve_locale, LANG_GLOBAL, DEFAULT_LOCALE};
+use super::locale::{DEFAULT_LOCALE, LANG_GLOBAL, pick_i18n_row, resolve_locale};
 
 /// 创建字典 meta 请求
 #[derive(Debug, Deserialize)]
@@ -77,10 +77,7 @@ impl From<DictMeta> for DictMetaView {
 pub async fn get_site_locales(db: &mut toasty::Db) -> Vec<String> {
     match DictValue::get_by_code_and_lang(db, "site_locales", LANG_GLOBAL).await {
         Ok(v) if !v.value.trim().is_empty() => super::locale::parse_locale_list(&v.value),
-        _ => vec![
-            DEFAULT_LOCALE.to_string(),
-            "en-us".to_string(),
-        ],
+        _ => vec![DEFAULT_LOCALE.to_string(), "en-us".to_string()],
     }
 }
 
@@ -189,19 +186,15 @@ pub async fn dict_public_views(
 pub async fn dict_detail_view(db: &mut toasty::Db, code: &str) -> Result<DictDetailView, String> {
     let meta = find_dict_meta_by_code(db, code).await?;
     let rows = get_dict_values_for_code(db, code).await?;
-    let values = rows
-        .into_iter()
-        .map(|v| (v.lang, v.value))
-        .collect();
+    let values = rows.into_iter().map(|v| (v.lang, v.value)).collect();
     Ok(DictDetailView {
         meta: meta.into(),
         values,
     })
 }
 
-/// 默认字典种子：(code, label, translatable, description, sort, global_value, [(lang, value)...])
-pub fn default_dict_seed(
-) -> &'static [(
+/// 默认字典种子条目：(code, label, translatable, description, sort, global_value, [(lang, value)...])
+pub type DictSeedEntry = (
     &'static str,
     &'static str,
     bool,
@@ -209,7 +202,10 @@ pub fn default_dict_seed(
     i64,
     Option<&'static str>,
     &'static [(&'static str, &'static str)],
-)] {
+);
+
+/// 默认字典种子表
+pub fn default_dict_seed() -> &'static [DictSeedEntry] {
     &[
         (
             "site_default_locale",
@@ -254,10 +250,7 @@ pub fn default_dict_seed(
             "页头、标题等",
             10,
             None,
-            &[
-                ("zh-cn", "海棠 CMS"),
-                ("en-us", "Haitang CMS"),
-            ],
+            &[("zh-cn", "海棠 CMS"), ("en-us", "Haitang CMS")],
         ),
         (
             "site_copyright",
@@ -305,18 +298,17 @@ pub async fn seed_default_dicts(db: &mut toasty::Db) {
             continue;
         }
 
-        if let Some(val) = global_value {
-            if DictValue::create()
+        if let Some(val) = global_value
+            && DictValue::create()
                 .code(*code)
                 .lang(LANG_GLOBAL)
                 .value(*val)
                 .exec(db)
                 .await
                 .is_err()
-            {
-                eprintln!("[种子] 创建字典 value {code} 失败");
-                continue;
-            }
+        {
+            eprintln!("[种子] 创建字典 value {code} 失败");
+            continue;
         }
 
         for (lang, val) in *i18n_pairs {

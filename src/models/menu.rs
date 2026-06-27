@@ -3,8 +3,8 @@ use serde::Serialize;
 use super::admin_sidebar::get_admin_sidebar_tree;
 use super::dict::{get_site_default_locale, get_site_locales, load_dict_map};
 use super::locale::{html_lang_attr, locale_path, public_page_title};
-use super::menu_group::{admin_sidebar_group_view, MenuGroup, MenuGroupView};
-use super::menu_item::{build_menu_tree, load_merged_menu_items, MenuView};
+use super::menu_group::{MenuGroup, MenuGroupView, admin_sidebar_group_view};
+use super::menu_item::{MenuView, build_menu_tree, load_merged_menu_items};
 
 /// 公开页菜单链接（供 Tera 模板渲染）
 #[derive(Debug, Clone, Serialize)]
@@ -64,7 +64,7 @@ pub async fn site_page_context(
 ) -> serde_json::Value {
     let default_lang = get_site_default_locale(db).await;
     let resolved_lang = lang
-        .map(|l| super::locale::normalize_lang(l))
+        .map(super::locale::normalize_lang)
         .unwrap_or(default_lang.clone());
     let supported = get_site_locales(db).await;
     let dict_map = load_dict_map(db, Some(&resolved_lang)).await;

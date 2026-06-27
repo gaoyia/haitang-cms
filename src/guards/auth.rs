@@ -1,7 +1,7 @@
-use jsonwebtoken::{decode, DecodingKey, Validation, Algorithm};
+use jsonwebtoken::{Algorithm, DecodingKey, Validation, decode};
+use rocket::State;
 use rocket::http::Status;
 use rocket::request::{FromRequest, Outcome, Request};
-use rocket::State;
 
 use crate::models::Claims;
 

@@ -1,7 +1,7 @@
-use rocket::serde::json::Json;
 use rocket::State;
+use rocket::serde::json::Json;
 
-use crate::models::{load_public_banners_by_code, ApiResponse, BannerView};
+use crate::models::{ApiResponse, BannerView, load_public_banners_by_code};
 
 /// 按轮播图组 code 获取启用的轮播图列表（公开）
 #[get("/api/banners?<code>")]

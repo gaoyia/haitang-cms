@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # 后端：Rust 编译、静态检查与测试
+  backend:
+    name: 后端 Rust
+    runs-on: ubuntu-latest
+    steps:
+      # Rocket 与 toasty 均为 git 依赖，由 cargo 从 GitHub 拉取，无需拉取子模块
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: 检查编译
+        run: cargo check --all-targets
+
+      - name: Clippy 静态检查
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: 单元测试
+        run: cargo test --all
+
+  # 前端：admin-web 类型检查与生产构建
+  frontend:
+    name: 前端 admin-web
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: admin-web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: admin-web/pnpm-lock.yaml
+
+      - name: 安装依赖
+        run: pnpm install --frozen-lockfile
+
+      - name: 类型检查
+        run: pnpm type-check
+
+      - name: 生产构建
+        run: pnpm build
+
+  # 文档：mdBook 构建
+  docs:
+    name: 文档 mdBook
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: peaceiris/actions-mdbook@v2
+        with:
+          mdbook-version: latest
+
+      - name: 构建文档
+        run: mdbook build docs

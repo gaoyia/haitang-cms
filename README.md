@@ -51,9 +51,10 @@ haitang-cms/
 │       └── js/
 ├── admin-web/               # 管理后台前端 (Vue 3)
 ├── docs/                    # API 文档 (mdbook)
-├── vendor/                  # Git Submodules
-│   ├── Rocket/
-│   └── toasty/
+├── vendor/                  # 本地资源（.gitignore 忽略，不进仓库）
+│   ├── koi-ui/              # admin-web 参考的 KOI-UI 框架
+│   ├── demo/                # 演示资源
+│   └── jquery-*.js          # 公开首页 jQuery
 ├── db/                      # SQLite 数据库文件
 ├── Cargo.toml
 └── Rocket.toml

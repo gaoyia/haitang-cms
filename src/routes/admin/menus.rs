@@ -1,14 +1,14 @@
-use rocket::serde::json::Json;
 use rocket::State;
+use rocket::serde::json::Json;
 
 use crate::guards::AdminAuth;
-use crate::routes::admin::auth::{get_roles_info, get_user_role_ids};
 use crate::models::{
-    all_menu_group_trees, create_menu_item, delete_menu_item, get_admin_sidebar_nav,
-    get_admin_sidebar_tree, get_db_menu_tree, get_site_default_locale, menu_has_children,
-    merged_menu_item, upsert_menu_i18n, validate_parent_id, ApiResponse, CreateMenuItem,
-    MenuGroup, MenuGroupTreeView, MenuItemMeta, MenuView, UpdateMenuItem, ADMIN_SIDEBAR_CODE,
+    ADMIN_SIDEBAR_CODE, ApiResponse, CreateMenuItem, MenuGroup, MenuGroupTreeView, MenuItemMeta,
+    MenuView, UpdateMenuItem, all_menu_group_trees, create_menu_item, delete_menu_item,
+    get_admin_sidebar_nav, get_admin_sidebar_tree, get_db_menu_tree, get_site_default_locale,
+    menu_has_children, merged_menu_item, upsert_menu_i18n, validate_parent_id,
 };
+use crate::routes::admin::auth::{get_roles_info, get_user_role_ids};
 use crate::routes::lang::LangQuery;
 
 /// 获取所有菜单组及其菜单树（菜单管理总览）
@@ -92,7 +92,10 @@ pub async fn create(
 ) -> Json<ApiResponse<MenuView>> {
     let mut db = db.inner().clone();
 
-    if MenuGroup::get_by_id(&mut db, &input.group_id).await.is_err() {
+    if MenuGroup::get_by_id(&mut db, &input.group_id)
+        .await
+        .is_err()
+    {
         return Json(ApiResponse::error(404, "菜单组不存在"));
     }
 
@@ -180,11 +183,7 @@ pub async fn update(
 
 /// 删除菜单
 #[delete("/api/admin/menus/<id>")]
-pub async fn delete(
-    _auth: AdminAuth,
-    db: &State<toasty::Db>,
-    id: i64,
-) -> Json<ApiResponse<()>> {
+pub async fn delete(_auth: AdminAuth, db: &State<toasty::Db>, id: i64) -> Json<ApiResponse<()>> {
     let mut db = db.inner().clone();
 
     let all_menus = match MenuItemMeta::all().exec(&mut db).await {

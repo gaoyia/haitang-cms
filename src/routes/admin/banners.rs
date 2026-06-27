@@ -1,10 +1,10 @@
-use rocket::serde::json::Json;
 use rocket::State;
+use rocket::serde::json::Json;
 
 use crate::guards::AdminAuth;
 use crate::models::{
-    banner_to_view, banners_to_views, filter_banners_by_group, paginate_vec, validate_banner_group_id,
-    ApiResponse, Banner, BannerView, CreateBanner, PageResult, UpdateBanner,
+    ApiResponse, Banner, BannerView, CreateBanner, PageResult, UpdateBanner, banner_to_view,
+    banners_to_views, filter_banners_by_group, paginate_vec, validate_banner_group_id,
 };
 use crate::routes::page::PageQuery;
 
@@ -111,10 +111,10 @@ pub async fn update(
         Err(_) => return Json(ApiResponse::error(404, "轮播图不存在")),
     };
 
-    if let Some(group_id) = input.group_id {
-        if let Err(msg) = validate_banner_group_id(&mut db, group_id).await {
-            return Json(ApiResponse::error(400, msg));
-        }
+    if let Some(group_id) = input.group_id
+        && let Err(msg) = validate_banner_group_id(&mut db, group_id).await
+    {
+        return Json(ApiResponse::error(400, msg));
     }
 
     let mut builder = banner.update();
@@ -154,11 +154,7 @@ pub async fn update(
 
 /// 删除轮播图
 #[delete("/api/admin/banners/<id>")]
-pub async fn delete(
-    _auth: AdminAuth,
-    db: &State<toasty::Db>,
-    id: i64,
-) -> Json<ApiResponse<()>> {
+pub async fn delete(_auth: AdminAuth, db: &State<toasty::Db>, id: i64) -> Json<ApiResponse<()>> {
     let mut db = db.inner().clone();
 
     match Banner::get_by_id(&mut db, &id).await {

@@ -269,10 +269,16 @@ pub async fn delete_post(db: &mut toasty::Db, id: i64) -> Result<(), String> {
     Ok(())
 }
 
-pub async fn count_posts_by_category(db: &mut toasty::Db, category_id: i64) -> Result<usize, String> {
+pub async fn count_posts_by_category(
+    db: &mut toasty::Db,
+    category_id: i64,
+) -> Result<usize, String> {
     let posts = PostMeta::all()
         .exec(db)
         .await
         .map_err(|e| format!("查询文章失败: {e}"))?;
-    Ok(posts.iter().filter(|p| p.category_id == category_id).count())
+    Ok(posts
+        .iter()
+        .filter(|p| p.category_id == category_id)
+        .count())
 }

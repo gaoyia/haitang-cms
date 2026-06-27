@@ -1,11 +1,11 @@
-use rocket::serde::json::Json;
 use rocket::State;
+use rocket::serde::json::Json;
 
 use crate::guards::AdminAuth;
 use crate::models::{
-    create_post, delete_post, get_site_default_locale, paginate_vec, post_detail_view, post_to_view,
-    posts_to_views, upsert_post_i18n, validate_category_id, ApiResponse, CreatePost, PageResult,
-    PostDetailView, PostI18n, PostMeta, PostView, UpdatePost,
+    ApiResponse, CreatePost, PageResult, PostDetailView, PostI18n, PostMeta, PostView, UpdatePost,
+    create_post, delete_post, get_site_default_locale, paginate_vec, post_detail_view,
+    post_to_view, posts_to_views, upsert_post_i18n, validate_category_id,
 };
 use crate::routes::page::LangPageQuery;
 
@@ -62,9 +62,7 @@ pub async fn update(
         return Json(ApiResponse::error(500, format!("更新失败: {e}")));
     }
 
-    meta = PostMeta::get_by_id(&mut db, &id)
-        .await
-        .expect("文章应存在");
+    meta = PostMeta::get_by_id(&mut db, &id).await.expect("文章应存在");
 
     let lang = input
         .lang
@@ -125,11 +123,7 @@ pub async fn update(
 
 /// 删除文章（需授权）
 #[delete("/api/admin/posts/<id>")]
-pub async fn delete(
-    _auth: AdminAuth,
-    db: &State<toasty::Db>,
-    id: i64,
-) -> Json<ApiResponse<()>> {
+pub async fn delete(_auth: AdminAuth, db: &State<toasty::Db>, id: i64) -> Json<ApiResponse<()>> {
     let mut db = db.inner().clone();
 
     match delete_post(&mut db, id).await {

@@ -1,8 +1,10 @@
-use rocket::serde::json::Json;
 use rocket::State;
+use rocket::serde::json::Json;
 
 use crate::guards::AdminAuth;
-use crate::models::{paginate_vec, ApiResponse, CreateRole, PageResult, Role, RoleView, UpdateRole, ALL_PERMISSIONS};
+use crate::models::{
+    ALL_PERMISSIONS, ApiResponse, CreateRole, PageResult, Role, RoleView, UpdateRole, paginate_vec,
+};
 use crate::routes::page::PageQuery;
 
 /// 获取所有角色列表
@@ -26,11 +28,7 @@ pub async fn list(
 
 /// 获取单个角色
 #[get("/api/admin/roles/<id>")]
-pub async fn get(
-    _auth: AdminAuth,
-    db: &State<toasty::Db>,
-    id: i64,
-) -> Json<ApiResponse<RoleView>> {
+pub async fn get(_auth: AdminAuth, db: &State<toasty::Db>, id: i64) -> Json<ApiResponse<RoleView>> {
     let mut db = db.inner().clone();
 
     match Role::get_by_id(&mut db, &id).await {
@@ -90,7 +88,7 @@ pub async fn update(
         builder = builder.description(description.as_str());
     }
     if let Some(ref permissions) = input.permissions {
-        builder = builder.permissions(&permissions.join(","));
+        builder = builder.permissions(permissions.join(","));
     }
 
     match builder.exec(&mut db).await {
@@ -104,11 +102,7 @@ pub async fn update(
 
 /// 删除角色
 #[delete("/api/admin/roles/<id>")]
-pub async fn delete(
-    _auth: AdminAuth,
-    db: &State<toasty::Db>,
-    id: i64,
-) -> Json<ApiResponse<()>> {
+pub async fn delete(_auth: AdminAuth, db: &State<toasty::Db>, id: i64) -> Json<ApiResponse<()>> {
     let mut db = db.inner().clone();
 
     let role = match Role::get_by_id(&mut db, &id).await {

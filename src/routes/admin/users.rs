@@ -1,8 +1,11 @@
-use rocket::serde::json::Json;
 use rocket::State;
+use rocket::serde::json::Json;
 
 use crate::guards::AdminAuth;
-use crate::models::{paginate_vec, ApiResponse, AssignRoles, CreateUser, PageResult, UpdateUser, User, UserRole, UserView};
+use crate::models::{
+    ApiResponse, AssignRoles, CreateUser, PageResult, UpdateUser, User, UserRole, UserView,
+    paginate_vec,
+};
 use crate::routes::page::PageQuery;
 
 use super::auth::{get_user_role_ids, hash_password};
@@ -33,11 +36,7 @@ pub async fn list(
 
 /// 获取单个用户
 #[get("/api/admin/users/<id>")]
-pub async fn get(
-    _auth: AdminAuth,
-    db: &State<toasty::Db>,
-    id: i64,
-) -> Json<ApiResponse<UserView>> {
+pub async fn get(_auth: AdminAuth, db: &State<toasty::Db>, id: i64) -> Json<ApiResponse<UserView>> {
     let mut db = db.inner().clone();
 
     let user = match User::get_by_id(&mut db, &id).await {
@@ -120,11 +119,7 @@ pub async fn update(
 
 /// 删除用户
 #[delete("/api/admin/users/<id>")]
-pub async fn delete(
-    _auth: AdminAuth,
-    db: &State<toasty::Db>,
-    id: i64,
-) -> Json<ApiResponse<()>> {
+pub async fn delete(_auth: AdminAuth, db: &State<toasty::Db>, id: i64) -> Json<ApiResponse<()>> {
     let mut db = db.inner().clone();
 
     let user = match User::get_by_id(&mut db, &id).await {

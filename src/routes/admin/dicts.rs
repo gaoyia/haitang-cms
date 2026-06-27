@@ -1,13 +1,14 @@
-use rocket::serde::json::Json;
 use rocket::State;
+use rocket::serde::json::Json;
 
 use crate::guards::AdminAuth;
-use crate::models::{
-    delete_dict_by_code, dict_detail_view, find_dict_meta_by_code, upsert_dict_values, ApiResponse,
-    CreateDictMeta, DictDetailView, DictMeta, DictMetaView, DictValue, UpdateDictMeta, UpsertDictValues,
-};
 use crate::models::locale::LANG_GLOBAL;
-use crate::models::{paginate_vec, PageResult};
+use crate::models::{
+    ApiResponse, CreateDictMeta, DictDetailView, DictMeta, DictMetaView, DictValue, UpdateDictMeta,
+    UpsertDictValues, delete_dict_by_code, dict_detail_view, find_dict_meta_by_code,
+    upsert_dict_values,
+};
+use crate::models::{PageResult, paginate_vec};
 use crate::routes::page::PageQuery;
 
 /// 获取所有字典 meta
@@ -164,11 +165,7 @@ pub async fn update_values(
 
 /// 删除字典项
 #[delete("/api/admin/dicts/<code>")]
-pub async fn delete(
-    _auth: AdminAuth,
-    db: &State<toasty::Db>,
-    code: &str,
-) -> Json<ApiResponse<()>> {
+pub async fn delete(_auth: AdminAuth, db: &State<toasty::Db>, code: &str) -> Json<ApiResponse<()>> {
     let mut db = db.inner().clone();
 
     match delete_dict_by_code(&mut db, code).await {

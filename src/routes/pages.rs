@@ -1,11 +1,11 @@
-use rocket::response::Redirect;
 use rocket::Route;
 use rocket::State;
+use rocket::response::Redirect;
 use rocket_dyn_templates::Template;
 
 use crate::models::dict::{get_site_default_locale, get_site_locales};
-use crate::models::locale::{is_supported_locale, locale_path, normalize_lang};
 use crate::models::load_public_banners_by_code;
+use crate::models::locale::{is_supported_locale, locale_path, normalize_lang};
 use crate::models::site_page_context;
 
 /// 汇总页面路由
@@ -111,16 +111,16 @@ async fn render_public_page(
     let current_path = locale_path(&resolved, page_slug);
     let mut ctx = site_page_context(&mut db, page_slug, &current_path, Some(&resolved)).await;
 
-    if page_slug.is_empty() {
-        if let Some(obj) = ctx.as_object_mut() {
-            let banners = load_public_banners_by_code(&mut db, "home_banner")
-                .await
-                .unwrap_or_default();
-            obj.insert(
-                "banners".to_string(),
-                serde_json::to_value(banners).unwrap_or_else(|_| serde_json::json!([])),
-            );
-        }
+    if page_slug.is_empty()
+        && let Some(obj) = ctx.as_object_mut()
+    {
+        let banners = load_public_banners_by_code(&mut db, "home_banner")
+            .await
+            .unwrap_or_default();
+        obj.insert(
+            "banners".to_string(),
+            serde_json::to_value(banners).unwrap_or_else(|_| serde_json::json!([])),
+        );
     }
 
     Ok(match page_slug {
