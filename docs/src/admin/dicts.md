@@ -3,15 +3,16 @@
 ## 获取字典 meta 列表
 
 ```
-GET /api/admin/dicts?page=1&page_size=10
+GET /api/admin/dicts?lang=zh-cn&page=1&page_size=10
 ```
 
 | 参数 | 位置 | 类型 | 说明 |
 |------|------|------|------|
+| `lang` | query | `string` | 可选，列表「当前值」预览语言；缺省为站点默认语言 |
 | `page` | query | `i64` | 可选，页码，默认 1 |
 | `page_size` | query | `i64` | 可选，每页条数，默认 10，上限 100 |
 
-返回 [分页响应](../overview.md#分页响应)，`list` 元素为 `DictMetaView`（`code`、`label`、`description`、`translatable`、`sort`）。
+返回 [分页响应](../overview.md#分页响应)，`list` 元素为 `DictMetaListView`（`code`、`label`、`description`、`translatable`、`sort`、**`preview_value`**）。非多语言项的 `preview_value` 为全球值；多语言项为 `lang` 指定语言下的值（无则 fallback 至默认语言）。
 
 ## 获取字典详情（meta + values）
 

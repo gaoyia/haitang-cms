@@ -271,6 +271,8 @@ export default {
         description: "说明",
         translatable: "多语言",
         sort: "排序",
+        previewLang: "预览语言",
+        previewValue: "当前值",
         values: "字典值",
         create: "新建字典",
         edit: "编辑字典",

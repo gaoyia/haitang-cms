@@ -4,30 +4,28 @@ use rocket::serde::json::Json;
 use crate::guards::AdminAuth;
 use crate::models::locale::LANG_GLOBAL;
 use crate::models::{
-    ApiResponse, CreateDictMeta, DictDetailView, DictMeta, DictMetaView, DictValue, UpdateDictMeta,
-    UpsertDictValues, delete_dict_by_code, dict_detail_view, find_dict_meta_by_code,
-    upsert_dict_values,
+    ApiResponse, CreateDictMeta, DictDetailView, DictMeta, DictMetaListView, DictValue, UpdateDictMeta,
+    UpsertDictValues, delete_dict_by_code, dict_detail_view, dict_meta_list_views,
+    find_dict_meta_by_code, upsert_dict_values,
 };
 use crate::models::{PageResult, paginate_vec};
-use crate::routes::page::PageQuery;
+use crate::routes::page::LangPageQuery;
 
 /// 获取所有字典 meta
-#[get("/api/admin/dicts?<page..>")]
+#[get("/api/admin/dicts?<query..>")]
 pub async fn list(
     _auth: AdminAuth,
     db: &State<toasty::Db>,
-    page: PageQuery,
-) -> Json<ApiResponse<PageResult<DictMetaView>>> {
+    query: LangPageQuery,
+) -> Json<ApiResponse<PageResult<DictMetaListView>>> {
     let mut db = db.inner().clone();
 
-    match DictMeta::all().exec(&mut db).await {
-        Ok(mut items) => {
-            items.sort_by_key(|d| d.sort);
-            let views: Vec<DictMetaView> = items.into_iter().map(DictMetaView::from).collect();
-            let (p, ps) = page.resolve();
+    match dict_meta_list_views(&mut db, query.lang.as_deref()).await {
+        Ok(views) => {
+            let (p, ps) = query.resolve_page();
             Json(ApiResponse::success(paginate_vec(views, p, ps)))
         }
-        Err(e) => Json(ApiResponse::error(500, format!("查询失败: {e}"))),
+        Err(e) => Json(ApiResponse::error(500, e)),
     }
 }
 

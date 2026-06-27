@@ -12,6 +12,10 @@
       </template>
 
       <div class="page-toolbar">
+        <div class="page-toolbar__left">
+          <span class="page-toolbar__label">{{ t("menu.dict.manage.previewLang") }}</span>
+          <el-segmented v-model="previewLang" :options="localeSegmentOptions" size="small" />
+        </div>
         <el-button type="primary" @click="openDialog(null)">
           <el-icon><Plus /></el-icon>
           {{ t("button.add") }}
@@ -40,6 +44,7 @@
             </el-tag>
           </template>
         </el-table-column>
+        <el-table-column prop="preview_value" :label="t('menu.dict.manage.previewValue')" min-width="160" show-overflow-tooltip />
         <el-table-column prop="sort" :label="t('menu.dict.manage.sort')" width="90" align="center" />
         <el-table-column :label="t('table.operate')" width="160" fixed="right" align="center">
           <template #default="{ row }">
@@ -123,19 +128,20 @@ import {
   listDictsApi,
   updateDictApi,
   updateDictValuesApi,
-  type DictMetaView,
+  type DictMetaListView,
 } from "@/api/system/dict.ts";
 import { useSiteLocales } from "@/composables/useSiteLocales.ts";
 import { useTablePage } from "@/composables/useTablePage.ts";
 import { koiMsgError, koiMsgSuccess } from "@/utils/koi.ts";
 
 const { t } = useI18n();
-const { siteLocales, defaultLocale, loadSiteLocales, localeLabel, emptyLocaleRecord } = useSiteLocales();
-const { page, pageSize, total, pageParams, applyPageResult } = useTablePage();
+const { siteLocales, defaultLocale, previewLang, loadSiteLocales, localeLabel, emptyLocaleRecord } =
+  useSiteLocales();
+const { page, pageSize, total, pageParams, applyPageResult, resetPage } = useTablePage();
 
 const loading = ref(false);
 const saving = ref(false);
-const dicts = ref<DictMetaView[]>([]);
+const dicts = ref<DictMetaListView[]>([]);
 
 const dialogVisible = ref(false);
 const editingCode = ref<string | null>(null);
@@ -144,6 +150,13 @@ const activeLocale = ref("zh-cn");
 const singleValue = ref("");
 
 const isEdit = computed(() => editingCode.value !== null);
+
+const localeSegmentOptions = computed(() =>
+  siteLocales.value.map((loc) => ({
+    label: localeLabel(loc),
+    value: loc,
+  })),
+);
 
 const form = reactive({
   code: "",
@@ -202,7 +215,7 @@ function initValuesMap(existing?: Record<string, string>) {
 async function loadDicts() {
   loading.value = true;
   try {
-    const res = await listDictsApi(pageParams.value);
+    const res = await listDictsApi(previewLang.value, pageParams.value);
     dicts.value = applyPageResult(res.code === 0 ? res.data : null);
   } finally {
     loading.value = false;
@@ -218,7 +231,7 @@ function resetForm() {
   initValuesMap();
 }
 
-async function openDialog(row: DictMetaView | null) {
+async function openDialog(row: DictMetaListView | null) {
   if (row) {
     editingCode.value = row.code;
     form.code = row.code;
@@ -306,7 +319,7 @@ async function handleSave() {
   });
 }
 
-async function handleDelete(row: DictMetaView) {
+async function handleDelete(row: DictMetaListView) {
   try {
     await ElMessageBox.confirm(
       t("menu.dict.manage.deleteConfirm", { name: row.label }),
@@ -324,6 +337,11 @@ async function handleDelete(row: DictMetaView) {
     koiMsgError(res.message || t("msg.fail"));
   }
 }
+
+watch(previewLang, () => {
+  resetPage();
+  loadDicts();
+});
 
 onMounted(async () => {
   await loadSiteLocales();
@@ -357,7 +375,23 @@ onMounted(async () => {
 }
 
 .page-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
   margin-bottom: 12px;
+
+  &__left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  &__label {
+    font-size: 13px;
+    color: var(--el-text-color-secondary);
+  }
 }
 
 .page-table {

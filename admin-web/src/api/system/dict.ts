@@ -19,6 +19,11 @@ export interface DictMetaView {
   sort: number;
 }
 
+/** 列表项：含当前值预览 */
+export interface DictMetaListView extends DictMetaView {
+  preview_value: string;
+}
+
 export interface DictDetailView extends DictMetaView {
   values: Record<string, string>;
 }
@@ -40,9 +45,12 @@ export interface UpdateDictInput {
   sort?: number;
 }
 
-export function listDictsApi(page?: PageParams): Promise<Result<PageResult<DictMetaView>>> {
+export function listDictsApi(
+  lang?: string,
+  page?: PageParams,
+): Promise<Result<PageResult<DictMetaListView>>> {
   return axios.get("/api/admin/dicts", {
-    params: { page: page?.page, page_size: page?.page_size },
+    params: { lang, page: page?.page, page_size: page?.page_size },
   });
 }
 

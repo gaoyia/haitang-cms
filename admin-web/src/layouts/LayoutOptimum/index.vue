@@ -62,8 +62,8 @@
           <Toolbar @widthChange="handleToolbarWidthChange"></Toolbar>
         </div>
       </el-header>
-      <!-- 路由页面 -->
-      <Main></Main>
+      <!-- 路由页面（由 layouts/index.vue 注入） -->
+      <LayoutMainMount />
     </el-container>
   </el-container>
 </template>
@@ -73,8 +73,8 @@ import settings from "@/settings.ts";
 import Logo from "@/layouts/components/Logo/index.vue";
 import Collapse from "@/layouts/components/Header/components/Collapse.vue";
 import Toolbar from "@/layouts/components/Header/components/Toolbar.vue";
+import LayoutMainMount from "@/layouts/components/LayoutMainMount.vue";
 import ColumnSubMenu from "@/layouts/components/Menu/ColumnSubMenu.vue";
-import Main from "@/layouts/components/Main/index.vue";
 import type { KoiScrollNavExpose } from "@/components/KoiScrollNav/Index.vue";
 import { ref, computed, watch, onMounted, nextTick } from "vue";
 import { useRoute, useRouter } from "vue-router";

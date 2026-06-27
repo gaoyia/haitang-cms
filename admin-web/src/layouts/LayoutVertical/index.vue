@@ -26,8 +26,8 @@
       <el-header class="layout-header">
         <Header></Header>
       </el-header>
-      <!-- 路由页面 -->
-      <Main></Main>
+      <!-- 路由页面（由 layouts/index.vue 注入，切换布局壳时不重挂载） -->
+      <LayoutMainMount />
     </el-container>
   </el-container>
 </template>
@@ -36,8 +36,8 @@
 import settings from "@/settings.ts";
 import Logo from "@/layouts/components/Logo/index.vue";
 import Header from "@/layouts/components/Header/index.vue";
+import LayoutMainMount from "@/layouts/components/LayoutMainMount.vue";
 import AsideSubMenu from "@/layouts/components/Menu/AsideSubMenu.vue";
-import Main from "@/layouts/components/Main/index.vue";
 import { ref, computed } from "vue";
 import { useRoute } from "vue-router";
 import useAuthStore from "@/stores/modules/auth.ts";

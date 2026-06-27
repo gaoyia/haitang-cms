@@ -272,6 +272,8 @@ export default {
         description: "Description",
         translatable: "Translatable",
         sort: "Sort",
+        previewLang: "Preview language",
+        previewValue: "Current value",
         values: "Values",
         create: "New dictionary",
         edit: "Edit dictionary",

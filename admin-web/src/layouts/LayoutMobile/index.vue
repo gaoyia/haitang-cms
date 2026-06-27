@@ -1,5 +1,5 @@
 <template>
-  <el-container class="layout-container">
+  <el-container class="layout-container" direction="vertical">
     <el-header class="layout-header flex flex-items-center flex-justify-between">
       <div class="layout-mobile-header-brand flex flex-items-center">
         <div v-show="showLogo" class="flex flex-items-center" @click="handleOpenMobileMenu">
@@ -14,10 +14,12 @@
         <div class="layout-mobile-header-menu-group flex flex-items-center">
           <span class="layout-mobile-header-divider" aria-hidden="true" />
           <div
-            class="layout-mobile-menu-trigger hover:bg-[--el-header-icon-hover-bg-color] w-36px h-36px rounded-md flex flex-justify-center flex-items-center"
+            class="layout-mobile-menu-trigger hover:bg-[--el-header-icon-hover-bg-color] koi-icon w-36px h-36px rounded-md flex flex-justify-center flex-items-center"
             @click="handleOpenMobileMenu"
           >
-            <KoiSvgIcon name="koi-align-left" width="19" height="19" />
+            <el-icon :size="20">
+              <KoiSvgIcon name="koi-align-left" width="20px" height="20px" />
+            </el-icon>
           </div>
         </div>
       </div>
@@ -27,8 +29,8 @@
         <User></User>
       </div>
     </el-header>
-    <!-- 路由页面 -->
-    <Main></Main>
+    <!-- 路由页面（由 layouts/index.vue 注入） -->
+    <LayoutMainMount />
   </el-container>
 
   <!-- 左侧抽屉菜单 -->
@@ -70,8 +72,8 @@ import { CircleCloseFilled } from "@element-plus/icons-vue";
 import User from "@/layouts/components/Header/components/User.vue";
 import Dark from "@/layouts/components/Header/components/Dark.vue";
 import Logo from "@/layouts/components/Logo/index.vue";
+import LayoutMainMount from "@/layouts/components/LayoutMainMount.vue";
 import ColumnSubMenu from "@/layouts/components/Menu/ColumnSubMenu.vue";
-import Main from "@/layouts/components/Main/index.vue";
 import { ref, computed, watch } from "vue";
 import { useRoute } from "vue-router";
 import useAuthStore from "@/stores/modules/auth.ts";

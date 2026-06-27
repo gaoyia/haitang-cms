@@ -2,7 +2,7 @@
   <div class="main-wrapper">
     <Maximize />
     <div class="main-frame">
-      <Tabs></Tabs>
+      <Tabs v-show="showTabs" />
       <el-main class="main-content">
         <div class="main-content__inner">
           <router-view v-slot="{ Component, route }">
@@ -19,11 +19,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, provide, onBeforeUnmount } from "vue";
+import { ref, watch, provide, onBeforeUnmount, onMounted } from "vue";
 import Maximize from "@/layouts/components/Main/components/Maximize.vue";
-import { useDebounceFn } from "@vueuse/core";
+import { useDebounceFn, useBreakpoints } from "@vueuse/core";
 import Tabs from "@/layouts/components/Tabs/index.vue";
 import { storeToRefs } from "pinia";
+import { breakpointsEnum } from "@/hooks/screen/index.ts";
 import useKeepAliveStore from "@/stores/modules/keepAlive.ts";
 import useGlobalStore from "@/stores/modules/global.ts";
 
@@ -32,6 +33,9 @@ const globalStore = useGlobalStore();
 const { transition } = storeToRefs(globalStore);
 
 const keepAliveStore = useKeepAliveStore();
+
+/** 宽度 ≥ 768px 显示标签栏，窄屏（与 LayoutMobile 一致）隐藏 */
+const showTabs = useBreakpoints(breakpointsEnum).greater("sm");
 
 const isRouterShow = ref(true);
 
@@ -50,20 +54,23 @@ watch(
   { deep: true, immediate: true }
 );
 
-const screenWidth = ref(0);
-const showTabs = ref(true);
-
-const listeningWindow = useDebounceFn(() => {
-  screenWidth.value = document.body.clientWidth;
-  if (!globalStore.isCollapse && screenWidth.value < 1200) globalStore.setGlobalState("isCollapse", true);
-  if (globalStore.isCollapse && screenWidth.value > 1200) globalStore.setGlobalState("isCollapse", false);
-  showTabs.value = screenWidth.value >= 520;
+/** 宽度 < 1200px 自动折叠侧栏，> 1200px 自动展开（与改前 Koi Admin 行为一致） */
+const syncSidebarCollapse = useDebounceFn(() => {
+  const width = document.body.clientWidth;
+  if (!globalStore.isCollapse && width < 1200) {
+    globalStore.setGlobalState("isCollapse", true);
+  } else if (globalStore.isCollapse && width > 1200) {
+    globalStore.setGlobalState("isCollapse", false);
+  }
 }, 100);
 
-window.addEventListener("resize", listeningWindow, false);
+onMounted(() => {
+  syncSidebarCollapse();
+  window.addEventListener("resize", syncSidebarCollapse, false);
+});
 
 onBeforeUnmount(() => {
-  window.removeEventListener("resize", listeningWindow);
+  window.removeEventListener("resize", syncSidebarCollapse);
 });
 </script>
 

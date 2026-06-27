@@ -26,8 +26,8 @@
         </div>
       </el-aside>
       <el-container class="flex flex-col">
-        <!-- 路由页面 -->
-        <Main></Main>
+        <!-- 路由页面（由 layouts/index.vue 注入） -->
+        <LayoutMainMount />
       </el-container>
     </el-container>
   </el-container>
@@ -37,8 +37,8 @@
 import settings from "@/settings.ts";
 import Logo from "@/layouts/components/Logo/index.vue";
 import Header from "@/layouts/components/Header/index.vue";
+import LayoutMainMount from "@/layouts/components/LayoutMainMount.vue";
 import AsideSubMenu from "@/layouts/components/Menu/AsideSubMenu.vue";
-import Main from "@/layouts/components/Main/index.vue";
 import { ref, computed } from "vue";
 import { useRoute } from "vue-router";
 import useAuthStore from "@/stores/modules/auth.ts";

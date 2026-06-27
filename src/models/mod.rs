@@ -45,10 +45,10 @@ pub use category::{
     seed_default_categories, upsert_category_i18n,
 };
 pub use dict::{
-    CreateDictMeta, DictDetailView, DictMetaView, DictPublicView, UpdateDictMeta, UpsertDictValues,
-    delete_dict_by_code, dict_detail_view, dict_public_views, find_dict_meta_by_code,
-    get_post_cover_max, get_site_default_locale, load_dict_map, seed_default_dicts,
-    upsert_dict_values,
+    CreateDictMeta, DictDetailView, DictMetaListView, DictPublicView, UpdateDictMeta,
+    UpsertDictValues, delete_dict_by_code, dict_detail_view, dict_meta_list_views, dict_public_views,
+    find_dict_meta_by_code, get_post_cover_max, get_site_default_locale, load_dict_map,
+    seed_default_dicts, upsert_dict_values,
 };
 pub use dict_meta::DictMeta;
 pub use dict_value::DictValue;

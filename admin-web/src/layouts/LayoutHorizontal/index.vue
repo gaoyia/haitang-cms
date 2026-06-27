@@ -60,7 +60,9 @@
           </div>
         </div>
       </header>
-      <Main class="layout-horizontal-main" />
+      <div class="layout-horizontal-main">
+        <LayoutMainMount />
+      </div>
     </div>
   </div>
 </template>
@@ -69,8 +71,8 @@
 import { koiMsgWarning } from "@/utils/koi.ts";
 import Logo from "@/layouts/components/Logo/index.vue";
 import Toolbar from "@/layouts/components/Header/components/Toolbar.vue";
+import LayoutMainMount from "@/layouts/components/LayoutMainMount.vue";
 import HorizontalSubMenu from "@/layouts/components/Menu/HorizontalSubMenu.vue";
-import Main from "@/layouts/components/Main/index.vue";
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import useAuthStore from "@/stores/modules/auth.ts";

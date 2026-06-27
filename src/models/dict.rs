@@ -43,6 +43,18 @@ pub struct DictMetaView {
     pub sort: i64,
 }
 
+/// 管理端列表项（meta + 当前值预览）
+#[derive(Debug, Clone, Serialize)]
+pub struct DictMetaListView {
+    pub code: String,
+    pub label: String,
+    pub description: String,
+    pub translatable: bool,
+    pub sort: i64,
+    /// 列表展示：非多语言为全球值；多语言为站点默认语言下的值
+    pub preview_value: String,
+}
+
 /// 字典详情（管理端）
 #[derive(Debug, Serialize)]
 pub struct DictDetailView {
@@ -209,6 +221,67 @@ pub async fn dict_detail_view(db: &mut toasty::Db, code: &str) -> Result<DictDet
     })
 }
 
+/// 从 value 行解析列表预览文案
+fn preview_value_for_rows(
+    meta: &DictMeta,
+    rows: &[DictValue],
+    preview_lang: &str,
+    default_lang: &str,
+) -> String {
+    if !meta.translatable {
+        return rows
+            .iter()
+            .find(|v| v.lang == LANG_GLOBAL)
+            .map(|v| v.value.clone())
+            .unwrap_or_default();
+    }
+    pick_i18n_row(rows, preview_lang, default_lang, |v| v.lang.as_str())
+        .map(|v| v.value.clone())
+        .unwrap_or_default()
+}
+
+/// 管理端字典 meta 列表（含当前值预览）
+pub async fn dict_meta_list_views(
+    db: &mut toasty::Db,
+    lang: Option<&str>,
+) -> Result<Vec<DictMetaListView>, String> {
+    let mut metas = DictMeta::all()
+        .exec(db)
+        .await
+        .map_err(|e| format!("查询字典失败: {e}"))?;
+    metas.sort_by_key(|d| d.sort);
+
+    let all_values = DictValue::all()
+        .exec(db)
+        .await
+        .map_err(|e| format!("查询字典值失败: {e}"))?;
+
+    let mut values_by_code: HashMap<String, Vec<DictValue>> = HashMap::new();
+    for v in all_values {
+        values_by_code.entry(v.code.clone()).or_default().push(v);
+    }
+
+    let default_lang = get_site_default_locale(db).await;
+    let preview_lang = resolve_locale(lang, &default_lang);
+
+    Ok(metas
+        .into_iter()
+        .map(|meta| {
+            let rows = values_by_code.remove(&meta.code).unwrap_or_default();
+            let preview_value =
+                preview_value_for_rows(&meta, &rows, &preview_lang, &default_lang);
+            DictMetaListView {
+                code: meta.code,
+                label: meta.label,
+                description: meta.description,
+                translatable: meta.translatable,
+                sort: meta.sort,
+                preview_value,
+            }
+        })
+        .collect())
+}
+
 /// 默认字典种子条目：(code, label, translatable, description, sort, global_value, [(lang, value)...])
 pub type DictSeedEntry = (
     &'static str,
@@ -247,7 +320,7 @@ pub fn default_dict_seed() -> &'static [DictSeedEntry] {
             false,
             "网站底部 ICP 备案号",
             2,
-            Some(""),
+            Some("京ICP备xxx号"),
             &[],
         ),
         (

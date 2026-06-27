@@ -9,6 +9,7 @@ dist
 /static/fileicon/
 /static/uploads/*
 !/static/uploads/.gitkeep
+# 种子资源：直接放在 uploads/seed/ 下并提交，其余 uploads 内容仍忽略
 !/static/uploads/seed/
 !/static/uploads/seed/**
 /vendor

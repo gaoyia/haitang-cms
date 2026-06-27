@@ -1,10 +1,11 @@
 <!-- 这里是一次性加载 LayoutComponents -->
 <template>
-  <!-- 全局水印：v-waterMarker="{ text: 'KOI-ADMIN', textColor: '#D9D9D9', isGlobal: true }" -->
-  <div>
-    <component :is="LayoutComponent[layout]" v-if="!isMobile" />
-    <component :is="LayoutMobile" v-if="isMobile" />
-    <!-- 同级进行选择不同布局时就不会被关闭 -->
+  <div class="layout-app">
+    <component :is="activeLayoutComponent" />
+    <!-- Main 与布局壳解耦：窄屏/桌面/主题布局切换时不随壳 unmount -->
+    <Teleport :to="layoutMainMountEl" :disabled="!layoutMainMountEl">
+      <Main />
+    </Teleport>
     <component :is="ThemeConfig" />
   </div>
 </template>
@@ -12,9 +13,10 @@
 <script setup lang="ts" name="layout">
 import { useScreenStore } from "@/hooks/screen/index.ts";
 import { computed, type Component } from "vue";
-// 全局主题配置
 import useGlobalStore from "@/stores/modules/global.ts";
+import { layoutMainMountEl } from "@/layouts/useLayoutMainMount.ts";
 import ThemeConfig from "@/layouts/components/ThemeConfig/index.vue";
+import Main from "@/layouts/components/Main/index.vue";
 import LayoutVertical from "@/layouts/LayoutVertical/index.vue";
 import LayoutColumns from "@/layouts/LayoutColumns/index.vue";
 import LayoutClassic from "@/layouts/LayoutClassic/index.vue";
@@ -22,23 +24,28 @@ import LayoutHorizontal from "@/layouts/LayoutHorizontal/index.vue";
 import LayoutOptimum from "@/layouts/LayoutOptimum/index.vue";
 import LayoutMobile from "@/layouts/LayoutMobile/index.vue";
 
-type LayoutType = "vertical" | "columns" | "classic" | "horizontal" | 'optimum' | string;
+type LayoutType = "vertical" | "columns" | "classic" | "horizontal" | "optimum" | string;
 const LayoutComponent: Record<LayoutType, Component> = {
   vertical: LayoutVertical,
   columns: LayoutColumns,
   classic: LayoutClassic,
   horizontal: LayoutHorizontal,
-  optimum: LayoutOptimum
+  optimum: LayoutOptimum,
 };
 
-// 全局主题仓库
 const globalStore = useGlobalStore();
-
-/** 获取布局格式 */
-const layout = computed(() => globalStore.layout);
-
-// 获取当前为[移动端、IPad、PC端]仓库，阔以使用 watchEffect(() => {}) 进行监听。
+const layout = computed(() => globalStore.layout as LayoutType);
 const { isMobile } = useScreenStore();
+
+const activeLayoutComponent = computed(() => {
+  if (isMobile.value) return LayoutMobile;
+  return LayoutComponent[layout.value] ?? LayoutVertical;
+});
 </script>
 
-<style scoped lang="scss"></style>
+<style scoped lang="scss">
+.layout-app {
+  width: 100%;
+  height: 100%;
+}
+</style>
