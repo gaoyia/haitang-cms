@@ -42,24 +42,26 @@ impl AssetListQuery {
     }
 }
 
+#[derive(rocket::form::FromForm)]
+pub(crate) struct UploadQuery {
+    purpose: String,
+    post_id: Option<i64>,
+    role: Option<String>,
+    banner_id: Option<i64>,
+    banner_role: Option<String>,
+}
+
 /// 上传资源
-#[post(
-    "/api/admin/assets?<purpose>&<post_id>&<role>&<banner_id>&<banner_role>",
-    data = "<form>"
-)]
+#[post("/api/admin/assets?<query..>", data = "<form>")]
 pub async fn upload(
     auth: AdminAuth,
     db: &State<toasty::Db>,
     storage: &State<StorageService>,
-    purpose: &str,
-    post_id: Option<i64>,
-    role: Option<&str>,
-    banner_id: Option<i64>,
-    banner_role: Option<&str>,
+    query: UploadQuery,
     form: Form<UploadForm<'_>>,
 ) -> Json<ApiResponse<crate::models::AssetView>> {
     let mut db = db.inner().clone();
-    let purpose = match AssetPurpose::parse(purpose) {
+    let purpose = match AssetPurpose::parse(&query.purpose) {
         Ok(p) => p,
         Err(e) => return Json(ApiResponse::error(400, e)),
     };
@@ -131,7 +133,7 @@ pub async fn upload(
         }
     };
 
-    if let (Some(pid), Some(role_str)) = (post_id, role) {
+    if let (Some(pid), Some(role_str)) = (query.post_id, query.role.as_deref()) {
         if PostMeta::get_by_id(&mut db, &pid).await.is_err() {
             return Json(ApiResponse::error(404, "文章不存在"));
         }
@@ -145,7 +147,7 @@ pub async fn upload(
         }
     }
 
-    if let (Some(bid), Some(role_str)) = (banner_id, banner_role) {
+    if let (Some(bid), Some(role_str)) = (query.banner_id, query.banner_role.as_deref()) {
         if Banner::get_by_id(&mut db, &bid).await.is_err() {
             return Json(ApiResponse::error(404, "轮播图不存在"));
         }

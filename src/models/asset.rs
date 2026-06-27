@@ -219,7 +219,7 @@ pub async fn list_asset_views(
         });
     }
 
-    assets.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+    assets.sort_by_key(|a| std::cmp::Reverse(a.created_at));
 
     let post_refs = post_asset_rows(db).await?;
     let banner_refs = banner_asset_rows(db).await?;

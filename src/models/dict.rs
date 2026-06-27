@@ -105,25 +105,6 @@ fn parse_post_cover_max(raw: &str) -> i64 {
         .unwrap_or(3)
 }
 
-#[cfg(test)]
-mod cover_max_tests {
-    use super::*;
-
-    #[test]
-    fn parse_cover_max_valid() {
-        assert_eq!(parse_post_cover_max("3"), 3);
-        assert_eq!(parse_post_cover_max("1"), 1);
-        assert_eq!(parse_post_cover_max("20"), 20);
-    }
-
-    #[test]
-    fn parse_cover_max_invalid() {
-        assert_eq!(parse_post_cover_max("0"), 3);
-        assert_eq!(parse_post_cover_max("21"), 3);
-        assert_eq!(parse_post_cover_max("abc"), 3);
-    }
-}
-
 /// 按 code 查找 meta
 pub async fn find_dict_meta_by_code(db: &mut toasty::Db, code: &str) -> Result<DictMeta, String> {
     DictMeta::get_by_code(db, code)
@@ -427,4 +408,23 @@ pub async fn upsert_dict_values(
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod cover_max_tests {
+    use super::*;
+
+    #[test]
+    fn parse_cover_max_valid() {
+        assert_eq!(parse_post_cover_max("3"), 3);
+        assert_eq!(parse_post_cover_max("1"), 1);
+        assert_eq!(parse_post_cover_max("20"), 20);
+    }
+
+    #[test]
+    fn parse_cover_max_invalid() {
+        assert_eq!(parse_post_cover_max("0"), 3);
+        assert_eq!(parse_post_cover_max("21"), 3);
+        assert_eq!(parse_post_cover_max("abc"), 3);
+    }
 }

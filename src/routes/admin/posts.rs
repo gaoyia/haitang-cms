@@ -5,7 +5,8 @@ use crate::guards::AdminAuth;
 use crate::models::{
     ApiResponse, CreatePost, PageResult, PostDetailView, PostI18n, PostMeta, PostView, UpdatePost,
     create_post, delete_post, get_site_default_locale, paginate_vec, post_assets_view,
-    post_detail_view, post_to_view, posts_to_views, upsert_post_i18n, validate_category_id,
+    post_detail_view, post_to_view, posts_to_views, upsert_post_i18n, PostI18nUpsert,
+    validate_category_id,
 };
 use crate::routes::page::LangPageQuery;
 use crate::storage::StorageService;
@@ -117,12 +118,14 @@ pub async fn update(
         if let Err(e) = upsert_post_i18n(
             &mut db,
             id,
-            &resolved_lang,
-            title,
-            description,
-            content,
-            route_path,
-            tags,
+            PostI18nUpsert {
+                lang: &resolved_lang,
+                title,
+                description,
+                content,
+                route_path,
+                tags,
+            },
         )
         .await
         {

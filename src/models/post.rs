@@ -373,16 +373,29 @@ pub async fn post_detail_view(db: &mut toasty::Db, id: i64) -> Result<PostDetail
     })
 }
 
+/// 文章翻译 upsert 入参
+pub struct PostI18nUpsert<'a> {
+    pub lang: &'a str,
+    pub title: &'a str,
+    pub description: &'a str,
+    pub content: &'a str,
+    pub route_path: &'a str,
+    pub tags: &'a str,
+}
+
 pub async fn upsert_post_i18n(
     db: &mut toasty::Db,
     post_id: i64,
-    lang: &str,
-    title: &str,
-    description: &str,
-    content: &str,
-    route_path: &str,
-    tags: &str,
+    input: PostI18nUpsert<'_>,
 ) -> Result<(), String> {
+    let PostI18nUpsert {
+        lang,
+        title,
+        description,
+        content,
+        route_path,
+        tags,
+    } = input;
     let lang = super::locale::normalize_lang(lang);
     let tags = normalize_tags(tags);
     let route_path = normalize_post_route_path(&lang, route_path)?;
@@ -414,6 +427,41 @@ pub async fn upsert_post_i18n(
         }
     }
     Ok(())
+}
+
+pub async fn delete_post(db: &mut toasty::Db, id: i64) -> Result<(), String> {
+    let meta = PostMeta::get_by_id(db, &id)
+        .await
+        .map_err(|_| "文章不存在".to_string())?;
+
+    super::asset::delete_post_asset_links(db, id).await?;
+
+    let rows = post_i18n_rows(db, id).await?;
+    for row in rows {
+        row.delete()
+            .exec(db)
+            .await
+            .map_err(|e| format!("删除文章翻译失败: {e}"))?;
+    }
+    meta.delete()
+        .exec(db)
+        .await
+        .map_err(|e| format!("删除文章失败: {e}"))?;
+    Ok(())
+}
+
+pub async fn count_posts_by_category(
+    db: &mut toasty::Db,
+    category_id: i64,
+) -> Result<usize, String> {
+    let posts = PostMeta::all()
+        .exec(db)
+        .await
+        .map_err(|e| format!("查询文章失败: {e}"))?;
+    Ok(posts
+        .iter()
+        .filter(|p| p.category_id == category_id)
+        .count())
 }
 
 #[cfg(test)]
@@ -498,39 +546,4 @@ mod tests {
             vec![1]
         );
     }
-}
-
-pub async fn delete_post(db: &mut toasty::Db, id: i64) -> Result<(), String> {
-    let meta = PostMeta::get_by_id(db, &id)
-        .await
-        .map_err(|_| "文章不存在".to_string())?;
-
-    super::asset::delete_post_asset_links(db, id).await?;
-
-    let rows = post_i18n_rows(db, id).await?;
-    for row in rows {
-        row.delete()
-            .exec(db)
-            .await
-            .map_err(|e| format!("删除文章翻译失败: {e}"))?;
-    }
-    meta.delete()
-        .exec(db)
-        .await
-        .map_err(|e| format!("删除文章失败: {e}"))?;
-    Ok(())
-}
-
-pub async fn count_posts_by_category(
-    db: &mut toasty::Db,
-    category_id: i64,
-) -> Result<usize, String> {
-    let posts = PostMeta::all()
-        .exec(db)
-        .await
-        .map_err(|e| format!("查询文章失败: {e}"))?;
-    Ok(posts
-        .iter()
-        .filter(|p| p.category_id == category_id)
-        .count())
 }

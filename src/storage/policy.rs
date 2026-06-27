@@ -52,18 +52,18 @@ impl AssetPurpose {
                 if mime.starts_with("image/")
                     || matches!(ext.as_str(), "jpg" | "jpeg" | "png" | "webp" | "gif")
                 {
-                    return Ok(());
+                    Ok(())
+                } else {
+                    Err(format!(
+                        "{}仅允许上传图片（jpg、png、webp、gif）",
+                        self.label()
+                    ))
                 }
-                return Err(format!(
-                    "{}仅允许上传图片（jpg、png、webp、gif）",
-                    self.label()
-                ));
             }
             Self::Attachment => {
-                if mime.starts_with("image/") || mime.starts_with("video/") {
-                    return Ok(());
-                }
-                if mime.starts_with("application/")
+                if mime.starts_with("image/")
+                    || mime.starts_with("video/")
+                    || mime.starts_with("application/")
                     || mime.starts_with("text/")
                     || matches!(
                         ext.as_str(),
@@ -91,11 +91,12 @@ impl AssetPurpose {
                             | "gif"
                     )
                 {
-                    return Ok(());
+                    Ok(())
+                } else {
+                    Err(
+                        "附件允许图片、视频、zip、rar、7z、pdf、Office 文档及纯文本等格式".to_string(),
+                    )
                 }
-                return Err(
-                    "附件允许图片、视频、zip、rar、7z、pdf、Office 文档及纯文本等格式".to_string(),
-                );
             }
         }
     }
