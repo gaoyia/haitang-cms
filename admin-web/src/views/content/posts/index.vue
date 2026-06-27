@@ -46,7 +46,20 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="route_path" :label="t('menu.content.post.manage.routePath')" min-width="200" show-overflow-tooltip />
+        <el-table-column :label="t('menu.content.post.manage.publicUrl')" min-width="200" show-overflow-tooltip>
+          <template #default="{ row }">
+            <el-link
+              v-if="row.status === 1"
+              :href="publicPostUrl(row.id)"
+              target="_blank"
+              type="primary"
+              :underline="false"
+            >
+              {{ publicPostUrl(row.id) }}
+            </el-link>
+            <span v-else class="post-public-url">{{ publicPostUrl(row.id) }}</span>
+          </template>
+        </el-table-column>
         <el-table-column :label="t('table.operate')" width="140" align="center" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" link @click="openDrawer(row.id)">
@@ -100,6 +113,10 @@ const localeSegmentOptions = computed(() =>
     value: loc,
   })),
 );
+
+function publicPostUrl(id: number): string {
+  return `/${previewLang.value}/posts/${id}`;
+}
 
 async function loadCategories() {
   const res = await listCategoriesApi(previewLang.value, { page: 1, page_size: 500 });
@@ -195,5 +212,10 @@ onMounted(async () => {
 
 .post-table {
   width: 100%;
+}
+
+.post-public-url {
+  font-size: 13px;
+  color: var(--el-text-color-secondary);
 }
 </style>

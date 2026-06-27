@@ -32,8 +32,8 @@
 
 | 表 | 主键 | 说明 |
 |----|------|------|
-| `post_meta` | `id` | `category_id`、`tags`、`status` |
-| `post_i18n` | `(post_id, lang)` | `title`、`description`、`content`（Markdown 源码）、`route_path` |
+| `post_meta` | `id` | `category_id`、`status` |
+| `post_i18n` | `(post_id, lang)` | `title`、`description`、`content`（Markdown 源码）、`route_path`、`tags` |
 
 正文 Markdown 的编辑与公开渲染选型见 [Markdown 内容选型](./markdown.md)。
 

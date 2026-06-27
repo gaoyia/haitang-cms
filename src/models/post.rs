@@ -14,8 +14,6 @@ pub struct PostMeta {
 
     pub category_id: i64,
 
-    pub tags: String,
-
     /// 0 = 草稿, 1 = 已发布
     pub status: i64,
 }
@@ -36,6 +34,9 @@ pub struct PostI18n {
 
     /// 完整路径，如 /zh-cn/posts/hello
     pub route_path: String,
+
+    /// 该语言下的标签，逗号分隔（已规范化，便于 SEO keywords）
+    pub tags: String,
 }
 
 /// 创建文章
@@ -84,7 +85,6 @@ pub struct PostView {
 pub struct PostDetailView {
     pub id: i64,
     pub category_id: i64,
-    pub tags: String,
     pub status: i64,
     pub translations: HashMap<String, PostI18nPayload>,
 }
@@ -95,6 +95,55 @@ pub struct PostI18nPayload {
     pub description: String,
     pub content: String,
     pub route_path: String,
+    pub tags: String,
+}
+
+/// 规范化标签字符串：去空白、统一中英文逗号分隔符
+pub fn normalize_tags(raw: &str) -> String {
+    raw.split([',', '，'])
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
+/// 指定语言下文章 SEO 路径的固定前缀
+pub fn post_route_path_prefix(lang: &str) -> String {
+    format!("/{}/posts/", super::locale::normalize_lang(lang))
+}
+
+/// 校验并规范化文章 SEO 路径；空串合法
+pub fn normalize_post_route_path(lang: &str, raw: &str) -> Result<String, String> {
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return Ok(String::new());
+    }
+
+    let prefix = post_route_path_prefix(lang);
+    let path = if trimmed.starts_with(&prefix) {
+        trimmed.to_string()
+    } else if !trimmed.contains('/') {
+        format!("{prefix}{trimmed}")
+    } else if let Some(idx) = trimmed.find("/posts/") {
+        let slug = trimmed[idx + "/posts/".len()..].trim();
+        format!("{prefix}{slug}")
+    } else {
+        return Err(format!("SEO 路径须以 {prefix} 开头"));
+    };
+
+    let slug = path
+        .strip_prefix(&prefix)
+        .unwrap_or_default()
+        .trim();
+    if slug.is_empty()
+        || slug
+            .chars()
+            .any(|c| c.is_whitespace() || matches!(c, '#' | '?' | '/'))
+    {
+        return Err("SEO 路径 slug 不能为空，且不能包含空格、#、? 或 /".to_string());
+    }
+
+    Ok(format!("{prefix}{slug}"))
 }
 
 pub async fn post_i18n_rows(db: &mut toasty::Db, post_id: i64) -> Result<Vec<PostI18n>, String> {
@@ -116,13 +165,12 @@ pub async fn create_post(
 
     let description = input.description.as_deref().unwrap_or("");
     let content = input.content.as_deref().unwrap_or("");
-    let tags = input.tags.as_deref().unwrap_or("");
-    let route_path = input.route_path.as_deref().unwrap_or("");
+    let tags = normalize_tags(input.tags.as_deref().unwrap_or(""));
+    let route_path = normalize_post_route_path(&lang, input.route_path.as_deref().unwrap_or(""))?;
     let status = input.status.unwrap_or(1);
 
     let meta = PostMeta::create()
         .category_id(category_id)
-        .tags(tags)
         .status(status)
         .exec(db)
         .await
@@ -134,7 +182,8 @@ pub async fn create_post(
         .title(&input.title)
         .description(description)
         .content(content)
-        .route_path(route_path)
+        .route_path(&route_path)
+        .tags(&tags)
         .exec(db)
         .await
         .map_err(|e| format!("创建文章翻译失败: {e}"))?;
@@ -165,7 +214,7 @@ pub async fn post_to_view(
         title: i18n.title.clone(),
         description: i18n.description.clone(),
         content: i18n.content.clone(),
-        tags: meta.tags.clone(),
+        tags: i18n.tags.clone(),
         category_id: meta.category_id,
         category_name,
         route_path: i18n.route_path.clone(),
@@ -201,6 +250,7 @@ pub async fn post_detail_view(db: &mut toasty::Db, id: i64) -> Result<PostDetail
                     description: r.description,
                     content: r.content,
                     route_path: r.route_path,
+                    tags: r.tags,
                 },
             )
         })
@@ -208,7 +258,6 @@ pub async fn post_detail_view(db: &mut toasty::Db, id: i64) -> Result<PostDetail
     Ok(PostDetailView {
         id: meta.id,
         category_id: meta.category_id,
-        tags: meta.tags,
         status: meta.status,
         translations,
     })
@@ -222,15 +271,19 @@ pub async fn upsert_post_i18n(
     description: &str,
     content: &str,
     route_path: &str,
+    tags: &str,
 ) -> Result<(), String> {
     let lang = super::locale::normalize_lang(lang);
+    let tags = normalize_tags(tags);
+    let route_path = normalize_post_route_path(&lang, route_path)?;
     match PostI18n::get_by_post_id_and_lang(db, &post_id, &lang).await {
         Ok(mut row) => {
             row.update()
                 .title(title)
                 .description(description)
                 .content(content)
-                .route_path(route_path)
+                .route_path(&route_path)
+                .tags(&tags)
                 .exec(db)
                 .await
                 .map_err(|e| format!("更新文章翻译失败: {e}"))?;
@@ -242,13 +295,53 @@ pub async fn upsert_post_i18n(
                 .title(title)
                 .description(description)
                 .content(content)
-                .route_path(route_path)
+                .route_path(&route_path)
+                .tags(&tags)
                 .exec(db)
                 .await
                 .map_err(|e| format!("创建文章翻译失败: {e}"))?;
         }
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn empty_route_path_ok() {
+        assert_eq!(normalize_post_route_path("zh-cn", "").unwrap(), "");
+    }
+
+    #[test]
+    fn full_route_path_ok() {
+        assert_eq!(
+            normalize_post_route_path("zh-cn", "/zh-cn/posts/hello").unwrap(),
+            "/zh-cn/posts/hello"
+        );
+    }
+
+    #[test]
+    fn slug_only_expanded() {
+        assert_eq!(
+            normalize_post_route_path("en-us", "my-slug").unwrap(),
+            "/en-us/posts/my-slug"
+        );
+    }
+
+    #[test]
+    fn invalid_slug_rejected() {
+        assert!(normalize_post_route_path("zh-cn", "/zh-cn/posts/a b").is_err());
+    }
+
+    #[test]
+    fn foreign_prefix_renormalized_to_lang() {
+        assert_eq!(
+            normalize_post_route_path("zh-cn", "/en-us/posts/hello").unwrap(),
+            "/zh-cn/posts/hello"
+        );
+    }
 }
 
 pub async fn delete_post(db: &mut toasty::Db, id: i64) -> Result<(), String> {

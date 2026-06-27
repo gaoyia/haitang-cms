@@ -54,8 +54,32 @@
 
             if (post.description) {
                 $("#post-description").text(post.description).prop("hidden", false);
+                var descMeta = document.querySelector('meta[name="description"]');
+                if (!descMeta) {
+                    descMeta = document.createElement("meta");
+                    descMeta.setAttribute("name", "description");
+                    document.head.appendChild(descMeta);
+                }
+                descMeta.setAttribute("content", post.description);
             }
 
+            if (post.tags) {
+                var kwMeta = document.querySelector('meta[name="keywords"]');
+                if (!kwMeta) {
+                    kwMeta = document.createElement("meta");
+                    kwMeta.setAttribute("name", "keywords");
+                    document.head.appendChild(kwMeta);
+                }
+                kwMeta.setAttribute("content", post.tags);
+                post.tags.split(/[,，]/).forEach(function (tag) {
+                    tag = tag.trim();
+                    if (!tag) return;
+                    var ogTag = document.createElement("meta");
+                    ogTag.setAttribute("property", "article:tag");
+                    ogTag.setAttribute("content", tag);
+                    document.head.appendChild(ogTag);
+                });
+            }
             var meta = [];
             if (post.category_name) {
                 meta.push(("{{ lang }}" === "en-us" ? "Category: " : "分类: ") + post.category_name);

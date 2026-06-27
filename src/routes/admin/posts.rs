@@ -51,9 +51,6 @@ pub async fn update(
         }
         builder = builder.category_id(category_id);
     }
-    if let Some(ref tags) = input.tags {
-        builder = builder.tags(tags.as_str());
-    }
     if let Some(status) = input.status {
         builder = builder.status(status);
     }
@@ -72,6 +69,7 @@ pub async fn update(
         || input.description.is_some()
         || input.content.is_some()
         || input.route_path.is_some()
+        || input.tags.is_some()
     {
         let resolved_lang = lang.clone().unwrap_or(default.clone());
         let rows = PostI18n::all().exec(&mut db).await.ok().unwrap_or_default();
@@ -99,6 +97,11 @@ pub async fn update(
             .as_deref()
             .or_else(|| existing.map(|e| e.route_path.as_str()))
             .unwrap_or("");
+        let tags = input
+            .tags
+            .as_deref()
+            .or_else(|| existing.map(|e| e.tags.as_str()))
+            .unwrap_or("");
 
         if let Err(e) = upsert_post_i18n(
             &mut db,
@@ -108,10 +111,12 @@ pub async fn update(
             description,
             content,
             route_path,
+            tags,
         )
         .await
         {
-            return Json(ApiResponse::error(500, e));
+            let code = if e.starts_with("SEO 路径") { 400 } else { 500 };
+            return Json(ApiResponse::error(code, e));
         }
     }
 

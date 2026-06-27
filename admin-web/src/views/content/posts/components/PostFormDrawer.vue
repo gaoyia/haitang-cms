@@ -35,13 +35,6 @@
         </el-select>
       </el-form-item>
 
-      <el-form-item :label="t('menu.content.post.manage.tags')">
-        <el-input
-          v-model="form.tags"
-          :placeholder="t('menu.content.post.manage.tagsPh')"
-        />
-      </el-form-item>
-
       <el-form-item :label="t('menu.content.post.manage.status')">
         <el-radio-group v-model="form.status">
           <el-radio :value="0">{{ t("menu.content.post.manage.draft") }}</el-radio>
@@ -72,6 +65,17 @@
               :placeholder="t('menu.content.post.manage.descriptionPh')"
             />
           </el-form-item>
+          <el-form-item :label="t('menu.content.post.manage.tags')">
+            <el-input-tag
+              v-model="form.i18n[loc].tagList"
+              :placeholder="t('menu.content.post.manage.tagsPh')"
+              tag-type="primary"
+              tag-effect="plain"
+              delimiter=","
+              clearable
+              style="width: 100%"
+            />
+          </el-form-item>
           <el-form-item :label="t('menu.content.post.manage.content')" class="post-form-drawer__content-item">
             <KoiMarkdownEditor
               v-model="form.i18n[loc].content"
@@ -79,11 +83,33 @@
               :placeholder="t('menu.content.post.manage.contentPh')"
             />
           </el-form-item>
-          <el-form-item :label="t('menu.content.post.manage.routePath')">
+          <el-form-item :label="t('menu.content.post.manage.publicUrl')">
+            <div class="post-url-block">
+              <code class="post-url-preview">{{ publicUrlPreview(loc) }}</code>
+              <el-link
+                v-if="canOpenPublicUrl"
+                :href="publicUrlPreview(loc)"
+                target="_blank"
+                type="primary"
+                class="post-url-open"
+              >
+                {{ t("menu.content.post.manage.openPublic") }}
+              </el-link>
+            </div>
+            <p class="post-field-hint">{{ t("menu.content.post.manage.publicUrlHint") }}</p>
+          </el-form-item>
+          <el-form-item
+            :label="t('menu.content.post.manage.seoPath')"
+            :error="seoSlugError(loc)"
+          >
             <el-input
-              v-model="form.i18n[loc].route_path"
-              :placeholder="routePathPlaceholder(loc)"
-            />
+              v-model="form.i18n[loc].seoSlug"
+              :placeholder="t('menu.content.post.manage.seoPathPh')"
+              clearable
+            >
+              <template #prepend>{{ seoPathPrefix(loc) }}</template>
+            </el-input>
+            <p class="post-field-hint">{{ t("menu.content.post.manage.seoPathHint") }}</p>
           </el-form-item>
         </el-tab-pane>
       </el-tabs>
@@ -113,7 +139,22 @@ import {
 import type { CategoryView } from "@/api/system/categories.ts";
 import { koiMsgError, koiMsgSuccess } from "@/utils/koi.ts";
 
-export type PostLocaleForm = Record<string, PostI18nPayload>;
+export type PostLocaleFormRow = Omit<PostI18nPayload, "tags" | "route_path"> & {
+  tagList: string[];
+  seoSlug: string;
+};
+export type PostLocaleForm = Record<string, PostLocaleFormRow>;
+
+/** 将 API 逗号分隔标签解析为数组 */
+function parseTags(raw: string): string[] {
+  if (!raw.trim()) return [];
+  return raw.split(/[,，]/).map((s) => s.trim()).filter(Boolean);
+}
+
+/** 将标签数组序列化为 API 逗号分隔字符串 */
+function serializeTags(list: string[]): string {
+  return list.map((s) => s.trim()).filter(Boolean).join(", ");
+}
 
 const props = defineProps<{
   modelValue: boolean;
@@ -141,13 +182,76 @@ const visible = computed({
 });
 
 const isEdit = computed(() => props.editId !== null);
+const canOpenPublicUrl = computed(() => isEdit.value && props.editId !== null && form.status === 1);
 const drawerTitle = computed(() =>
   isEdit.value ? t("menu.content.post.manage.edit") : t("menu.content.post.manage.create"),
 );
 
+/** 当前语言下访客实际使用的公开路径 */
+function publicUrlPreview(loc: string): string {
+  const idPart = isEdit.value && props.editId
+    ? String(props.editId)
+    : t("menu.content.post.manage.publicUrlPending");
+  return `/${loc}/posts/${idPart}`;
+}
+
+function seoPathPrefix(loc: string): string {
+  return `/${loc}/posts/`;
+}
+
+/** 从完整 route_path 解析 slug；兼容旧数据 */
+function parseSeoSlug(loc: string, routePath: string): string {
+  const trimmed = routePath.trim();
+  if (!trimmed) return "";
+
+  const prefix = seoPathPrefix(loc);
+  if (trimmed.startsWith(prefix)) {
+    return trimmed.slice(prefix.length);
+  }
+
+  const marker = "/posts/";
+  const idx = trimmed.indexOf(marker);
+  if (idx >= 0) {
+    return trimmed.slice(idx + marker.length);
+  }
+
+  return trimmed.replace(/^\//, "");
+}
+
+function buildRoutePath(loc: string, slug: string): string {
+  const s = slug.trim();
+  if (!s) return "";
+  return `${seoPathPrefix(loc)}${s}`;
+}
+
+/** 校验 SEO slug；空字符串视为合法 */
+function validateSeoSlug(slug: string): string {
+  const trimmed = slug.trim();
+  if (!trimmed) return "";
+  if (/[\s#?/]/.test(trimmed)) {
+    return t("menu.content.post.manage.seoPathSlugError");
+  }
+  return "";
+}
+
+function seoSlugError(loc: string): string {
+  return validateSeoSlug(form.i18n[loc]?.seoSlug ?? "");
+}
+
+function validateAllSeoSlugs(): boolean {
+  for (const loc of props.siteLocales) {
+    const err = validateSeoSlug(form.i18n[loc]?.seoSlug ?? "");
+    if (err) {
+      activeLocale.value = loc;
+      koiMsgError(err);
+      return false;
+    }
+  }
+  return true;
+}
+
 const form = reactive({
   category_id: undefined as number | undefined,
-  tags: "",
   status: 0,
   i18n: {} as PostLocaleForm,
 });
@@ -155,22 +259,23 @@ const form = reactive({
 function emptyI18n(): PostLocaleForm {
   const map: PostLocaleForm = {};
   for (const loc of props.siteLocales) {
-    map[loc] = { title: "", description: "", content: "", route_path: "" };
+    map[loc] = { title: "", description: "", content: "", tagList: [], seoSlug: "" };
   }
   return map;
 }
 
-function routePathPlaceholder(loc: string): string {
-  return loc === "en-us" ? "/en-us/posts/hello" : "/zh-cn/posts/hello";
-}
-
-function hasLocaleContent(row: PostI18nPayload): boolean {
-  return !!(row.title.trim() || row.description.trim() || row.content.trim() || row.route_path.trim());
+function hasLocaleContent(row: PostLocaleFormRow): boolean {
+  return !!(
+    row.title.trim()
+    || row.description.trim()
+    || row.content.trim()
+    || row.seoSlug.trim()
+    || row.tagList.length
+  );
 }
 
 function resetForm() {
   form.category_id = undefined;
-  form.tags = "";
   form.status = 0;
   form.i18n = emptyI18n();
   activeLocale.value = props.defaultLocale || props.siteLocales[0] || "zh-cn";
@@ -188,7 +293,6 @@ async function loadDetail() {
     }
     const detail = res.data;
     form.category_id = detail.category_id || undefined;
-    form.tags = detail.tags;
     form.status = detail.status;
     for (const loc of props.siteLocales) {
       const tr = detail.translations[loc];
@@ -197,7 +301,8 @@ async function loadDetail() {
           title: tr.title,
           description: tr.description,
           content: tr.content,
-          route_path: tr.route_path,
+          tagList: parseTags(tr.tags),
+          seoSlug: parseSeoSlug(loc, tr.route_path),
         };
       }
     }
@@ -231,11 +336,14 @@ async function handleSave() {
     return;
   }
 
+  if (!validateAllSeoSlugs()) {
+    return;
+  }
+
   saving.value = true;
   try {
     const metaPayload = {
       category_id: form.category_id,
-      tags: form.tags || undefined,
       status: form.status,
     };
 
@@ -246,7 +354,8 @@ async function handleSave() {
         title: primary.title.trim(),
         description: primary.description.trim() || undefined,
         content: primary.content.trim() || undefined,
-        route_path: primary.route_path.trim() || undefined,
+        route_path: buildRoutePath(props.defaultLocale, primary.seoSlug) || undefined,
+        tags: serializeTags(primary.tagList) || undefined,
         lang: props.defaultLocale,
       });
       if (createRes.code !== 0 || !createRes.data) {
@@ -262,7 +371,8 @@ async function handleSave() {
           title: row.title.trim(),
           description: row.description.trim() || undefined,
           content: row.content.trim() || undefined,
-          route_path: row.route_path.trim() || undefined,
+          route_path: buildRoutePath(loc, row.seoSlug) || undefined,
+          tags: serializeTags(row.tagList),
           lang: loc,
         });
         if (res.code !== 0) {
@@ -283,7 +393,8 @@ async function handleSave() {
           title: row.title.trim(),
           description: row.description.trim() || undefined,
           content: row.content.trim() || undefined,
-          route_path: row.route_path.trim() || undefined,
+          route_path: buildRoutePath(loc, row.seoSlug) || undefined,
+          tags: serializeTags(row.tagList),
           lang: loc,
         });
         if (res.code !== 0) {
@@ -346,5 +457,40 @@ async function handleSave() {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+}
+
+.post-url-block {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  width: 100%;
+}
+
+.post-url-preview {
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--el-fill-color-light);
+  color: var(--el-text-color-primary);
+  font-size: 13px;
+  word-break: break-all;
+}
+
+.post-url-open {
+  flex-shrink: 0;
+}
+
+.post-field-hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--el-text-color-secondary);
+}
+
+:deep(.el-input-group__prepend) {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 13px;
+  color: var(--el-text-color-secondary);
+  user-select: all;
 }
 </style>

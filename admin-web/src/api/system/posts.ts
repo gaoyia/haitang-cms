@@ -19,12 +19,12 @@ export interface PostI18nPayload {
   description: string;
   content: string;
   route_path: string;
+  tags: string;
 }
 
 export interface PostDetailView {
   id: number;
   category_id: number;
-  tags: string;
   status: number;
   translations: Record<string, PostI18nPayload>;
 }

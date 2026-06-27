@@ -37,7 +37,7 @@ POST /api/admin/posts
     "title": "新文章标题",
     "content": "文章内容",
     "description": "摘要",
-    "tags": "rust,cms",
+    "tags": "Rust, CMS",
     "category_id": 1,
     "lang": "zh-cn",
     "route_path": "/zh-cn/posts/hello",
@@ -50,10 +50,10 @@ POST /api/admin/posts
 | `title` | `string` | 是 | 指定语言的标题 |
 | `content` | `string` | 否 | 正文 |
 | `description` | `string` | 否 | 摘要 |
-| `tags` | `string` | 否 | 标签，逗号分隔 |
+| `tags` | `string` | 否 | 该语言下的标签，逗号分隔；保存时会规范化空白与分隔符 |
 | `category_id` | `i64` | 否 | 分类 ID |
 | `lang` | `string` | 否 | 默认 `site_default_locale` |
-| `route_path` | `string` | 否 | 该语言的完整 URL 路径 |
+| `route_path` | `string` | 否 | 该语言的 SEO 完整路径或 slug；空串合法，非空时须匹配 `/{lang}/posts/{slug}` |
 | `status` | `i64` | 否 | `0` 草稿，`1` 已发布 |
 
 ## 更新文章
@@ -62,7 +62,7 @@ POST /api/admin/posts
 PUT /api/admin/posts/:id
 ```
 
-可同时更新 `post_meta`（`category_id`、`tags`、`status`）与指定 `lang` 的 i18n 字段。字段与创建接口相同，均为可选。
+可同时更新 `post_meta`（`category_id`、`status`）与指定 `lang` 的 i18n 字段（含 `tags`）。字段与创建接口相同，均为可选。
 
 ## 删除文章
 
