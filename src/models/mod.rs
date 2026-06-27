@@ -33,7 +33,7 @@ pub use banner_group::{
 pub use category::{
     CategoryDetailView, CategoryMeta, CategoryView, CreateCategory, UpdateCategory,
     categories_to_views, category_detail_view, category_to_view, create_category, delete_category,
-    upsert_category_i18n, validate_category_id,
+    seed_default_categories, upsert_category_i18n, validate_category_id,
 };
 pub use dict::{
     CreateDictMeta, DictDetailView, DictMetaView, DictPublicView, UpdateDictMeta, UpsertDictValues,

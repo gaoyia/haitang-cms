@@ -34,6 +34,7 @@ pub async fn seed_admin(db: &mut toasty::Db) {
     seed_default_site_menus(db).await;
     seed_default_banner_group(db).await;
     crate::models::seed_default_dicts(db).await;
+    crate::models::seed_default_categories(db).await;
 
     // 检查是否已有用户
     let user_count = match User::all().exec(db).await {

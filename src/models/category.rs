@@ -237,3 +237,80 @@ pub async fn upsert_category_i18n(
     }
     Ok(())
 }
+
+/// 默认分类种子：(sort, zh-cn 名称, zh-cn 描述, en-us 名称, en-us 描述)
+type CategorySeedEntry = (
+    i64,
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+);
+
+fn default_category_seed() -> &'static [CategorySeedEntry] {
+    &[
+        (
+            0,
+            "公告通知",
+            "站点公告与重要通知",
+            "Announcements",
+            "Site announcements and notices",
+        ),
+        (
+            1,
+            "新闻动态",
+            "行业与公司相关动态",
+            "News",
+            "Industry and company updates",
+        ),
+        (
+            2,
+            "产品教程",
+            "使用指南与最佳实践",
+            "Tutorials",
+            "Guides and best practices",
+        ),
+        (
+            3,
+            "技术分享",
+            "开发经验与技术文章",
+            "Tech",
+            "Development notes and technical articles",
+        ),
+    ]
+}
+
+/// 写入默认文章分类（仅当尚无分类时执行）
+pub async fn seed_default_categories(db: &mut toasty::Db) {
+    let existing = match CategoryMeta::all().exec(db).await {
+        Ok(m) => m,
+        Err(_) => return,
+    };
+    if !existing.is_empty() {
+        return;
+    }
+
+    println!("[种子] 创建默认文章分类...");
+    let mut created = 0;
+
+    for (sort, zh_name, zh_desc, en_name, en_desc) in default_category_seed() {
+        let meta = match CategoryMeta::create().sort(*sort).exec(db).await {
+            Ok(m) => m,
+            Err(e) => {
+                eprintln!("[种子] 创建分类 meta 失败: {e}");
+                continue;
+            }
+        };
+
+        for (lang, name, desc) in [("zh-cn", *zh_name, *zh_desc), ("en-us", *en_name, *en_desc)] {
+            if let Err(e) = upsert_category_i18n(db, meta.id, lang, name, desc).await {
+                eprintln!("[种子] 创建分类 i18n {lang} 失败: {e}");
+            }
+        }
+        created += 1;
+    }
+
+    if created > 0 {
+        println!("[种子] 已创建 {created} 个默认文章分类");
+    }
+}
