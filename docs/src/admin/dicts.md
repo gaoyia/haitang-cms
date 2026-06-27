@@ -3,8 +3,15 @@
 ## 获取字典 meta 列表
 
 ```
-GET /api/admin/dicts
+GET /api/admin/dicts?page=1&page_size=10
 ```
+
+| 参数 | 位置 | 类型 | 说明 |
+|------|------|------|------|
+| `page` | query | `i64` | 可选，页码，默认 1 |
+| `page_size` | query | `i64` | 可选，每页条数，默认 10，上限 100 |
+
+返回 [分页响应](../overview.md#分页响应)，`list` 元素为 `DictMetaView`（`code`、`label`、`description`、`translatable`、`sort`）。
 
 ## 获取字典详情（meta + values）
 
@@ -12,7 +19,7 @@ GET /api/admin/dicts
 GET /api/admin/dicts/:code
 ```
 
-路径参数为字典 **code**（非数字 id）。
+路径参数为字典 **code**（非数字 id）。`values` 为 `lang → value` 映射。
 
 ## 创建字典
 
@@ -25,6 +32,8 @@ POST /api/admin/dicts
 | `code` | `string` | 唯一标识 |
 | `label` | `string` | 后台显示名 |
 | `translatable` | `bool` | 是否多语言 |
+| `description` | `string` | 可选，描述 |
+| `sort` | `i64` | 可选，排序 |
 | `value` | `string` | 初始 value |
 | `lang` | `string` | 可选，多语言项的语言码 |
 
@@ -33,6 +42,13 @@ POST /api/admin/dicts
 ```
 PUT /api/admin/dicts/:code
 ```
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `label` | `string` | 可选 |
+| `description` | `string` | 可选 |
+| `translatable` | `bool` | 可选 |
+| `sort` | `i64` | 可选 |
 
 ## 更新字典 values
 
@@ -56,3 +72,5 @@ PUT /api/admin/dicts/:code/values
 ```
 DELETE /api/admin/dicts/:code
 ```
+
+删除 meta 及全部 value 行。

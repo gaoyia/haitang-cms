@@ -35,6 +35,32 @@
 | `message` | `string` | 状态描述 |
 | `data` | `object / null` | 响应数据，失败时为 `null` |
 
+## 分页响应
+
+管理端部分列表接口支持查询参数 `page`、`page_size`，`data` 为分页对象：
+
+```json
+{
+    "code": 0,
+    "message": "ok",
+    "data": {
+        "list": [],
+        "total": 0,
+        "page": 1,
+        "page_size": 10
+    }
+}
+```
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `list` | `array` | 当前页数据 |
+| `total` | `i64` | 总条数 |
+| `page` | `i64` | 当前页码，从 1 开始 |
+| `page_size` | `i64` | 每页条数 |
+
+默认第 1 页、每页 10 条；`page_size` 上限 100。部分列表还支持 `lang` 查询参数（见各模块说明）。
+
 ## 多语言
 
 公开读接口支持查询参数 `lang`（如 `zh-cn`、`en-us`）。未传时使用字典项 `site_default_locale` 作为 fallback。公开 Tera 页面使用 URL 前缀 `/<lang>/...`（如 `/en-us/posts`）。数据模型见 [多语言数据模型](./i18n-data-model.md)。
