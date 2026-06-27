@@ -77,11 +77,6 @@ pub fn public_page_title(lang: &str, page_slug: &str) -> &'static str {
     }
 }
 
-/// 管理后台入口标题（无语言前缀路由）
-pub fn admin_page_title() -> &'static str {
-    "管理后台"
-}
-
 /// 从多语言行中按 lang 选取，支持 fallback 到 default_lang
 pub fn pick_i18n_row<'a, T>(
     rows: &'a [T],

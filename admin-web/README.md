@@ -26,6 +26,21 @@ pnpm type-check
 pnpm build
 ```
 
+构建产物默认写入项目根目录 `static/haitang-cms-admin/`，由 Rocket 在 `/{ADMIN_WEB_PATH}/` 提供（默认 `/haitang-cms-admin/`）。可通过环境变量覆盖：
+
+| 变量 | 默认值 | 说明 |
+|------|-------|------|
+| `VITE_BASE` | `/haitang-cms-admin/` | 资源与路由 base（首尾 `/`） |
+| `VITE_BUILD_OUT_DIR` | `../static/haitang-cms-admin` | 输出目录（相对 admin-web） |
+
+示例：部署到 `/cms-admin/` 且输出到 `static/cms-admin`：
+
+```bash
+VITE_BASE=/cms-admin/ VITE_BUILD_OUT_DIR=../static/cms-admin pnpm build
+```
+
+后端启动时需设置 `ADMIN_WEB_PATH=cms-admin`。
+
 需同时启动后端：
 
 ```bash

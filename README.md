@@ -75,6 +75,8 @@ haitang-cms/
 | `/api/*` | 公开 API (JSON) | 无需 |
 | `/api/admin/*` | 管理 API (JSON) | 需要 Bearer Token |
 | `/static/*` | 静态资源 | 无需 |
+| `/{ADMIN_WEB_PATH}/*` | 管理后台 SPA（默认 `/haitang-cms-admin/`） | 无需 |
+| `/admin` | 重定向至管理后台 SPA | 无需 |
 
 ### 公开首页
 
@@ -82,11 +84,23 @@ haitang-cms/
 
 ### 管理后台
 
-`admin-web/` 是基于 Element Plus 的后台管理框架（参考 [KOI-UI](https://gitee.com/KoiKite/koi-ui) MIT），默认海棠红主题，支持明暗模式、多种布局与 Tags-View，调用 `/api/admin/*` 接口。开发命令：
+`admin-web/` 是基于 Element Plus 的后台管理框架（参考 [KOI-UI](https://gitee.com/KoiKite/koi-ui) MIT），默认海棠红主题，支持明暗模式、多种布局与 Tags-View，调用 `/api/admin/*` 接口。
+
+**开发**（Vite  dev server，端口 5174）：
 
 ```bash
 cd admin-web && pnpm dev
 ```
+
+**生产构建**（产物输出至 `static/haitang-cms-admin/`，由 Rocket 托管）：
+
+```bash
+cd admin-web && pnpm build
+# 可选：自定义路径
+# VITE_BASE=/my-admin/ VITE_BUILD_OUT_DIR=../static/my-admin pnpm build
+```
+
+构建后访问 `http://127.0.0.1:9000/haitang-cms-admin/`（`/admin` 会重定向至此）。后端路径由环境变量 `ADMIN_WEB_PATH` 控制，须与 `VITE_BASE` 的路径段一致。
 
 ## 开发
 
@@ -120,6 +134,16 @@ cargo run
 | 变量 | 默认值 | 说明 |
 |------|-------|------|
 | `JWT_SECRET` | `haitang-cms-dev-secret` | JWT 签名密钥 |
+| `ADMIN_WEB_PATH` | `haitang-cms-admin` | 管理后台 SPA URL 路径段（不含斜杠） |
+| `ADMIN_WEB_STATIC_DIR` | `static/{ADMIN_WEB_PATH}` | 管理后台构建产物目录 |
+
+### admin-web 构建环境变量（`.env.production`）
+
+| 变量 | 默认值 | 说明 |
+|------|-------|------|
+| `VITE_BASE` | `/haitang-cms-admin/` | 部署 base，须与 `ADMIN_WEB_PATH` 对应 |
+| `VITE_BUILD_OUT_DIR` | `../static/haitang-cms-admin` | 构建输出目录 |
+| `VITE_WEB_BASE_API` | （空） | 生产环境 API 前缀，空表示同源 `/api/...` |
 
 ## 默认管理员
 

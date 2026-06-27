@@ -5,9 +5,35 @@ import { createSvgIconsPlugin } from "vite-plugin-svg-icons";
 import Unocss from "unocss/vite";
 import path from "path";
 
+/** 规范化 Vite base（必须以 / 开头和结尾） */
+function normalizeBase(raw: string | undefined): string {
+  if (!raw?.trim() || raw.trim() === "/") {
+    return "/";
+  }
+  let base = raw.trim();
+  if (!base.startsWith("/")) {
+    base = `/${base}`;
+  }
+  if (!base.endsWith("/")) {
+    base = `${base}/`;
+  }
+  return base;
+}
+
+function resolveOutDir(raw: string | undefined): string {
+  const dir = raw?.trim() || "dist";
+  return path.isAbsolute(dir) ? dir : path.resolve(process.cwd(), dir);
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd());
+  const base = normalizeBase(env.VITE_BASE);
   return {
+    base,
+    build: {
+      outDir: resolveOutDir(env.VITE_BUILD_OUT_DIR),
+      emptyOutDir: true,
+    },
     plugins: [
       vue(),
       Unocss(),

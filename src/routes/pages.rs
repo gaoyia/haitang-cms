@@ -19,7 +19,6 @@ pub fn routes() -> Vec<Route> {
         post_detail_lang,
         posts_lang,
         about_lang,
-        admin_page,
     ]
 }
 
@@ -88,21 +87,6 @@ pub async fn posts_lang(lang: &str, db: &State<toasty::Db>) -> Result<Template, 
 #[get("/<lang>/about")]
 pub async fn about_lang(lang: &str, db: &State<toasty::Db>) -> Result<Template, Redirect> {
     render_public_page(db, lang, "about").await
-}
-
-/// 管理后台入口（无语言前缀）
-#[get("/admin")]
-pub async fn admin_page(db: &State<toasty::Db>) -> Template {
-    let mut db = db.inner().clone();
-    let default = get_site_default_locale(&mut db).await;
-    let mut ctx = site_page_context(&mut db, "", "/admin", Some(&default)).await;
-    if let Some(obj) = ctx.as_object_mut() {
-        obj.insert(
-            "title".to_string(),
-            serde_json::json!(crate::models::locale::admin_page_title()),
-        );
-    }
-    Template::render("admin", ctx)
 }
 
 /// 校验并解析公开页语言，不支持时重定向到默认语言

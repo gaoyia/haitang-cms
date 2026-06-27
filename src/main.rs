@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate rocket;
 
+mod config;
 mod db_migrate;
 mod guards;
 mod models;
@@ -10,6 +11,7 @@ use rocket::fs::{self, FileServer};
 use rocket_dyn_templates::Template;
 use std::path::Path;
 
+use config::AdminWebConfig;
 use guards::auth::JwtConfig;
 use routes::admin::auth::seed_admin;
 
@@ -52,11 +54,31 @@ async fn rocket() -> _ {
             .unwrap_or_else(|_| "haitang-cms-dev-secret".to_string()),
     };
 
+    let admin_cfg = AdminWebConfig::from_env();
+    if admin_cfg.static_dir.join("index.html").is_file() {
+        println!(
+            "[管理后台] 静态 SPA：/{}/ → {}",
+            admin_cfg.path_segment,
+            admin_cfg.static_dir.display()
+        );
+    } else {
+        eprintln!(
+            "[管理后台] 未找到 {}，请先执行 admin-web 生产构建（pnpm build）",
+            admin_cfg.static_dir.join("index.html").display()
+        );
+    }
+
     rocket::build()
         .manage(db)
         .manage(jwt_config)
+        .manage(admin_cfg.clone())
         // 挂载静态资源（jQuery 等）
         .mount("/static", FileServer::new(fs::relative!("static")))
+        // 管理后台 SPA（history 模式回退 index.html）
+        .mount(
+            admin_cfg.mount_path.as_str(),
+            routes::admin_web::spa_routes(),
+        )
         // 挂载所有路由
         .mount("/", routes::routes())
         // 附加模板引擎

@@ -17,15 +17,15 @@ import i18n from '@/languages/index.ts';
 const mode = import.meta.env.VITE_ROUTER_MODE;
 
 // 路由访问两种模式：带#号的哈希模式，正常路径的web模式。
-const routerMode: any = {
-  hash: () => createWebHashHistory(),
-  history: () => createWebHistory()
+const routerMode: Record<string, () => ReturnType<typeof createWebHistory>> = {
+  hash: () => createWebHashHistory(import.meta.env.BASE_URL),
+  history: () => createWebHistory(import.meta.env.BASE_URL),
 };
 
 // 创建路由器对象
 const router = createRouter({
-  // 路由模式hash或者默认不带#
-  history: routerMode[mode](),
+  // 路由模式 hash 或 history；base 与 Vite `base` / 后端 ADMIN_WEB_PATH 一致
+  history: (routerMode[mode] ?? routerMode.history)(),
   routes: [...layoutRouter, ...staticRouter, ...errorRouter],
   strict: false,
   // 滚动行为
