@@ -13,6 +13,7 @@
 | 前端框架 | Vue 3 + Vite (admin-web) |
 | UI 组件库 | Element Plus 2.x (admin-web，全量引入) |
 | 前端库 | jQuery 4.0.0 (公开首页) |
+| 文章正文 | Markdown（后台 md-editor-v3，公开站 marked + DOMPurify，见 [docs](docs/src/markdown.md)） |
 | 认证 | JWT (jsonwebtoken) |
 
 ## 项目结构
@@ -47,8 +48,12 @@ haitang-cms/
 ├── static/                  # 静态资源
 │   └── resources/           # logo、样式、jQuery 等
 │       ├── css/site.css     # 公开站点样式（DESIGN.md token）
+│       ├── css/github-markdown.min.css
 │       ├── logo.svg
 │       └── js/
+│           ├── markdown-render.js
+│           ├── marked.min.js
+│           └── purify.min.js
 ├── admin-web/               # 管理后台前端 (Vue 3)
 ├── docs/                    # API 文档 (mdbook)
 ├── vendor/                  # 本地资源（.gitignore 忽略，不进仓库）
@@ -66,7 +71,7 @@ haitang-cms/
 |---------|------|------|
 | `/` | 重定向至 `/{默认语言}/` | 无需 |
 | `/<lang>/` | 多语言公开首页 | 无需 |
-| `/<lang>/posts`、`/<lang>/about` | 多语言公开页 | 无需 |
+| `/<lang>/posts`、`/<lang>/posts/<id>`、`/<lang>/about` | 多语言公开页 | 无需 |
 | `/api/*` | 公开 API (JSON) | 无需 |
 | `/api/admin/*` | 管理 API (JSON) | 需要 Bearer Token |
 | `/static/*` | 静态资源 | 无需 |

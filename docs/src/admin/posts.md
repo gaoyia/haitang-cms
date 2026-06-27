@@ -1,5 +1,7 @@
 # 文章
 
+`content` 字段为 **Markdown 源码**，存储与渲染约定见 [Markdown 内容选型](../markdown.md)。
+
 ## 获取文章列表
 
 ```

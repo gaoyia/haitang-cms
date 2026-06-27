@@ -5,38 +5,61 @@
     <div class="container container-narrow">
         <h1 class="page-title">{{ title }}</h1>
         <ul class="post-list" id="post-list">
-            <li class="empty">加载中...</li>
+            <li class="empty">{% if lang == "en-us" %}Loading…{% else %}加载中…{% endif %}</li>
         </ul>
     </div>
 </section>
 {% endblock content %}
 
 {% block scripts %}
+<script src="/static/resources/js/markdown-render.js"></script>
 <script>
     $(function () {
+        var localePrefix = "{{ locale_prefix }}";
+        var emptyText = "{{ lang }}" === "en-us" ? "No posts yet." : "暂无文章";
+        var failText = "{{ lang }}" === "en-us" ? "Failed to load. Please retry." : "加载失败，请稍后重试";
+        var maxSummary = 200;
+
         $.getJSON("/api/posts?lang={{ lang }}", function (res) {
             var $list = $("#post-list");
             $list.empty();
-            if (res.code === 0 && res.data && res.data.length > 0) {
-                $.each(res.data, function (i, post) {
-                    var summary = post.description || (post.content ? post.content.substring(0, 200) : "");
-                    var meta = [];
-                    if (post.category_name) meta.push('分类: ' + post.category_name);
-                    if (post.tags) meta.push('标签: ' + post.tags);
-                    meta.push('ID: ' + post.id);
-                    $list.append(
-                        '<li class="post-item">' +
-                        '<h2>' + $("<span>").text(post.title).html() + '</h2>' +
-                        '<p>' + $("<span>").text(summary).html() + '</p>' +
-                        '<div class="meta">' + meta.join(' · ') + '</div>' +
-                        '</li>'
-                    );
-                });
-            } else {
-                $list.append('<li class="empty">暂无文章</li>');
+            if (res.code !== 0 || !res.data || res.data.length === 0) {
+                $list.append('<li class="empty">' + emptyText + '</li>');
+                return;
             }
+
+            var published = res.data.filter(function (post) { return post.status === 1; });
+            if (published.length === 0) {
+                $list.append('<li class="empty">' + emptyText + '</li>');
+                return;
+            }
+
+            $.each(published, function (i, post) {
+                var summary = post.description;
+                if (!summary && post.content) {
+                    summary = stripMarkdown(post.content);
+                }
+                if (summary && summary.length > maxSummary) {
+                    summary = summary.substring(0, maxSummary) + "…";
+                }
+                var meta = [];
+                if (post.category_name) {
+                    meta.push(("{{ lang }}" === "en-us" ? "Category: " : "分类: ") + post.category_name);
+                }
+                if (post.tags) {
+                    meta.push(("{{ lang }}" === "en-us" ? "Tags: " : "标签: ") + post.tags);
+                }
+                var detailUrl = localePrefix + "/posts/" + post.id;
+                $list.append(
+                    '<li class="post-item">' +
+                    '<h2><a href="' + detailUrl + '">' + $("<span>").text(post.title).html() + '</a></h2>' +
+                    (summary ? '<p>' + $("<span>").text(summary).html() + '</p>' : '') +
+                    (meta.length ? '<div class="meta">' + meta.join(' · ') + '</div>' : '') +
+                    '</li>'
+                );
+            });
         }).fail(function () {
-            $("#post-list").html('<li class="empty">加载失败，请稍后重试</li>');
+            $("#post-list").html('<li class="empty">' + failText + '</li>');
         });
     });
 </script>

@@ -17,4 +17,5 @@
   - [轮播图组](./admin/banner-groups.md)
   - [轮播图](./admin/banners.md)
 - [管理后台 UI 约定](./admin-ui.md)
+- [Markdown 内容选型](./markdown.md)
 - [多语言数据模型](./i18n-data-model.md)

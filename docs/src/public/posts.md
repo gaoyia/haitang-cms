@@ -1,5 +1,7 @@
 # 文章
 
+`content` 为 Markdown 源码；公开页渲染方案见 [Markdown 内容选型](../markdown.md)。
+
 ## 获取文章列表
 
 **请求**
@@ -36,3 +38,5 @@ GET /api/posts/:id?lang=en-us
 |------|------|------|------|
 | `id` | path | `i64` | 文章 ID |
 | `lang` | query | `string` | 可选 |
+
+公开 HTML 详情页：`GET /<lang>/posts/<id>`，正文经 Markdown 渲染（见 [Markdown 内容选型](../markdown.md)）。仅展示 `status = 1` 的已发布文章。

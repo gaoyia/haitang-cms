@@ -68,6 +68,8 @@ pub fn public_page_title(lang: &str, page_slug: &str) -> &'static str {
     match page_slug {
         "posts" if en => "Posts",
         "posts" => "最新文章",
+        "post-detail" if en => "Article",
+        "post-detail" => "文章详情",
         "about" if en => "About",
         "about" => "关于我们",
         _ if en => "Home",

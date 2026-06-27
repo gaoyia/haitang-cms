@@ -16,6 +16,7 @@ pub fn routes() -> Vec<Route> {
         about_legacy_redirect,
         index_lang,
         index_lang_no_slash,
+        post_detail_lang,
         posts_lang,
         about_lang,
         admin_page,
@@ -58,6 +59,23 @@ pub async fn index_lang_no_slash(lang: &str, db: &State<toasty::Db>) -> Result<R
     let mut db = db.inner().clone();
     let resolved = resolve_public_lang(&mut db, lang).await?;
     Ok(Redirect::to(locale_path(&resolved, "")))
+}
+
+/// 多语言文章详情页
+#[get("/<lang>/posts/<id>")]
+pub async fn post_detail_lang(
+    lang: &str,
+    id: i64,
+    db: &State<toasty::Db>,
+) -> Result<Template, Redirect> {
+    let mut db = db.inner().clone();
+    let resolved = resolve_public_lang(&mut db, lang).await?;
+    let current_path = format!("/{resolved}/posts/{id}");
+    let mut ctx = site_page_context(&mut db, "post-detail", &current_path, Some(&resolved)).await;
+    if let Some(obj) = ctx.as_object_mut() {
+        obj.insert("post_id".to_string(), serde_json::json!(id));
+    }
+    Ok(Template::render("post-detail", ctx))
 }
 
 /// 多语言文章列表页

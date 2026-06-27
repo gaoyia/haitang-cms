@@ -544,6 +544,10 @@ img {
   margin-bottom: var(--space-sm);
 }
 
+.post-item h2 a:hover {
+  color: var(--color-primary);
+}
+
 .post-item p {
   color: var(--color-secondary);
   font-size: 16px;
@@ -565,6 +569,91 @@ img {
   background: var(--color-surface-low);
   border-radius: var(--radius-lg);
   border: 1px dashed var(--color-outline-variant);
+}
+
+/* 文章详情 */
+.post-detail-section {
+  padding-top: var(--space-md);
+}
+
+.post-detail-nav {
+  margin-bottom: var(--space-md);
+}
+
+.post-detail-back {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-secondary);
+}
+
+.post-detail-back:hover {
+  color: var(--color-primary);
+}
+
+.post-detail-header {
+  margin-bottom: var(--space-md);
+}
+
+.post-detail-title {
+  font-size: clamp(28px, 4vw, 40px);
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--color-on-surface);
+  margin-bottom: var(--space-sm);
+}
+
+.post-detail-description {
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--color-secondary);
+  margin-bottom: var(--space-sm);
+}
+
+.post-detail-meta {
+  font-size: 13px;
+  color: var(--color-outline);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.post-detail-body.content-card {
+  padding: var(--space-md);
+  background: var(--color-white);
+  border: 1px solid var(--color-border-card);
+  border-radius: var(--radius-lg);
+}
+
+/* GitHub Markdown 与站点 token 对齐 */
+.markdown-body {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  font-family: var(--font-sans);
+  color: var(--color-on-surface);
+  background: transparent;
+}
+
+.markdown-body a {
+  color: var(--color-primary);
+}
+
+.markdown-body a:hover {
+  text-decoration: underline;
+}
+
+.markdown-body pre {
+  background: var(--color-surface-low);
+  border: 1px solid var(--color-outline-variant);
+  border-radius: var(--radius-md);
+}
+
+.markdown-body code {
+  font-size: 0.9em;
+}
+
+.markdown-body blockquote {
+  border-left-color: var(--color-primary-container);
+  color: var(--color-secondary);
 }
 
 /* CTA */

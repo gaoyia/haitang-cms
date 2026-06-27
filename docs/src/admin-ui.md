@@ -1,6 +1,6 @@
 # 管理后台 UI 约定
 
-本文档描述 `admin-web` 管理后台中与菜单、标签等相关的 UI 约定。API 字段与路由说明见 [管理接口](./admin/README.md)。
+本文档描述 `admin-web` 管理后台中与菜单、标签等相关的 UI 约定。API 字段与路由说明见 [管理接口](./admin/README.md)。文章正文 Markdown 编辑与公开渲染选型见 [Markdown 内容选型](./markdown.md)。
 
 ---
 
@@ -66,3 +66,4 @@
 | `admin-web/src/utils/localIcons.ts` | 本地 SVG 文件名白名单 |
 | `admin-web/src/components/KoiGlobalIcon/Index.vue` | 统一渲染组件 |
 | `admin-web/src/config/index.ts` | `SVG_PREFIX` 本地 SVG 前缀 |
+| `admin-web/src/components/KoiMarkdownEditor/Index.vue` | 文章正文 Markdown 编辑器（见 [Markdown 内容选型](./markdown.md)） |

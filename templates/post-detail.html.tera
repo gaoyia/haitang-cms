@@ -1,0 +1,78 @@
+{% extends "base" %}
+
+{% block title %}{{ title }}{% endblock title %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="/static/resources/css/github-markdown.min.css">
+{% endblock extra_head %}
+
+{% block content %}
+<section class="page-section post-detail-section">
+    <div class="container container-narrow">
+        <nav class="post-detail-nav">
+            <a class="post-detail-back" href="{{ locale_prefix }}/posts">
+                {% if lang == "en-us" %}← Back to posts{% else %}← 返回文章列表{% endif %}
+            </a>
+        </nav>
+        <article class="post-detail">
+            <header class="post-detail-header">
+                <h1 class="post-detail-title" id="post-title">{{ title }}</h1>
+                <p class="post-detail-description" id="post-description" hidden></p>
+                <div class="post-detail-meta" id="post-meta"></div>
+            </header>
+            <div id="post-content" class="post-detail-body content-card markdown-body"></div>
+            <p class="empty" id="post-error" hidden></p>
+        </article>
+    </div>
+</section>
+{% endblock content %}
+
+{% block scripts %}
+<script src="/static/resources/js/marked.min.js"></script>
+<script src="/static/resources/js/purify.min.js"></script>
+<script src="/static/resources/js/markdown-render.js"></script>
+<script>
+    $(function () {
+        var postId = {{ post_id }};
+        var lang = "{{ lang }}";
+        var loadFailed = "{{ lang }}" === "en-us" ? "Failed to load article." : "文章加载失败，请稍后重试。";
+        var notFound = "{{ lang }}" === "en-us" ? "Article not found or unpublished." : "文章不存在或未发布。";
+
+        $.getJSON("/api/posts/" + postId + "?lang=" + encodeURIComponent(lang), function (res) {
+            if (res.code !== 0 || !res.data) {
+                $("#post-error").text(res.message || loadFailed).prop("hidden", false);
+                return;
+            }
+            var post = res.data;
+            if (post.status !== 1) {
+                $("#post-error").text(notFound).prop("hidden", false);
+                return;
+            }
+
+            document.title = post.title + " - {{ site_name }}";
+            $("#post-title").text(post.title);
+
+            if (post.description) {
+                $("#post-description").text(post.description).prop("hidden", false);
+            }
+
+            var meta = [];
+            if (post.category_name) {
+                meta.push(("{{ lang }}" === "en-us" ? "Category: " : "分类: ") + post.category_name);
+            }
+            if (post.tags) {
+                meta.push(("{{ lang }}" === "en-us" ? "Tags: " : "标签: ") + post.tags);
+            }
+            if (meta.length) {
+                $("#post-meta").text(meta.join(" · "));
+            }
+
+            if (!renderMarkdown(post.content, document.getElementById("post-content"))) {
+                $("#post-error").text(loadFailed).prop("hidden", false);
+            }
+        }).fail(function () {
+            $("#post-error").text(loadFailed).prop("hidden", false);
+        });
+    });
+</script>
+{% endblock scripts %}

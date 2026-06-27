@@ -33,7 +33,9 @@
 | 表 | 主键 | 说明 |
 |----|------|------|
 | `post_meta` | `id` | `category_id`、`tags`、`status` |
-| `post_i18n` | `(post_id, lang)` | `title`、`description`、`content`、`route_path` |
+| `post_i18n` | `(post_id, lang)` | `title`、`description`、`content`（Markdown 源码）、`route_path` |
+
+正文 Markdown 的编辑与公开渲染选型见 [Markdown 内容选型](./markdown.md)。
 
 ### 菜单
 
@@ -51,6 +53,7 @@
 | `/` | 302 重定向至 `/{site_default_locale}/` |
 | `/<lang>/` | 首页 |
 | `/<lang>/posts` | 文章列表 |
+| `/<lang>/posts/<id>` | 文章详情（Markdown 渲染） |
 | `/<lang>/about` | 关于页 |
 
 `lang` 须为字典项 `site_locales` 中的语言码（如 `zh-cn`、`en-us`）；无效语言会重定向到默认语言首页。
