@@ -86,15 +86,20 @@ async fn rocket() -> _ {
             .unwrap_or_else(|_| "haitang-cms-dev-secret".to_string()),
     };
 
-    if admin_cfg.static_dir.join("index.html").is_file() {
+    if app_cfg.is_development() {
         println!(
-            "[管理后台] 静态 SPA：/{}/ → {}",
+            "[管理后台] 开发模式：/{}/ → {}（Vite dev，无静态构建亦可访问）",
+            admin_cfg.path_segment, admin_cfg.dev_server_url
+        );
+    } else if admin_cfg.static_dir.join("index.html").is_file() {
+        println!(
+            "[管理后台] 生产静态：/{}/ → {}",
             admin_cfg.path_segment,
             admin_cfg.static_dir.display()
         );
     } else {
         eprintln!(
-            "[管理后台] 未找到 {}，请先执行 admin-web 生产构建（pnpm build）",
+            "[管理后台] 生产环境未找到 {}，请执行 admin-web 生产构建（pnpm build）",
             admin_cfg.static_dir.join("index.html").display()
         );
     }
@@ -102,6 +107,7 @@ async fn rocket() -> _ {
     rocket::build()
         .manage(db)
         .manage(jwt_config)
+        .manage(app_cfg)
         .manage(admin_cfg.clone())
         .manage(storage)
         // 挂载静态资源（jQuery 等）

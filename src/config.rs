@@ -74,6 +74,8 @@ pub struct AdminWebConfig {
     pub mount_path: String,
     /// 磁盘目录，如 `static/haitang-cms-admin`
     pub static_dir: PathBuf,
+    /// 开发环境 Vite dev server 根地址（无尾斜杠），如 `http://127.0.0.1:5174`
+    pub dev_server_url: String,
 }
 
 impl AdminWebConfig {
@@ -87,10 +89,66 @@ impl AdminWebConfig {
             .map(PathBuf::from)
             .unwrap_or_else(|_| PathBuf::from("static").join(&segment));
 
+        let dev_server_url = std::env::var("ADMIN_WEB_DEV_URL")
+            .unwrap_or_else(|_| "http://127.0.0.1:5174".to_string())
+            .trim()
+            .trim_end_matches('/')
+            .to_string();
+
         Self {
             mount_path: format!("/{segment}"),
             path_segment: segment,
             static_dir,
+            dev_server_url,
         }
+    }
+
+    /// 开发环境：将挂载路径下的子路径重定向到 Vite（dev base 为 `/`，故去掉后台前缀段）
+    pub fn dev_redirect_url(&self, subpath: &std::path::Path, query: Option<&str>) -> String {
+        let mut url = format!("{}/", self.dev_server_url);
+        let sub = subpath.to_string_lossy();
+        if !sub.is_empty() {
+            url = format!(
+                "{}/{}",
+                self.dev_server_url,
+                sub.trim_start_matches('/').replace('\\', "/")
+            );
+        }
+        if let Some(q) = query {
+            let q = q.trim_start_matches('?');
+            if !q.is_empty() {
+                url.push('?');
+                url.push_str(q);
+            }
+        }
+        url
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn test_cfg() -> AdminWebConfig {
+        AdminWebConfig {
+            path_segment: "haitang-cms-admin".to_string(),
+            mount_path: "/haitang-cms-admin".to_string(),
+            static_dir: PathBuf::from("static/haitang-cms-admin"),
+            dev_server_url: "http://127.0.0.1:5174".to_string(),
+        }
+    }
+
+    #[test]
+    fn dev_redirect_strips_mount_segment() {
+        let cfg = test_cfg();
+        assert_eq!(cfg.dev_redirect_url(std::path::Path::new(""), None), "http://127.0.0.1:5174/");
+        assert_eq!(
+            cfg.dev_redirect_url(std::path::Path::new("dicts"), None),
+            "http://127.0.0.1:5174/dicts"
+        );
+        assert_eq!(
+            cfg.dev_redirect_url(std::path::Path::new("dicts"), Some("tab=1")),
+            "http://127.0.0.1:5174/dicts?tab=1"
+        );
     }
 }

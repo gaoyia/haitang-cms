@@ -90,11 +90,13 @@ haitang-cms/
 
 `admin-web/` 是基于 Element Plus 的后台管理框架（参考 [KOI-UI](https://gitee.com/KoiKite/koi-ui) MIT），默认海棠红主题，支持明暗模式、多种布局与 Tags-View，调用 `/api/admin/*` 接口。
 
-**开发**（Vite  dev server，端口 5174）：
+**开发**（Vite dev server，端口 5174）：
 
 ```bash
 cd admin-web && pnpm dev
 ```
+
+开发时无需 `pnpm build`。`cargo run` 启动后端后，访问 `http://127.0.0.1:9000/haitang-cms-admin/`（或 `/haitang-cms-admin/dicts` 等）会由 Rocket **302 重定向**到 Vite dev server（默认 `http://127.0.0.1:5174`）。API 仍走 9000（Vite 将 `/dev-api` 代理到后端）。
 
 **生产构建**（产物输出至 `static/haitang-cms-admin/`，由 Rocket 托管）：
 
@@ -140,7 +142,8 @@ cargo run
 | `HAITANG_ENV` | `development` | 运行环境：`development` / `production`；生产部署请显式设为 `production` |
 | `JWT_SECRET` | `haitang-cms-dev-secret` | JWT 签名密钥 |
 | `ADMIN_WEB_PATH` | `haitang-cms-admin` | 管理后台 SPA URL 路径段（不含斜杠） |
-| `ADMIN_WEB_STATIC_DIR` | `static/{ADMIN_WEB_PATH}` | 管理后台构建产物目录 |
+| `ADMIN_WEB_STATIC_DIR` | `static/{ADMIN_WEB_PATH}` | 管理后台构建产物目录（**production** 使用） |
+| `ADMIN_WEB_DEV_URL` | `http://127.0.0.1:5174` | **development** 下后台 SPA 重定向目标（Vite dev） |
 | `STORAGE_BACKEND` | `local` | 资源存储后端（`aliyun` / `tencent` 预留） |
 | `STORAGE_LOCAL_DIR` | `static/uploads` | 本地存储目录 |
 | `STORAGE_PUBLIC_PREFIX` | `/static/uploads` | 上传文件公开 URL 前缀 |
