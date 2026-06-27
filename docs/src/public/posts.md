@@ -39,4 +39,4 @@ GET /api/posts/:id?lang=en-us
 | `id` | path | `i64` | 文章 ID |
 | `lang` | query | `string` | 可选 |
 
-公开 HTML 详情页：`GET /<lang>/posts/<id>`，正文经 Markdown 渲染（见 [Markdown 内容选型](../markdown.md)）。仅展示 `status = 1` 的已发布文章。
+公开 HTML 详情页：`GET /<lang>/posts/<key>`，`<key>` 为文章 ID 或当前语言 SEO slug（对应 `route_path` 最后一段）；正文经 Markdown 渲染（见 [Markdown 内容选型](../markdown.md)）。仅展示 `status = 1` 的已发布文章。若用数字 ID 访问且已配置 SEO 路径，会重定向到 canonical URL。若同一语言下 slug 重复（数据异常），公开页返回 **409 Conflict**；管理端创建/更新时会拒绝重复 slug。

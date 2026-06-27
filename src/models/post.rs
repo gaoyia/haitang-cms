@@ -146,6 +146,112 @@ pub fn normalize_post_route_path(lang: &str, raw: &str) -> Result<String, String
     Ok(format!("{prefix}{slug}"))
 }
 
+/// 同一语言下 SEO 路径已被其他文章占用
+pub fn post_route_path_taken(lang: &str, route_path: &str, other_post_id: i64) -> String {
+    format!("该语言（{lang}）下 SEO 路径「{route_path}」已被文章 #{other_post_id} 使用")
+}
+
+/// 公开访问时 slug 对应多篇已发布文章（数据异常）
+pub fn post_route_path_ambiguous(route_path: &str, post_ids: &[i64]) -> String {
+    let ids = post_ids
+        .iter()
+        .map(|id| format!("#{id}"))
+        .collect::<Vec<_>>()
+        .join("、");
+    format!("SEO 路径「{route_path}」对应多篇文章（{ids}），请修改冲突文章的 SEO 路径")
+}
+
+/// 按公开 URL 段收集匹配的文章 ID（去重、保持发现顺序）
+fn collect_post_ids_for_public_key(rows: &[PostI18n], lang: &str, key: &str) -> Vec<i64> {
+    let lang = super::locale::normalize_lang(lang);
+    let key = key.trim();
+    if key.is_empty() {
+        return vec![];
+    }
+
+    let expected = format!("/{lang}/posts/{key}");
+    let prefix = post_route_path_prefix(&lang);
+    let mut ids = Vec::new();
+
+    for row in rows {
+        if row.lang != lang {
+            continue;
+        }
+        let matched = row.route_path == expected
+            || (!row.route_path.is_empty()
+                && row
+                    .route_path
+                    .strip_prefix(&prefix)
+                    .is_some_and(|slug| slug == key));
+        if matched && !ids.contains(&row.post_id) {
+            ids.push(row.post_id);
+        }
+    }
+
+    ids
+}
+
+/// 非空 `route_path` 在同一语言下不得与其他文章重复
+pub async fn ensure_unique_post_route_path(
+    db: &mut toasty::Db,
+    lang: &str,
+    route_path: &str,
+    exclude_post_id: Option<i64>,
+) -> Result<(), String> {
+    if route_path.is_empty() {
+        return Ok(());
+    }
+
+    let lang = super::locale::normalize_lang(lang);
+    let rows = PostI18n::all()
+        .exec(db)
+        .await
+        .map_err(|e| format!("查询文章翻译失败: {e}"))?;
+
+    for row in rows {
+        if row.lang != lang || row.route_path.is_empty() {
+            continue;
+        }
+        if row.route_path == route_path && exclude_post_id != Some(row.post_id) {
+            return Err(post_route_path_taken(&lang, route_path, row.post_id));
+        }
+    }
+
+    Ok(())
+}
+
+/// 从公开 URL 最后一段解析文章 ID：纯数字按 ID 查，否则按当前语言 `route_path` 匹配
+pub async fn resolve_post_id_from_public_key(
+    db: &mut toasty::Db,
+    lang: &str,
+    key: &str,
+) -> Result<Option<i64>, String> {
+    let lang = super::locale::normalize_lang(lang);
+    let key = key.trim();
+    if key.is_empty() {
+        return Ok(None);
+    }
+
+    if let Ok(id) = key.parse::<i64>() {
+        if PostMeta::get_by_id(db, &id).await.is_ok() {
+            return Ok(Some(id));
+        }
+        return Ok(None);
+    }
+
+    let expected = format!("/{lang}/posts/{key}");
+    let rows = PostI18n::all()
+        .exec(db)
+        .await
+        .map_err(|e| format!("查询文章翻译失败: {e}"))?;
+
+    match collect_post_ids_for_public_key(&rows, &lang, key).as_slice() {
+        [] => Ok(None),
+        [id] => Ok(Some(*id)),
+        ids => Err(post_route_path_ambiguous(&expected, ids)),
+    }
+}
+
 pub async fn post_i18n_rows(db: &mut toasty::Db, post_id: i64) -> Result<Vec<PostI18n>, String> {
     let all = PostI18n::all()
         .exec(db)
@@ -167,6 +273,7 @@ pub async fn create_post(
     let content = input.content.as_deref().unwrap_or("");
     let tags = normalize_tags(input.tags.as_deref().unwrap_or(""));
     let route_path = normalize_post_route_path(&lang, input.route_path.as_deref().unwrap_or(""))?;
+    ensure_unique_post_route_path(db, &lang, &route_path, None).await?;
     let status = input.status.unwrap_or(1);
 
     let meta = PostMeta::create()
@@ -276,6 +383,7 @@ pub async fn upsert_post_i18n(
     let lang = super::locale::normalize_lang(lang);
     let tags = normalize_tags(tags);
     let route_path = normalize_post_route_path(&lang, route_path)?;
+    ensure_unique_post_route_path(db, &lang, &route_path, Some(post_id)).await?;
     match PostI18n::get_by_post_id_and_lang(db, &post_id, &lang).await {
         Ok(mut row) => {
             row.update()
@@ -340,6 +448,51 @@ mod tests {
         assert_eq!(
             normalize_post_route_path("zh-cn", "/en-us/posts/hello").unwrap(),
             "/zh-cn/posts/hello"
+        );
+    }
+
+    fn test_row(post_id: i64, lang: &str, route_path: &str) -> PostI18n {
+        PostI18n {
+            post_id,
+            lang: lang.to_string(),
+            title: String::new(),
+            description: String::new(),
+            content: String::new(),
+            route_path: route_path.to_string(),
+            tags: String::new(),
+        }
+    }
+
+    #[test]
+    fn collect_ids_single_slug_match() {
+        let rows = vec![test_row(3, "zh-cn", "/zh-cn/posts/hello")];
+        assert_eq!(
+            collect_post_ids_for_public_key(&rows, "zh-cn", "hello"),
+            vec![3]
+        );
+    }
+
+    #[test]
+    fn collect_ids_duplicate_route_path() {
+        let rows = vec![
+            test_row(1, "zh-cn", "/zh-cn/posts/hello"),
+            test_row(2, "zh-cn", "/zh-cn/posts/hello"),
+        ];
+        assert_eq!(
+            collect_post_ids_for_public_key(&rows, "zh-cn", "hello"),
+            vec![1, 2]
+        );
+    }
+
+    #[test]
+    fn collect_ids_respects_lang() {
+        let rows = vec![
+            test_row(1, "zh-cn", "/zh-cn/posts/hello"),
+            test_row(2, "en-us", "/en-us/posts/hello"),
+        ];
+        assert_eq!(
+            collect_post_ids_for_public_key(&rows, "zh-cn", "hello"),
+            vec![1]
         );
     }
 }

@@ -9,7 +9,7 @@
 | 语言码 | 小写 BCP 47，如 `zh-cn`、`en-us` |
 | 全局字典 | `dict_value.lang = ""`（空串哨兵） |
 | 默认语言 | 字典项 `site_default_locale`，缺翻译时 fallback |
-| URL | `route_path` 存完整路径，如 `/zh-cn/posts/hello` |
+| URL | `route_path` 存完整路径，如 `/zh-cn/posts/hello`；**同一 `(lang, route_path)` 非空时全局唯一**（管理端写入校验） |
 | 开发库重置 | 删除 `db/haitang.sqlite` 后 `cargo run` 自动建表并种子；旧库启动时会自动迁移 `post_metas.tags` → `post_i18ns.tags` |
 
 ## 表结构
@@ -53,7 +53,7 @@
 | `/` | 302 重定向至 `/{site_default_locale}/` |
 | `/<lang>/` | 首页 |
 | `/<lang>/posts` | 文章列表 |
-| `/<lang>/posts/<id>` | 文章详情（Markdown 渲染） |
+| `/<lang>/posts/<key>` | 文章详情（`<key>` 为 ID 或 SEO slug，Markdown 渲染） |
 | `/<lang>/about` | 关于页 |
 
 `lang` 须为字典项 `site_locales` 中的语言码（如 `zh-cn`、`en-us`）；无效语言会重定向到默认语言首页。

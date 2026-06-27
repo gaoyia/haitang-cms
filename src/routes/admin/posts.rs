@@ -7,6 +7,12 @@ use crate::models::{
     create_post, delete_post, get_site_default_locale, paginate_vec, post_detail_view,
     post_to_view, posts_to_views, upsert_post_i18n, validate_category_id,
 };
+
+fn is_post_route_path_client_error(message: &str) -> bool {
+    message.starts_with("SEO 路径")
+        || message.contains("已被文章 #")
+        || message.contains("对应多篇文章")
+}
 use crate::routes::page::LangPageQuery;
 
 /// 创建新文章（需授权）
@@ -119,7 +125,11 @@ pub async fn update(
         )
         .await
         {
-            let code = if e.starts_with("SEO 路径") { 400 } else { 500 };
+            let code = if is_post_route_path_client_error(&e) {
+                400
+            } else {
+                500
+            };
             return Json(ApiResponse::error(code, e));
         }
     }

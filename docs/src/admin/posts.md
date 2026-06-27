@@ -53,7 +53,7 @@ POST /api/admin/posts
 | `tags` | `string` | 否 | 该语言下的标签，逗号分隔；保存时会规范化空白与分隔符 |
 | `category_id` | `i64` | 否 | 分类 ID |
 | `lang` | `string` | 否 | 默认 `site_default_locale` |
-| `route_path` | `string` | 否 | 该语言的 SEO 完整路径或 slug；空串合法，非空时须匹配 `/{lang}/posts/{slug}` |
+| `route_path` | `string` | 否 | 该语言的 SEO 完整路径或 slug；空串合法，非空时须匹配 `/{lang}/posts/{slug}`，且**同一语言下不可与其他文章重复** |
 | `status` | `i64` | 否 | `0` 草稿，`1` 已发布 |
 
 ## 更新文章

@@ -1,11 +1,14 @@
 use rocket::Route;
 use rocket::State;
-use rocket::response::Redirect;
+use rocket::http::Status;
+use rocket::request::Request;
+use rocket::response::{self, Redirect, Responder};
 use rocket_dyn_templates::Template;
 
 use crate::models::dict::{get_site_default_locale, get_site_locales};
 use crate::models::load_public_banners_by_code;
 use crate::models::locale::{is_supported_locale, locale_path, normalize_lang};
+use crate::models::post::{post_to_view, resolve_post_id_from_public_key, PostMeta};
 use crate::models::site_page_context;
 
 /// 汇总页面路由
@@ -60,21 +63,64 @@ pub async fn index_lang_no_slash(lang: &str, db: &State<toasty::Db>) -> Result<R
     Ok(Redirect::to(locale_path(&resolved, "")))
 }
 
-/// 多语言文章详情页
-#[get("/<lang>/posts/<id>")]
+/// 多语言文章详情页（支持数字 ID 或 SEO slug）
+#[get("/<lang>/posts/<key>")]
 pub async fn post_detail_lang(
     lang: &str,
-    id: i64,
+    key: &str,
     db: &State<toasty::Db>,
-) -> Result<Template, Redirect> {
+) -> Result<Template, PostDetailError> {
     let mut db = db.inner().clone();
-    let resolved = resolve_public_lang(&mut db, lang).await?;
-    let current_path = format!("/{resolved}/posts/{id}");
+    let resolved = resolve_public_lang(&mut db, lang)
+        .await
+        .map_err(PostDetailError::LangRedirect)?;
+
+    let post_id = match resolve_post_id_from_public_key(&mut db, &resolved, key).await {
+        Ok(Some(id)) => id,
+        Ok(None) => return Err(PostDetailError::NotFound),
+        Err(e) if e.contains("对应多篇文章") => return Err(PostDetailError::Conflict),
+        Err(_) => return Err(PostDetailError::NotFound),
+    };
+
+    // 数字 ID 访问且已配置 SEO 路径时，301 到 canonical URL
+    if key.parse::<i64>().is_ok()
+        && let Ok(meta) = PostMeta::get_by_id(&mut db, &post_id).await
+        && let Ok(view) = post_to_view(&mut db, &meta, Some(&resolved)).await
+        && !view.route_path.is_empty()
+    {
+        let current = format!("/{resolved}/posts/{key}");
+        if view.route_path != current {
+            return Err(PostDetailError::CanonicalRedirect(Redirect::to(
+                view.route_path,
+            )));
+        }
+    }
+
+    let current_path = format!("/{resolved}/posts/{key}");
     let mut ctx = site_page_context(&mut db, "post-detail", &current_path, Some(&resolved)).await;
     if let Some(obj) = ctx.as_object_mut() {
-        obj.insert("post_id".to_string(), serde_json::json!(id));
+        obj.insert("post_id".to_string(), serde_json::json!(post_id));
     }
     Ok(Template::render("post-detail", ctx))
+}
+
+/// 文章详情页错误响应（语言重定向 / SEO 重定向 / 404）
+pub(crate) enum PostDetailError {
+    LangRedirect(Redirect),
+    CanonicalRedirect(Redirect),
+    NotFound,
+    Conflict,
+}
+
+#[rocket::async_trait]
+impl<'r> Responder<'r, 'static> for PostDetailError {
+    fn respond_to(self, req: &'r Request<'_>) -> response::Result<'static> {
+        match self {
+            Self::LangRedirect(r) | Self::CanonicalRedirect(r) => r.respond_to(req),
+            Self::NotFound => Status::NotFound.respond_to(req),
+            Self::Conflict => Status::Conflict.respond_to(req),
+        }
+    }
 }
 
 /// 多语言文章列表页
