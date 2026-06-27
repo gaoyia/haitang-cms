@@ -81,7 +81,7 @@ export default {
           description: "摘要",
           descriptionPh: "文章摘要",
           content: "正文",
-          contentPh: "文章正文",
+          contentPh: "支持 Markdown 语法，可使用预览与全屏编辑",
           sectionMeta: "基本信息",
           sectionI18n: "多语言文案",
           create: "新建文章",

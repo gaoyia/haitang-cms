@@ -81,7 +81,7 @@ export default {
           description: "Summary",
           descriptionPh: "Post summary",
           content: "Body",
-          contentPh: "Post body",
+          contentPh: "Markdown supported; use preview and fullscreen while editing",
           sectionMeta: "Meta",
           sectionI18n: "Translations",
           create: "New post",

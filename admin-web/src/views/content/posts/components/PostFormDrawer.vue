@@ -2,13 +2,20 @@
   <el-drawer
     v-model="visible"
     :title="drawerTitle"
-    size="480px"
+    size="100%"
+    class="post-form-drawer"
     :close-on-click-modal="false"
     append-to-body
     destroy-on-close
     @closed="onClosed"
   >
-    <el-form ref="formRef" :model="form" label-width="88px" v-loading="loading">
+    <el-form
+      ref="formRef"
+      :model="form"
+      label-width="88px"
+      v-loading="loading"
+      class="post-form-drawer__form"
+    >
       <el-divider content-position="left">{{ t("menu.content.post.manage.sectionMeta") }}</el-divider>
 
       <el-form-item :label="t('menu.content.post.manage.category')">
@@ -65,11 +72,10 @@
               :placeholder="t('menu.content.post.manage.descriptionPh')"
             />
           </el-form-item>
-          <el-form-item :label="t('menu.content.post.manage.content')">
-            <el-input
+          <el-form-item :label="t('menu.content.post.manage.content')" class="post-form-drawer__content-item">
+            <KoiMarkdownEditor
               v-model="form.i18n[loc].content"
-              type="textarea"
-              :rows="6"
+              :editor-id="`post-content-${loc}`"
               :placeholder="t('menu.content.post.manage.contentPh')"
             />
           </el-form-item>
@@ -297,8 +303,43 @@ async function handleSave() {
 </script>
 
 <style scoped lang="scss">
+.post-form-drawer {
+  :deep(.el-drawer__body) {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+}
+
+.post-form-drawer__form {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: auto;
+}
+
 .post-locale-tabs {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   margin-top: 4px;
+
+  :deep(.el-tabs__content) {
+    flex: 1;
+    overflow: auto;
+  }
+
+  :deep(.el-tab-pane) {
+    height: 100%;
+  }
+}
+
+.post-form-drawer__content-item {
+  :deep(.el-form-item__content) {
+    line-height: normal;
+  }
 }
 
 .post-drawer-footer {

@@ -14,6 +14,7 @@ import KoiGlobalIcon from "./KoiGlobalIcon/Index.vue";
 import KoiSearch from './KoiSearch/Index.vue';
 import KoiScrollNav from "./KoiScrollNav/Index.vue";
 import KoiTablePanel from "./KoiTablePanel/Index.vue";
+import KoiMarkdownEditor from "./KoiMarkdownEditor/Index.vue";
 
 import type { App, Component } from "vue";
 
@@ -34,7 +35,8 @@ const components: { [name: string]: Component } = {
   KoiGlobalIcon,
   KoiSearch,
   KoiScrollNav,
-  KoiTablePanel
+  KoiTablePanel,
+  KoiMarkdownEditor
 };
 
 export default {
