@@ -10,7 +10,7 @@
 | 全局字典 | `dict_value.lang = ""`（空串哨兵） |
 | 默认语言 | 字典项 `site_default_locale`，缺翻译时 fallback |
 | URL | `route_path` 存完整路径，如 `/zh-cn/posts/hello`；**同一 `(lang, route_path)` 非空时全局唯一**（管理端写入校验） |
-| 开发库重置 | 删除 `db/haitang.sqlite` 后 `cargo run` 自动建表并种子；启动时 `db_patch` 会为已有库补列（如 `assets.upload_name`、`post_metas` 时间字段）；默认轮播图位于 `static/uploads/seed/1/banner-1.png`，入库 `storage_key = seed/1/banner-1.png` |
+| 开发库重置 | 删除 `db/haitang.sqlite` 后 `cargo run` 自动建表；**development** 下每次启动会幂等写入种子（字典、菜单、轮播图、admin 等）；**production** 仅在库中尚无用户时写入一次初始数据。启动时 `db_patch` 在任何环境下都会为已有库补列（如 `assets.upload_name`、`post_metas` 时间字段），与种子无关。默认轮播图位于 `static/uploads/seed/1/banner-1.png`，入库 `storage_key = seed/1/banner-1.png` |
 
 ## 表结构
 

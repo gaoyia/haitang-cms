@@ -1,5 +1,37 @@
 use std::path::PathBuf;
 
+/// 运行环境（控制启动时是否写入种子数据，不影响 schema patch）
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum AppEnvironment {
+    Development,
+    Production,
+}
+
+/// 应用运行配置
+#[derive(Clone, Debug)]
+pub struct AppConfig {
+    pub environment: AppEnvironment,
+}
+
+impl AppConfig {
+    pub fn from_env() -> Self {
+        let raw = std::env::var("HAITANG_ENV").unwrap_or_else(|_| "development".to_string());
+        let environment = match raw.trim().to_lowercase().as_str() {
+            "production" | "prod" => AppEnvironment::Production,
+            "development" | "dev" => AppEnvironment::Development,
+            other => {
+                eprintln!("[警告] 未知 HAITANG_ENV={other}，按 development 处理");
+                AppEnvironment::Development
+            }
+        };
+        Self { environment }
+    }
+
+    pub fn is_development(&self) -> bool {
+        matches!(self.environment, AppEnvironment::Development)
+    }
+}
+
 /// 上传存储配置
 #[derive(Clone, Debug)]
 pub struct StorageConfig {

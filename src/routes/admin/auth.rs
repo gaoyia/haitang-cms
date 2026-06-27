@@ -4,6 +4,7 @@ use rocket::State;
 use rocket::serde::json::Json;
 
 use crate::config::AdminWebConfig;
+use crate::config::AppConfig;
 use crate::guards::auth::JwtConfig;
 use crate::models::{
     ApiResponse, Banner, BannerGroup, Claims, LoginRequest, LoginResponse, LoginUserInfo,
@@ -28,6 +29,35 @@ pub fn epoch_secs() -> usize {
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
         .as_secs() as usize
+}
+
+/// 是否应在本次启动写入种子数据（schema patch 不受此限制）
+async fn should_run_startup_seed(db: &mut toasty::Db, app: &AppConfig) -> bool {
+    if app.is_development() {
+        return true;
+    }
+    // production：仅首次安装（尚无用户）时写入
+    match User::all().exec(db).await {
+        Ok(users) => users.is_empty(),
+        Err(_) => false,
+    }
+}
+
+/// 按环境执行启动种子（development 幂等补全；production 仅首次安装）
+pub async fn run_startup_seeds(db: &mut toasty::Db, storage: &StorageService, app: &AppConfig) {
+    if !should_run_startup_seed(db, app).await {
+        println!("[种子] 生产环境已完成安装，跳过启动种子数据");
+        return;
+    }
+
+    if app.is_development() {
+        println!("[种子] development：执行幂等种子数据");
+    } else {
+        println!("[种子] production 首次安装：写入初始数据");
+    }
+
+    seed_admin(db).await;
+    seed_default_banner_data(db, storage).await;
 }
 
 /// 种子数据：确保默认管理员和角色存在，并同步 admin 角色权限

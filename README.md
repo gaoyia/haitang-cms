@@ -131,12 +131,13 @@ Remove-Item db/haitang.sqlite -ErrorAction SilentlyContinue
 cargo run
 ```
 
-种子数据会自动写入默认字典、菜单、首页轮播图与用户。多语言模型说明见 [docs/src/i18n-data-model.md](docs/src/i18n-data-model.md)。
+种子数据会自动写入默认字典、菜单、首页轮播图与用户（**development** 下每次启动幂等补全；**production** 仅在首次安装、库中尚无用户时写入一次）。多语言模型说明见 [docs/src/i18n-data-model.md](docs/src/i18n-data-model.md)。
 
 ## 环境变量
 
 | 变量 | 默认值 | 说明 |
 |------|-------|------|
+| `HAITANG_ENV` | `development` | 运行环境：`development` / `production`；生产部署请显式设为 `production` |
 | `JWT_SECRET` | `haitang-cms-dev-secret` | JWT 签名密钥 |
 | `ADMIN_WEB_PATH` | `haitang-cms-admin` | 管理后台 SPA URL 路径段（不含斜杠） |
 | `ADMIN_WEB_STATIC_DIR` | `static/{ADMIN_WEB_PATH}` | 管理后台构建产物目录 |

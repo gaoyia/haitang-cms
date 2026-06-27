@@ -12,9 +12,9 @@ use rocket::fs::{self, FileServer};
 use rocket_dyn_templates::Template;
 use std::path::Path;
 
-use config::{AdminWebConfig, StorageConfig};
+use config::{AdminWebConfig, AppConfig, StorageConfig};
 use guards::auth::JwtConfig;
-use routes::admin::auth::{seed_admin, seed_default_banner_data};
+use routes::admin::auth::run_startup_seeds;
 use storage::StorageService;
 
 #[launch]
@@ -52,6 +52,7 @@ async fn rocket() -> _ {
         db_patch::apply_schema_patches(&mut db_mut).await;
     }
 
+    let app_cfg = AppConfig::from_env();
     let admin_cfg = AdminWebConfig::from_env();
     let storage_cfg = StorageConfig::from_env();
     let storage = StorageService::from_config(storage_cfg.clone()).unwrap_or_else(|e| {
@@ -67,11 +68,16 @@ async fn rocket() -> _ {
         );
     }
 
-    // 种子数据：默认管理员、菜单、轮播图与资源等
+    if app_cfg.is_development() {
+        println!("[环境] development（HAITANG_ENV 未设时默认）");
+    } else {
+        println!("[环境] production");
+    }
+
+    // 种子数据：development 幂等补全；production 仅首次安装（无用户时）
     {
         let mut db_mut = db.clone();
-        seed_admin(&mut db_mut).await;
-        seed_default_banner_data(&mut db_mut, &storage).await;
+        run_startup_seeds(&mut db_mut, &storage, &app_cfg).await;
     }
 
     // JWT 密钥配置
