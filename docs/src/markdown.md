@@ -33,12 +33,25 @@
 - 工具栏已启用 **图片上传**（`purpose=content`），上传后插入 Markdown 图片语法；接口见 [资源管理 API](../admin/assets.md)。
 - 多语言 Tab 下每个语言 Tab 各有一个编辑器实例，需传入唯一 `editor-id`（如 `post-content-zh-cn`）。
 
+### 窄屏适配
+
+| 断点 | 宽度 | 行为 |
+|------|------|------|
+| 桌面 | ≥ 768px | 完整工具栏；**全屏按钮在右侧**（预览、目录之后）；默认编辑/预览分屏 |
+| 窄屏 | **< 768px** | **工具** 下拉为双列面板：顶栏全屏（各占一列）+ 分隔线 + 双列格式/插入项；工具栏其余为撤销/重做、预览、目录；**预览为全宽**（非左右半屏），再次点击预览回到编辑 |
+
+窄屏「工具」为 Element Plus 下拉菜单，内含原格式化与插入能力（加粗、列表、链接、表格、图片等），通过 `execCommand` 调用编辑器内置命令。断点与 [管理后台 UI 约定](./admin-ui.md) 中 Element 栅格 `xs`（768px）一致。
+
+相关实现：`admin-web/src/components/KoiMarkdownEditor/`（`Index.vue`、`toolbar.ts`）。
+
 ### 相关代码（管理端）
 
 | 路径 | 说明 |
 |------|------|
 | `admin-web/package.json` | 依赖 `md-editor-v3` |
 | `admin-web/src/components/KoiMarkdownEditor/Index.vue` | 全局组件封装 |
+| `admin-web/src/components/KoiMarkdownEditor/toolbar.ts` | 桌面/窄屏工具栏配置 |
+| `admin-web/src/components/KoiMarkdownEditor/CompactToolMenu.vue` | 窄屏工具下拉菜单 |
 | `admin-web/src/views/content/posts/components/PostFormDrawer.vue` | 文章表单 |
 
 ## 公开站：渲染

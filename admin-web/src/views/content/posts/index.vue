@@ -35,6 +35,11 @@
         @change="loadPosts"
       >
         <el-table-column prop="title" :label="t('menu.content.post.manage.titleCol')" min-width="180" show-overflow-tooltip />
+        <el-table-column :label="t('menu.content.post.manage.displayTime')" width="168" align="center">
+          <template #default="{ row }">
+            {{ formatUnixTime(row.display_time) }}
+          </template>
+        </el-table-column>
         <el-table-column prop="category_name" :label="t('menu.content.post.manage.category')" min-width="120" show-overflow-tooltip />
         <el-table-column :label="t('menu.content.post.manage.status')" width="100" align="center">
           <template #default="{ row }">
@@ -95,6 +100,7 @@ import { listCategoriesApi, type CategoryView } from "@/api/system/categories.ts
 import { useSiteLocales } from "@/composables/useSiteLocales.ts";
 import { useTablePage } from "@/composables/useTablePage.ts";
 import { koiMsgError, koiMsgSuccess } from "@/utils/koi.ts";
+import { formatUnixTime } from "@/utils/formatTime.ts";
 import PostFormDrawer from "./components/PostFormDrawer.vue";
 
 const { t } = useI18n();

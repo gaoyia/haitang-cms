@@ -16,6 +16,18 @@ pub struct PostMeta {
 
     /// 0 = 草稿, 1 = 已发布
     pub status: i64,
+
+    /// 创建时间（Unix 秒）
+    pub created_at: i64,
+
+    /// 最后内容变更时间（不含仅改状态）
+    pub updated_at: i64,
+
+    /// 首次发布时间；未发布过为 0
+    pub published_at: i64,
+
+    /// 前台展示时间
+    pub display_time: i64,
 }
 
 /// 文章文案与 SEO 路径（按语言）
@@ -50,6 +62,8 @@ pub struct CreatePost {
     pub route_path: Option<String>,
     pub lang: Option<String>,
     pub status: Option<i64>,
+    /// 前台展示时间（Unix 秒）
+    pub display_time: Option<i64>,
 }
 
 /// 更新文章
@@ -63,6 +77,8 @@ pub struct UpdatePost {
     pub route_path: Option<String>,
     pub lang: Option<String>,
     pub status: Option<i64>,
+    /// 前台展示时间（Unix 秒）；创建时缺省为当前时间
+    pub display_time: Option<i64>,
 }
 
 /// 文章视图（已 merge 当前语言）
@@ -78,6 +94,10 @@ pub struct PostView {
     pub route_path: String,
     pub status: i64,
     pub lang: String,
+    pub created_at: i64,
+    pub updated_at: i64,
+    pub published_at: i64,
+    pub display_time: i64,
 }
 
 /// 管理端文章详情
@@ -86,6 +106,10 @@ pub struct PostDetailView {
     pub id: i64,
     pub category_id: i64,
     pub status: i64,
+    pub created_at: i64,
+    pub updated_at: i64,
+    pub published_at: i64,
+    pub display_time: i64,
     pub translations: HashMap<String, PostI18nPayload>,
     #[serde(default)]
     pub covers: Vec<super::asset::AssetView>,
@@ -261,6 +285,18 @@ pub async fn post_i18n_rows(db: &mut toasty::Db, post_id: i64) -> Result<Vec<Pos
     Ok(all.into_iter().filter(|r| r.post_id == post_id).collect())
 }
 
+async fn touch_post_updated_at(db: &mut toasty::Db, post_id: i64) -> Result<(), String> {
+    let mut meta = PostMeta::get_by_id(db, &post_id)
+        .await
+        .map_err(|_| "文章不存在".to_string())?;
+    meta.update()
+        .updated_at(super::asset::now_unix())
+        .exec(db)
+        .await
+        .map_err(|e| format!("更新文章时间失败: {e}"))?;
+    Ok(())
+}
+
 pub async fn create_post(
     db: &mut toasty::Db,
     input: &CreatePost,
@@ -276,10 +312,17 @@ pub async fn create_post(
     let route_path = normalize_post_route_path(&lang, input.route_path.as_deref().unwrap_or(""))?;
     ensure_unique_post_route_path(db, &lang, &route_path, None).await?;
     let status = input.status.unwrap_or(1);
+    let now = super::asset::now_unix();
+    let display_time = input.display_time.unwrap_or(now);
+    let published_at = if status == 1 { now } else { 0 };
 
     let meta = PostMeta::create()
         .category_id(category_id)
         .status(status)
+        .created_at(now)
+        .updated_at(now)
+        .published_at(published_at)
+        .display_time(display_time)
         .exec(db)
         .await
         .map_err(|e| format!("创建文章失败: {e}"))?;
@@ -328,14 +371,19 @@ pub async fn post_to_view(
         route_path: i18n.route_path.clone(),
         status: meta.status,
         lang: i18n.lang.clone(),
+        created_at: meta.created_at,
+        updated_at: meta.updated_at,
+        published_at: meta.published_at,
+        display_time: meta.display_time,
     })
 }
 
 pub async fn posts_to_views(
     db: &mut toasty::Db,
-    metas: Vec<PostMeta>,
+    mut metas: Vec<PostMeta>,
     lang: Option<&str>,
 ) -> Result<Vec<PostView>, String> {
+    metas.sort_by_key(|m| std::cmp::Reverse(m.display_time));
     let mut views = Vec::new();
     for meta in metas {
         views.push(post_to_view(db, &meta, lang).await?);
@@ -367,6 +415,10 @@ pub async fn post_detail_view(db: &mut toasty::Db, id: i64) -> Result<PostDetail
         id: meta.id,
         category_id: meta.category_id,
         status: meta.status,
+        created_at: meta.created_at,
+        updated_at: meta.updated_at,
+        published_at: meta.published_at,
+        display_time: meta.display_time,
         translations,
         covers: vec![],
         attachments: vec![],
@@ -426,7 +478,125 @@ pub async fn upsert_post_i18n(
                 .map_err(|e| format!("创建文章翻译失败: {e}"))?;
         }
     }
+    touch_post_updated_at(db, post_id).await?;
     Ok(())
+}
+
+/// 更新文章元数据与翻译；`updated_at` 在除「仅改状态」外的变更时刷新
+pub async fn update_post(
+    db: &mut toasty::Db,
+    id: i64,
+    input: &UpdatePost,
+    default_lang: &str,
+) -> Result<PostMeta, String> {
+    let mut meta = PostMeta::get_by_id(db, &id)
+        .await
+        .map_err(|_| "文章不存在".to_string())?;
+    let old_status = meta.status;
+    let old_category_id = meta.category_id;
+    let old_display_time = meta.display_time;
+    let now = super::asset::now_unix();
+
+    let mut builder = meta.update();
+    let mut meta_changed = false;
+    let mut touch_updated = false;
+
+    if let Some(category_id) = input.category_id {
+        validate_category_id(db, category_id).await?;
+        if old_category_id != category_id {
+            builder = builder.category_id(category_id);
+            meta_changed = true;
+            touch_updated = true;
+        }
+    }
+    if let Some(status) = input.status
+        && old_status != status
+    {
+        builder = builder.status(status);
+        meta_changed = true;
+        if old_status == 0 && status == 1 {
+            builder = builder.published_at(now);
+        }
+    }
+    if let Some(display_time) = input.display_time
+        && old_display_time != display_time
+    {
+        builder = builder.display_time(display_time);
+        meta_changed = true;
+        touch_updated = true;
+    }
+    if touch_updated {
+        builder = builder.updated_at(now);
+    }
+    if meta_changed {
+        builder
+            .exec(db)
+            .await
+            .map_err(|e| format!("更新失败: {e}"))?;
+        meta = PostMeta::get_by_id(db, &id)
+            .await
+            .map_err(|_| "文章不存在".to_string())?;
+    }
+
+    let lang = input
+        .lang
+        .as_deref()
+        .map(|l| super::locale::resolve_locale(Some(l), default_lang));
+    if input.title.is_some()
+        || input.description.is_some()
+        || input.content.is_some()
+        || input.route_path.is_some()
+        || input.tags.is_some()
+    {
+        let resolved_lang = lang.clone().unwrap_or_else(|| default_lang.to_string());
+        let rows = post_i18n_rows(db, id).await?;
+        let existing = rows.iter().find(|r| r.lang == resolved_lang);
+
+        let title = input
+            .title
+            .as_deref()
+            .or_else(|| existing.map(|e| e.title.as_str()))
+            .unwrap_or("");
+        let description = input
+            .description
+            .as_deref()
+            .or_else(|| existing.map(|e| e.description.as_str()))
+            .unwrap_or("");
+        let content = input
+            .content
+            .as_deref()
+            .or_else(|| existing.map(|e| e.content.as_str()))
+            .unwrap_or("");
+        let route_path = input
+            .route_path
+            .as_deref()
+            .or_else(|| existing.map(|e| e.route_path.as_str()))
+            .unwrap_or("");
+        let tags = input
+            .tags
+            .as_deref()
+            .or_else(|| existing.map(|e| e.tags.as_str()))
+            .unwrap_or("");
+
+        upsert_post_i18n(
+            db,
+            id,
+            PostI18nUpsert {
+                lang: &resolved_lang,
+                title,
+                description,
+                content,
+                route_path,
+                tags,
+            },
+        )
+        .await?;
+        meta = PostMeta::get_by_id(db, &id)
+            .await
+            .map_err(|_| "文章不存在".to_string())?;
+    }
+
+    Ok(meta)
 }
 
 pub async fn delete_post(db: &mut toasty::Db, id: i64) -> Result<(), String> {

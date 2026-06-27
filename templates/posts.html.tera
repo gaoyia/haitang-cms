@@ -20,6 +20,18 @@
         var failText = "{{ lang }}" === "en-us" ? "Failed to load. Please retry." : "加载失败，请稍后重试";
         var maxSummary = 200;
 
+        function formatDisplayTime(ts) {
+            if (!ts) return "";
+            var d = new Date(ts * 1000);
+            return d.toLocaleString("{{ lang }}" === "en-us" ? "en-US" : "zh-CN", {
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit"
+            });
+        }
+
         $.getJSON("/api/posts?lang={{ lang }}", function (res) {
             var $list = $("#post-list");
             $list.empty();
@@ -29,6 +41,7 @@
             }
 
             var published = res.data.filter(function (post) { return post.status === 1; });
+            published.sort(function (a, b) { return (b.display_time || 0) - (a.display_time || 0); });
             if (published.length === 0) {
                 $list.append('<li class="empty">' + emptyText + '</li>');
                 return;
@@ -43,6 +56,9 @@
                     summary = summary.substring(0, maxSummary) + "…";
                 }
                 var meta = [];
+                if (post.display_time) {
+                    meta.push(formatDisplayTime(post.display_time));
+                }
                 if (post.category_name) {
                     meta.push(("{{ lang }}" === "en-us" ? "Category: " : "分类: ") + post.category_name);
                 }

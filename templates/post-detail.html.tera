@@ -38,6 +38,18 @@
         var loadFailed = "{{ lang }}" === "en-us" ? "Failed to load article." : "文章加载失败，请稍后重试。";
         var notFound = "{{ lang }}" === "en-us" ? "Article not found or unpublished." : "文章不存在或未发布。";
 
+        function formatDisplayTime(ts) {
+            if (!ts) return "";
+            var d = new Date(ts * 1000);
+            return d.toLocaleString(lang === "en-us" ? "en-US" : "zh-CN", {
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit"
+            });
+        }
+
         $.getJSON("/api/posts/" + postId + "?lang=" + encodeURIComponent(lang), function (res) {
             if (res.code !== 0 || !res.data) {
                 $("#post-error").text(res.message || loadFailed).prop("hidden", false);
@@ -81,6 +93,9 @@
                 });
             }
             var meta = [];
+            if (post.display_time) {
+                meta.push(formatDisplayTime(post.display_time));
+            }
             if (post.category_name) {
                 meta.push(("{{ lang }}" === "en-us" ? "Category: " : "分类: ") + post.category_name);
             }

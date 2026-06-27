@@ -75,6 +75,8 @@ export default {
           status: "Status",
           draft: "Draft",
           published: "Published",
+          displayTime: "Display time",
+          displayTimePh: "Pick display time",
           routePath: "Path",
           publicUrl: "Public URL",
           publicUrlHint: "The URL visitors use today; the post ID is assigned after save",

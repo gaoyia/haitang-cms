@@ -58,6 +58,85 @@
 
 ---
 
+## 表单分栏与响应式宽度
+
+表单中**不宜撑满整行**的控件（日期时间选择器、短输入框等），应放在 `el-form-item` 内，用 `el-row` + `el-col` 限制最大宽度，并在列内令控件 `width: 100%`，由列宽决定实际展示宽度。
+
+### 默认分栏规则
+
+与 Element Plus 栅格一致，断点含义如下：
+
+| 断点 | 宽度 | 列 span | 说明 |
+|------|------|---------|------|
+| `xs` | &lt; 768px | `24` | 小屏占满一行 |
+| `sm` | ≥ 768px | — | 常规右侧标签（`label-width: 88px`） |
+| `lg` | ≥ 1200px | `8` | 超宽屏三列并排（如文章基本信息） |
+
+标准写法（单项）：
+
+```vue
+<el-form-item label="展示时间">
+  <el-row>
+    <el-col :xs="24" :lg="8">
+      <el-date-picker v-model="value" type="datetime" style="width: 100%" />
+    </el-col>
+  </el-row>
+</el-form-item>
+```
+
+多项并排（如文章基本信息：分类、展示时间、状态）：
+
+```vue
+<el-row :gutter="16">
+  <el-col :xs="24" :lg="8">
+    <el-form-item label="分类">...</el-form-item>
+  </el-col>
+  <el-col :xs="24" :lg="8">
+    <el-form-item label="展示时间">...</el-form-item>
+  </el-col>
+  <el-col :xs="24" :lg="8">
+    <el-form-item label="状态">...</el-form-item>
+  </el-col>
+</el-row>
+```
+
+`lg="8"` 时三列合计 24 格，最宽屏（≥ 1200px）一行展示；**< 1200px** 时基本信息各字段占满一行。
+
+### 窄屏上下布局
+
+宽度 **< 768px**（与 Element `xs`、Markdown 编辑器紧凑模式一致）时，表单整体切换为**上下布局**：
+
+- `label-position="top"`，标签在控件上方
+- 取消固定 `label-width`
+- 分栏区域各 `el-col` 使用 `:xs="24" :lg="8"`，窄屏下每字段独占一行
+
+```vue
+<el-form
+  :label-position="isFormStacked ? 'top' : 'right'"
+  :label-width="isFormStacked ? undefined : '88px'"
+>
+```
+
+`isFormStacked` 使用 `useBreakpoints(breakpointsEnum).smaller('sm')`。
+
+### 约定
+
+- **需要全宽的控件**（标题、正文、Markdown 编辑器等）不套 `el-col`，保持默认占满 `el-form-item` 内容区。
+- **短控件**（日期时间、数字、短下拉等）使用上表 `:xs="24" :sm="12" :md="8"`，除非该页有明确布局需求。
+- 列内控件统一 `style="width: 100%"`，避免固定像素宽度；外层由 `el-col` 自适应。
+- 同一表单内多处使用分栏时，优先复用相同 span，保持视觉一致。
+
+### 参考实现
+
+| 路径 | 说明 |
+|------|------|
+| `admin-web/src/views/content/posts/components/PostFormDrawer.vue` | 文章基本信息三列并排（`:lg="8"`） |
+| `admin-web/src/views/home/index.vue` | 首页统计卡片与面板分栏（`:xs="24" :sm="12" :lg="6"` 等） |
+
+Markdown 编辑器窄屏（宽度 **< 768px**）工具栏折叠为「工具」菜单，见 [Markdown 内容选型](./markdown.md#窄屏适配)。
+
+---
+
 ## 相关代码
 
 | 路径 | 说明 |

@@ -75,6 +75,8 @@ export default {
           status: "状态",
           draft: "草稿",
           published: "已发布",
+          displayTime: "展示时间",
+          displayTimePh: "选择展示时间",
           routePath: "路径",
           publicUrl: "公开链接",
           publicUrlHint: "当前站点实际访问地址；新建文章保存后才会生成 ID",

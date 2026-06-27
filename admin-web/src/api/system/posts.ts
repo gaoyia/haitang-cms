@@ -13,6 +13,10 @@ export interface PostView {
   route_path: string;
   status: number;
   lang: string;
+  created_at: number;
+  updated_at: number;
+  published_at: number;
+  display_time: number;
 }
 
 export interface PostI18nPayload {
@@ -27,6 +31,10 @@ export interface PostDetailView {
   id: number;
   category_id: number;
   status: number;
+  created_at: number;
+  updated_at: number;
+  published_at: number;
+  display_time: number;
   translations: Record<string, PostI18nPayload>;
   covers?: AssetView[];
   attachments?: AssetView[];
@@ -41,6 +49,7 @@ export interface CreatePostInput {
   route_path?: string;
   lang?: string;
   status?: number;
+  display_time?: number;
 }
 
 export interface UpdatePostInput {
@@ -52,6 +61,7 @@ export interface UpdatePostInput {
   route_path?: string;
   lang?: string;
   status?: number;
+  display_time?: number;
 }
 
 export function listPostsApi(lang?: string, page?: PageParams): Promise<Result<PageResult<PostView>>> {

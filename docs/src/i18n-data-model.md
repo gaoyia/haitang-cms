@@ -10,7 +10,7 @@
 | 全局字典 | `dict_value.lang = ""`（空串哨兵） |
 | 默认语言 | 字典项 `site_default_locale`，缺翻译时 fallback |
 | URL | `route_path` 存完整路径，如 `/zh-cn/posts/hello`；**同一 `(lang, route_path)` 非空时全局唯一**（管理端写入校验） |
-| 开发库重置 | 删除 `db/haitang.sqlite` 后 `cargo run` 自动建表并种子；默认轮播图位于 `static/uploads/seed/1/banner-1.png`，入库 `storage_key = seed/1/banner-1.png` |
+| 开发库重置 | 删除 `db/haitang.sqlite` 后 `cargo run` 自动建表并种子；启动时 `db_patch` 会为已有库补列（如 `assets.upload_name`、`post_metas` 时间字段）；默认轮播图位于 `static/uploads/seed/1/banner-1.png`，入库 `storage_key = seed/1/banner-1.png` |
 
 ## 表结构
 
@@ -32,8 +32,17 @@
 
 | 表 | 主键 | 说明 |
 |----|------|------|
-| `post_meta` | `id` | `category_id`、`status` |
+| `post_meta` | `id` | `category_id`、`status`、`created_at`、`updated_at`、`published_at`、`display_time` |
 | `post_i18n` | `(post_id, lang)` | `title`、`description`、`content`（Markdown 源码）、`route_path`、`tags` |
+
+时间字段（均在 `post_meta`，Unix 秒）：
+
+| 字段 | 说明 |
+|------|------|
+| `created_at` | 创建时间，写入后不变 |
+| `updated_at` | 除「仅改状态」外的任意内容变更时刷新（分类、翻译、`display_time` 等） |
+| `published_at` | 首次从草稿（0）变为已发布（1）时写入；未发布过为 0 |
+| `display_time` | 前台展示时间，可手动编辑；创建时默认等于 `created_at`；列表按此字段降序 |
 
 正文 Markdown 的编辑与公开渲染选型见 [Markdown 内容选型](./markdown.md)。
 

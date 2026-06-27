@@ -12,35 +12,54 @@
     <el-form
       ref="formRef"
       :model="form"
-      label-width="88px"
+      :label-position="isFormStacked ? 'top' : 'right'"
+      :label-width="isFormStacked ? undefined : '88px'"
       v-loading="loading"
       class="post-form-drawer__form"
+      :class="{ 'post-form-drawer__form--stacked': isFormStacked }"
     >
       <el-divider content-position="left">{{ t("menu.content.post.manage.sectionMeta") }}</el-divider>
 
-      <el-form-item :label="t('menu.content.post.manage.category')">
-        <el-select
-          v-model="form.category_id"
-          clearable
-          filterable
-          :placeholder="t('menu.content.post.manage.categoryPh')"
-          style="width: 100%"
-        >
-          <el-option
-            v-for="cat in categories"
-            :key="cat.id"
-            :label="cat.name"
-            :value="cat.id"
-          />
-        </el-select>
-      </el-form-item>
+      <el-row :gutter="16" class="post-meta-row">
+        <el-col :xs="24" :lg="8">
+          <el-form-item :label="t('menu.content.post.manage.category')">
+            <el-select
+              v-model="form.category_id"
+              clearable
+              filterable
+              :placeholder="t('menu.content.post.manage.categoryPh')"
+              style="width: 100%"
+            >
+              <el-option
+                v-for="cat in categories"
+                :key="cat.id"
+                :label="cat.name"
+                :value="cat.id"
+              />
+            </el-select>
+          </el-form-item>
+        </el-col>
 
-      <el-form-item :label="t('menu.content.post.manage.status')">
-        <el-radio-group v-model="form.status">
-          <el-radio :value="0">{{ t("menu.content.post.manage.draft") }}</el-radio>
-          <el-radio :value="1">{{ t("menu.content.post.manage.published") }}</el-radio>
-        </el-radio-group>
-      </el-form-item>
+        <el-col :xs="24" :lg="8">
+          <el-form-item :label="t('menu.content.post.manage.displayTime')">
+            <el-date-picker
+              v-model="displayTimeDate"
+              type="datetime"
+              :placeholder="t('menu.content.post.manage.displayTimePh')"
+              style="width: 100%"
+            />
+          </el-form-item>
+        </el-col>
+
+        <el-col :xs="24" :lg="8">
+          <el-form-item :label="t('menu.content.post.manage.status')">
+            <el-radio-group v-model="form.status">
+              <el-radio :value="0">{{ t("menu.content.post.manage.draft") }}</el-radio>
+              <el-radio :value="1">{{ t("menu.content.post.manage.published") }}</el-radio>
+            </el-radio-group>
+          </el-form-item>
+        </el-col>
+      </el-row>
 
       <el-divider content-position="left">{{ t("menu.content.post.manage.sectionAssets") }}</el-divider>
       <el-form-item label=" " class="post-form-drawer__assets-note-item">
@@ -142,6 +161,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from "vue";
 import type { FormInstance } from "element-plus";
+import { useBreakpoints } from "@vueuse/core";
 import { useI18n } from "vue-i18n";
 import {
   createPostApi,
@@ -153,6 +173,11 @@ import type { AssetView } from "@/api/system/assets.ts";
 import type { CategoryView } from "@/api/system/categories.ts";
 import PostAssetsSection from "@/components/assets/PostAssetsSection.vue";
 import { koiMsgError, koiMsgSuccess } from "@/utils/koi.ts";
+import { nowUnix } from "@/utils/formatTime.ts";
+import { breakpointsEnum } from "@/hooks/screen/index.ts";
+
+/** 宽度 < 768px 时表单改为标签在上、字段纵向排列 */
+const isFormStacked = useBreakpoints(breakpointsEnum).smaller("sm");
 
 export type PostLocaleFormRow = Omit<PostI18nPayload, "tags" | "route_path"> & {
   tagList: string[];
@@ -272,7 +297,15 @@ function validateAllSeoSlugs(): boolean {
 const form = reactive({
   category_id: undefined as number | undefined,
   status: 0,
+  display_time: 0,
   i18n: {} as PostLocaleForm,
+});
+
+const displayTimeDate = computed({
+  get: () => (form.display_time > 0 ? new Date(form.display_time * 1000) : null),
+  set: (v: Date | null) => {
+    form.display_time = v ? Math.floor(v.getTime() / 1000) : 0;
+  },
 });
 
 function emptyI18n(): PostLocaleForm {
@@ -296,6 +329,7 @@ function hasLocaleContent(row: PostLocaleFormRow): boolean {
 function resetForm() {
   form.category_id = undefined;
   form.status = 0;
+  form.display_time = nowUnix();
   form.i18n = emptyI18n();
   sessionPostId.value = null;
   postCovers.value = [];
@@ -316,6 +350,7 @@ async function loadDetail() {
     const detail = res.data;
     form.category_id = detail.category_id || undefined;
     form.status = detail.status;
+    form.display_time = detail.display_time;
     postCovers.value = detail.covers ?? [];
     postAttachments.value = detail.attachments ?? [];
     for (const loc of props.siteLocales) {
@@ -369,6 +404,7 @@ async function handleSave() {
     const metaPayload = {
       category_id: form.category_id,
       status: form.status,
+      display_time: form.display_time || undefined,
     };
 
     const updateTargetId = props.editId ?? sessionPostId.value;
@@ -390,6 +426,7 @@ async function handleSave() {
       }
       const newId = createRes.data.id;
       sessionPostId.value = newId;
+      form.display_time = createRes.data.display_time;
       for (const loc of props.siteLocales) {
         if (loc === props.defaultLocale) continue;
         const row = form.i18n[loc];
@@ -457,6 +494,12 @@ async function handleSave() {
   flex-direction: column;
   min-height: 0;
   overflow: auto;
+
+  &--stacked {
+    :deep(.el-form-item) {
+      margin-bottom: 16px;
+    }
+  }
 }
 
 .post-locale-tabs {
@@ -479,6 +522,14 @@ async function handleSave() {
 .post-form-drawer__content-item {
   :deep(.el-form-item__content) {
     line-height: normal;
+  }
+}
+
+.post-meta-row {
+  width: 100%;
+
+  :deep(.el-form-item) {
+    margin-bottom: 18px;
   }
 }
 
