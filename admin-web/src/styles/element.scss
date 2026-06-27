@@ -1,0 +1,127 @@
+@use "./variable.scss" as *;
+
+/* 当前页面最大化CSS */
+.main-maximize {
+  .el-aside,
+  .el-header,
+  .el-footer,
+  .layout-column,
+  .layout-tabs {
+    display: none !important;
+  }
+
+  .main-wrapper {
+    padding: 0 !important;
+    background-color: transparent !important;
+  }
+
+  .main-frame :deep(.layout-tabs-bar),
+  .main-content {
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+}
+
+/* 各布局顶栏 el-header.layout-header */
+.el-header.layout-header {
+  --el-header-padding: 0 #{$layout-header-padding-x};
+}
+
+/* 图标颜色 */
+.koi-icon {
+  // 翻转色字体颜色
+  color: var(--el-header-text-color);
+  outline: none; // 去除伪元素
+  &:hover {
+    color: var(--el-color-primary);
+    cursor: pointer;
+  }
+}
+
+/* el-table表头颜色配置 */
+.el-table .el-table__header-wrapper th {
+  font-weight: 500;
+  color: #303133;
+  @apply dark:c-#FFFFFFE6;
+}
+
+/* DIV 顶级自适应 */
+.koi-flex {
+  @apply flex flex-col flex-1 h-100% min-w-0;
+}
+
+/* 管理页：卡片内容区撑满可视高度 */
+.koi-page {
+  @apply flex flex-col h-100% min-h-0;
+}
+
+/* 左右分栏（菜单、轮播图等） */
+.koi-split-layout {
+  @apply flex flex-1 min-h-0 gap-16px;
+
+  &__aside,
+  &__main {
+    @apply flex flex-col min-h-0 overflow-hidden border-1 border-solid border-#E5E7ED rounded-8px bg-#FFF;
+    @apply dark:border-#414243 dark:bg-#1D1E1F;
+  }
+
+  &__aside {
+    @apply flex-shrink-0;
+    width: 260px;
+  }
+
+  &__main {
+    @apply flex-1 min-w-0 p-14px;
+  }
+
+  &__body {
+    @apply flex-1 min-h-0 flex flex-col overflow-hidden;
+  }
+
+  &__empty {
+    @apply flex-1 min-h-360px flex items-center justify-center;
+  }
+}
+
+/* 表格区撑满 + 空态居中 */
+.koi-table-panel {
+  @apply flex flex-col flex-1 min-h-0 overflow-hidden;
+
+  &__body {
+    @apply flex-1 min-h-360px overflow-hidden flex flex-col;
+
+    .el-table {
+      flex: 1;
+      height: 100% !important;
+    }
+  }
+
+  &__footer {
+    @apply flex-shrink-0 flex justify-end pt-12px;
+  }
+}
+
+/* DIV el-tabs 或 el-segmented 中 el-table 自适应 */
+.koi-flex-tabs {
+  @apply flex flex-col flex-1 overflow-hidden h-100% min-w-0;
+}
+
+/* el-table 表格样式 和 表格自适应 */
+.el-table {
+  flex: 1;
+  // 修复 safari 浏览器表格错位
+  table {
+    width: 100%;
+  }
+  // 解决表格数据为空时样式不居中问题[仅在element-plus中]
+  .el-table__empty-block {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    .table-empty {
+      line-height: 30px;
+    }
+  }
+}

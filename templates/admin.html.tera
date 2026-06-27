@@ -1,0 +1,18 @@
+{% extends "base" %}
+
+{% block content %}
+<section class="page-section">
+    <div class="container container-narrow">
+        <h1 class="page-title">管理后台</h1>
+        <div class="content-card">
+            <p>{{ site_name }} 管理后台是独立的 Vue 前端应用，开发环境下默认运行在 <strong>http://127.0.0.1:5173</strong>。</p>
+            <p style="margin-top: 1rem;">请确保已启动管理后台前端服务：</p>
+            <pre>cd admin-web && pnpm dev</pre>
+            <p style="margin-top: 1.5rem;">
+                <a class="btn btn-primary" href="http://127.0.0.1:5173" target="_blank" rel="noopener">打开管理后台</a>
+                <a class="btn btn-secondary" href="/" style="margin-left: 0.75rem;">返回首页</a>
+            </p>
+        </div>
+    </div>
+</section>
+{% endblock content %}

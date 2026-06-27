@@ -1,0 +1,24 @@
+{% extends "base" %}
+
+{% block content %}
+<section class="page-section">
+    <div class="container container-narrow">
+        <h1 class="page-title">{{ title }}</h1>
+        <div class="content-card">
+            {% if lang == "en-us" %}
+            <p><strong>{{ site_name }}</strong> is a lightweight CMS built with Rust and Rocket, SQLite for storage, Tera templates for the public site, and Vue 3 for the admin panel.</p>
+            <p style="margin-top: 1rem;">Stack: Rocket, Toasty ORM, Tera, Vue 3, JWT auth.</p>
+            <p style="margin-top: 1rem;">Designed for structured elegance — balancing efficiency with a warm, refined experience.</p>
+            {% else %}
+            <p><strong>{{ site_name }}</strong> 是一个轻量级内容管理系统，采用 Rust + Rocket 作为后端，SQLite 作为数据库，公开站点使用 Tera 模板引擎，管理后台使用 Vue 3 + Vite 构建。</p>
+            <p style="margin-top: 1rem;">技术栈：Rocket、Toasty ORM、Tera、Vue 3、JWT 认证。</p>
+            <p style="margin-top: 1rem;">设计理念遵循「结构化优雅」——在高效实用与温暖精致之间取得平衡，详见项目设计文档。</p>
+            {% endif %}
+            <p style="margin-top: 1.5rem;">
+                <a class="btn btn-primary" href="{{ locale_prefix }}/posts">{% if lang == "en-us" %}Browse Posts{% else %}浏览文章{% endif %}</a>
+                <a class="btn btn-secondary" href="/admin" style="margin-left: 0.75rem;">{% if lang == "en-us" %}Admin{% else %}管理后台{% endif %}</a>
+            </p>
+        </div>
+    </div>
+</section>
+{% endblock content %}

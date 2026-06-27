@@ -1,0 +1,142 @@
+{% extends "base" %}
+
+{% block content %}
+<section class="hero{% if banners and banners | length > 0 %} hero--banner-bg{% endif %}">
+    {% if banners and banners | length > 0 %}
+    <div class="hero-bg-carousel" id="home-banner" data-autoplay="5000" aria-hidden="true">
+        {% for banner in banners %}
+        <div class="hero-bg-slide{% if loop.first %} is-active{% endif %}">
+            <img
+                class="hero-bg-slide__img"
+                src="{{ banner.image_url }}"
+                alt=""
+                loading="{% if loop.first %}eager{% else %}lazy{% endif %}"
+            >
+        </div>
+        {% endfor %}
+        {% if banners | length > 1 %}
+        <div class="hero-bg-carousel__controls">
+            <button type="button" class="hero-bg-carousel__btn hero-bg-carousel__prev" aria-label="{% if lang == 'en-us' %}Previous{% else %}上一张{% endif %}">‹</button>
+            <div class="hero-bg-carousel__dots" role="tablist">
+                {% for banner in banners %}
+                <button
+                    type="button"
+                    class="hero-bg-carousel__dot{% if loop.first %} is-active{% endif %}"
+                    aria-label="{% if lang == 'en-us' %}Slide {{ loop.index }}{% else %}第 {{ loop.index }} 张{% endif %}"
+                    data-index="{{ loop.index0 }}"
+                ></button>
+                {% endfor %}
+            </div>
+            <button type="button" class="hero-bg-carousel__btn hero-bg-carousel__next" aria-label="{% if lang == 'en-us' %}Next{% else %}下一张{% endif %}">›</button>
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <div class="hero-bg"></div>
+    {% endif %}
+    <div class="hero-gradient"></div>
+    <div class="hero-inner">
+        <span class="hero-badge">结构化优雅</span>
+        <h1 class="hero-title">让数字内容 <em>如花绽放</em> 成艺术。</h1>
+        <p class="hero-desc">{{ site_name }} 为追求优雅与性能的创作者提供结构化的工作空间。公开站点由 Tera 模板驱动，管理后台由 Vue 3 独立构建。</p>
+        <div class="hero-actions">
+            <a class="btn btn-primary btn-lg" href="{{ locale_prefix }}/posts">{% if lang == "en-us" %}Browse Posts{% else %}浏览最新文章{% endif %}</a>
+            <a class="btn btn-secondary btn-lg" href="{{ locale_prefix }}/about">{% if lang == "en-us" %}Learn More{% else %}了解更多{% endif %}</a>
+        </div>
+    </div>
+</section>
+
+<section class="page-section">
+    <div class="container">
+        <div class="section-header">
+            <h2>为精致感而生</h2>
+            <p>海棠 CMS 不仅仅是一个内容管理系统，它是为高效编辑团队精心打造的创意工作室。</p>
+        </div>
+        <div class="feature-grid">
+            <div class="feature-card feature-span-8">
+                <div class="feature-icon">✦</div>
+                <h3>结构化的优雅</h3>
+                <p>基于 Rocket + Toasty ORM 的后端架构，配合 Tera 模板与 REST API，在保持模块清晰的同时，让内容与展示自然生长。</p>
+            </div>
+            <div class="feature-card feature-span-4 feature-card-accent">
+                <div class="feature-icon">⚡</div>
+                <h3>轻量而快速</h3>
+                <p>Rust 原生性能与 SQLite 本地存储，开发启动快、部署简单，适合中小型内容站点。</p>
+            </div>
+            <div class="feature-card feature-span-4">
+                <div class="feature-icon">🔒</div>
+                <h3>安全发布</h3>
+                <p>管理接口采用 JWT 认证，RBAC 权限模型与分类、菜单、字典等模块协同，保障内容安全可控。</p>
+                <div class="feature-tags">
+                    <span class="tag">JWT</span>
+                    <span class="tag tag-green">RBAC</span>
+                </div>
+            </div>
+            <div class="feature-card feature-span-8">
+                <div class="feature-icon">🔗</div>
+                <h3>前后端分离</h3>
+                <p>公开页面使用 jQuery 调用 `/api` 接口动态加载数据；管理后台为独立的 Vue 3 + Vite 应用，通过 `/api/admin` 完成 CRUD。</p>
+                <div class="feature-tags">
+                    <span class="tag">公开 API</span>
+                    <span class="tag">Vue 3</span>
+                    <span class="tag tag-green">Tera</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="cta-section">
+    <div class="container container-narrow">
+        <h2>准备好开始创作了吗？</h2>
+        <p>从浏览文章到进入管理后台，海棠 CMS 为您提供完整的内容工作流。</p>
+        <a class="btn btn-primary btn-lg" href="/admin">进入管理后台</a>
+    </div>
+</section>
+{% endblock content %}
+
+{% block scripts %}
+{% if banners and banners | length > 1 %}
+<script>
+    $(function () {
+        var $carousel = $("#home-banner");
+        var $slides = $carousel.find(".hero-bg-slide");
+        var current = 0;
+        var timer;
+        var delay = parseInt($carousel.data("autoplay"), 10) || 5000;
+
+        function show(idx) {
+            current = (idx + $slides.length) % $slides.length;
+            $slides.removeClass("is-active").eq(current).addClass("is-active");
+            $carousel.find(".hero-bg-carousel__dot").removeClass("is-active").eq(current).addClass("is-active");
+        }
+
+        function next() {
+            show(current + 1);
+        }
+
+        function start() {
+            clearInterval(timer);
+            timer = setInterval(next, delay);
+        }
+
+        $carousel.find(".hero-bg-carousel__next").on("click", function () {
+            next();
+            start();
+        });
+
+        $carousel.find(".hero-bg-carousel__prev").on("click", function () {
+            show(current - 1);
+            start();
+        });
+
+        $carousel.on("click", ".hero-bg-carousel__dot", function () {
+            show(parseInt($(this).data("index"), 10));
+            start();
+        });
+
+        start();
+    });
+</script>
+{% endif %}
+{% endblock scripts %}

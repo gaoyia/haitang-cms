@@ -1,0 +1,297 @@
+{
+
+  "data": [
+
+    {
+
+      "menuId": 100,
+
+      "menuName": "menu.content.auth",
+
+      "parentId": 0,
+
+      "menuType": "1",
+
+      "path": "/content",
+
+      "name": "contentPage",
+
+      "component": "",
+
+      "icon": "koi-document",
+
+      "isVisible": "1",
+
+      "linkUrl": "",
+
+      "isKeepAlive": "1",
+
+      "isTag": "0",
+
+      "isAffix": "0",
+
+      "redirect": "/content/posts"
+
+    },
+
+    {
+
+      "menuId": 101,
+
+      "menuName": "menu.content.posts",
+
+      "parentId": 100,
+
+      "menuType": "2",
+
+      "path": "/content/posts",
+
+      "name": "postListPage",
+
+      "component": "content/posts/index",
+
+      "icon": "koi-note-text",
+
+      "isVisible": "1",
+
+      "linkUrl": "",
+
+      "isKeepAlive": "1",
+
+      "isTag": "1",
+
+      "isAffix": "0",
+
+      "redirect": ""
+
+    },
+
+    {
+
+      "menuId": 102,
+
+      "menuName": "menu.content.categories",
+
+      "parentId": 100,
+
+      "menuType": "2",
+
+      "path": "/content/categories",
+
+      "name": "categoryListPage",
+
+      "component": "content/categories/index",
+
+      "icon": "koi-directory",
+
+      "isVisible": "1",
+
+      "linkUrl": "",
+
+      "isKeepAlive": "1",
+
+      "isTag": "1",
+
+      "isAffix": "0",
+
+      "redirect": ""
+
+    },
+
+    {
+
+      "menuId": 200,
+
+      "menuName": "menu.banner.auth",
+
+      "parentId": 0,
+
+      "menuType": "2",
+
+      "path": "/banner",
+
+      "name": "bannerManagePage",
+
+      "component": "banner/index",
+
+      "icon": "koi-picture",
+
+      "isVisible": "1",
+
+      "linkUrl": "",
+
+      "isKeepAlive": "1",
+
+      "isTag": "1",
+
+      "isAffix": "0",
+
+      "redirect": ""
+
+    },
+
+    {
+
+      "menuId": 300,
+
+      "menuName": "menu.system.auth",
+
+      "parentId": 0,
+
+      "menuType": "1",
+
+      "path": "/system",
+
+      "name": "systemPage",
+
+      "component": "",
+
+      "icon": "koi-setting",
+
+      "isVisible": "1",
+
+      "linkUrl": "",
+
+      "isKeepAlive": "1",
+
+      "isTag": "0",
+
+      "isAffix": "0",
+
+      "redirect": "/system/users"
+
+    },
+
+    {
+
+      "menuId": 301,
+
+      "menuName": "menu.system.users",
+
+      "parentId": 300,
+
+      "menuType": "2",
+
+      "path": "/system/users",
+
+      "name": "userListPage",
+
+      "component": "system/users/index",
+
+      "icon": "koi-enhance-user",
+
+      "isVisible": "1",
+
+      "linkUrl": "",
+
+      "isKeepAlive": "1",
+
+      "isTag": "1",
+
+      "isAffix": "0",
+
+      "redirect": ""
+
+    },
+
+    {
+
+      "menuId": 302,
+
+      "menuName": "menu.system.roles",
+
+      "parentId": 300,
+
+      "menuType": "2",
+
+      "path": "/system/roles",
+
+      "name": "roleListPage",
+
+      "component": "system/roles/index",
+
+      "icon": "koi-user-search",
+
+      "isVisible": "1",
+
+      "linkUrl": "",
+
+      "isKeepAlive": "1",
+
+      "isTag": "1",
+
+      "isAffix": "0",
+
+      "redirect": ""
+
+    },
+
+    {
+
+      "menuId": 400,
+
+      "menuName": "menu.menu.auth",
+
+      "parentId": 0,
+
+      "menuType": "2",
+
+      "path": "/menus",
+
+      "name": "menuManagePage",
+
+      "component": "menus/index",
+
+      "icon": "koi-slack",
+
+      "isVisible": "1",
+
+      "linkUrl": "",
+
+      "isKeepAlive": "1",
+
+      "isTag": "1",
+
+      "isAffix": "0",
+
+      "redirect": ""
+
+    },
+
+    {
+
+      "menuId": 500,
+
+      "menuName": "menu.dict.auth",
+
+      "parentId": 0,
+
+      "menuType": "2",
+
+      "path": "/dicts",
+
+      "name": "dictListPage",
+
+      "component": "dicts/index",
+
+      "icon": "koi-book-square",
+
+      "isVisible": "1",
+
+      "linkUrl": "",
+
+      "isKeepAlive": "1",
+
+      "isTag": "1",
+
+      "isAffix": "0",
+
+      "redirect": ""
+
+    }
+
+  ]
+
+}
+
+

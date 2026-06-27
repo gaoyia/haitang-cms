@@ -1,0 +1,6 @@
+[submodule "vendor/toasty"]
+	path = vendor/toasty
+	url = https://github.com/tokio-rs/toasty
+[submodule "vendor/Rocket"]
+	path = vendor/Rocket
+	url = https://github.com/rwf2/Rocket

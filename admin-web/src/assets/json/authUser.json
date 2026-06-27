@@ -1,0 +1,12 @@
+{
+  "data": {
+    "roles": ["admin"],
+    "buttons": [],
+    "loginUser": {
+      "userId": "",
+      "loginName": "",
+      "sex": "",
+      "avatar": ""
+    }
+  }
+}

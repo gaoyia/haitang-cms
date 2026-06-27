@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="{{ html_lang }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ title }}{% endblock title %} - {{ site_name }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/resources/css/site.css">
+    {% block extra_head %}{% endblock extra_head %}
+</head>
+<body>
+    <header class="site-header">
+        <a class="site-brand" href="{{ locale_prefix }}/">
+            <img src="/static/resources/logo.svg" alt="{{ site_name }}">
+            <span class="site-brand-name">{{ site_name }}</span>
+        </a>
+        <nav class="site-nav">
+            {% for item in header_menus %}
+            <a href="{{ item.path }}"{% if current_path == item.path %} class="active"{% endif %}>{{ item.title }}</a>
+            {% endfor %}
+        </nav>
+        <div class="site-header-actions">
+            <nav class="site-lang-switch" aria-label="语言切换">
+                {% for link in locale_links %}
+                <a href="{{ link.url }}"{% if link.active %} class="active"{% endif %}>{{ link.label }}</a>
+                {% endfor %}
+            </nav>
+            <a class="btn btn-ghost" href="{{ locale_prefix }}/posts">{% if lang == "en-us" %}Posts{% else %}浏览文章{% endif %}</a>
+            <a class="btn btn-primary" href="/admin">{% if lang == "en-us" %}Admin{% else %}管理后台{% endif %}</a>
+        </div>
+    </header>
+
+    <main class="site-main">
+        {% block content %}{% endblock content %}
+    </main>
+
+    <footer class="site-footer">
+        <div class="site-footer-inner">
+            <div class="site-footer-brand">
+                <div class="site-footer-logo">
+                    <img src="/static/resources/logo.svg" alt="">
+                    <span>{{ site_name }}</span>
+                </div>
+                <p class="footer-copy">
+                    {{ site_copyright }}
+                    {% if site_icp %}
+                    &nbsp;|&nbsp;<a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">{{ site_icp }}</a>
+                    {% endif %}
+                </p>
+            </div>
+            <nav class="site-footer-nav">
+                {% for item in footer_menus %}
+                <a href="{{ item.path }}"{% if current_path == item.path %} class="active"{% endif %}>{{ item.title }}</a>
+                {% endfor %}
+            </nav>
+        </div>
+    </footer>
+
+    <script src="/static/resources/js/jquery-4.0.0.min.js"></script>
+    {% block scripts %}{% endblock scripts %}
+</body>
+</html>

@@ -1,0 +1,11 @@
+# 依赖
+node_modules/
+dist/
+
+# 本地环境
+.env.local
+.env.*.local
+
+# 编辑器
+.vscode/
+*.log

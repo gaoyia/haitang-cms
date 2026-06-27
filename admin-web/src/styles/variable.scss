@@ -1,0 +1,57 @@
+// 项目提供scss全局变量
+
+/** Aside左侧布局相关变量-开始 */
+// Logo和标题高度
+$aside-header-height: 56px;
+
+// 顶栏水平内边距（覆盖 el-header 默认 0 12px）
+$layout-header-padding-x: 12px;
+
+// 左侧菜单高度
+$aside-menu-height: 40px; // [已使用][页面：@/layouts/components/Menu/SubMenu.vue]
+// 左侧菜单字体 AND 图标左侧偏移
+$aside-menu-font-icon-translate: -10px; // [已使用][页面：@/layouts/components/Menu/SubMenu.vue]
+// 左侧菜单菜单字体加粗
+$aside-menu-font-weight: 500;
+
+// 左侧菜单间隔
+$aside-menu-margin-bottom: 4px;
+
+// 左侧菜单边框圆角配置
+$aside-menu-border-left: 4px;
+
+// 左侧菜单左内边框宽度
+$aside-menu-padding-left: 6px;
+
+// 左侧菜单右内边框宽度
+$aside-menu-padding-right: 6px;
+
+/** Aside左侧布局相关变量-结束 */
+
+/** Column双栏布局相关变量-开始 */
+// 左侧菜单左内边框宽度[双栏布局]
+$column-menu-padding-left: 6px;
+
+// 左侧菜单右内边框宽度[双栏布局]
+$column-menu-padding-right: 6px;
+/** Column双栏布局相关变量-结束 */
+
+/** 主内容区布局变量 */
+// 主区域相对侧栏/顶栏的外侧留白
+$main-area-inset: 12px 16px 16px 16px;
+// 画布底色（与侧栏、内容面板形成层次）
+$main-canvas-bg: #f0f2f5;
+// 标签栏底色（略深于画布，未激活标签浮于其上）
+$main-tabs-bg: #e8ebf0;
+// 内容面板底色
+$main-surface-bg: #ffffff;
+// 内容区内部 padding
+$main-content-padding: 20px 24px 24px;
+// 内容区圆角
+$main-content-radius: 8px;
+
+@media (width <= 768px) {
+  $main-area-inset: 8px 10px 10px 10px !global;
+  $main-content-padding: 14px 16px 16px !global;
+  $main-content-radius: 6px !global;
+}

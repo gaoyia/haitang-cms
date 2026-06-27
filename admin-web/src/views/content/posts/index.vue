@@ -1,0 +1,199 @@
+<template>
+  <div class="post-manage-page koi-page">
+    <KoiCard>
+      <template #header>
+        <div class="post-page-head">
+          <div>
+            <div class="post-page-head__title">{{ t("menu.content.post.manage.title") }}</div>
+            <div class="post-page-head__desc">{{ t("menu.content.post.manage.subtitle") }}</div>
+          </div>
+          <KoiToolbar :show-maximize="false" @refresh-table="loadPosts" />
+        </div>
+      </template>
+
+      <div class="post-toolbar">
+        <div class="post-toolbar__left">
+          <span class="post-toolbar__label">{{ t("menu.content.post.manage.previewLang") }}</span>
+          <el-segmented v-model="previewLang" :options="localeSegmentOptions" size="small" />
+        </div>
+        <div class="post-toolbar__right">
+          <el-button type="primary" @click="openDrawer(null)">
+            <el-icon><Plus /></el-icon>
+            {{ t("button.add") }}
+          </el-button>
+        </div>
+      </div>
+
+      <KoiTablePanel
+        v-model:page="page"
+        v-model:page-size="pageSize"
+        :loading="loading"
+        :data="posts"
+        :total="total"
+        stripe
+        class="post-table"
+        @change="loadPosts"
+      >
+        <el-table-column prop="title" :label="t('menu.content.post.manage.titleCol')" min-width="180" show-overflow-tooltip />
+        <el-table-column prop="category_name" :label="t('menu.content.post.manage.category')" min-width="120" show-overflow-tooltip />
+        <el-table-column :label="t('menu.content.post.manage.status')" width="100" align="center">
+          <template #default="{ row }">
+            <el-tag v-if="row.status === 1" type="success" size="small" effect="plain">
+              {{ t("menu.content.post.manage.published") }}
+            </el-tag>
+            <el-tag v-else type="info" size="small" effect="plain">
+              {{ t("menu.content.post.manage.draft") }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="route_path" :label="t('menu.content.post.manage.routePath')" min-width="200" show-overflow-tooltip />
+        <el-table-column :label="t('table.operate')" width="140" align="center" fixed="right">
+          <template #default="{ row }">
+            <el-button type="primary" link @click="openDrawer(row.id)">
+              {{ t("button.update") }}
+            </el-button>
+            <el-button type="danger" link @click="handleDelete(row)">
+              {{ t("button.delete") }}
+            </el-button>
+          </template>
+        </el-table-column>
+      </KoiTablePanel>
+    </KoiCard>
+
+    <PostFormDrawer
+      v-model="drawerVisible"
+      :edit-id="editingId"
+      :site-locales="siteLocales"
+      :default-locale="defaultLocale"
+      :categories="categories"
+      :locale-label="localeLabel"
+      @saved="loadPosts"
+    />
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed, onMounted, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
+import { Plus } from "@element-plus/icons-vue";
+import { ElMessageBox } from "element-plus";
+import { deletePostApi, listPostsApi, type PostView } from "@/api/system/posts.ts";
+import { listCategoriesApi, type CategoryView } from "@/api/system/categories.ts";
+import { useSiteLocales } from "@/composables/useSiteLocales.ts";
+import { useTablePage } from "@/composables/useTablePage.ts";
+import { koiMsgError, koiMsgSuccess } from "@/utils/koi.ts";
+import PostFormDrawer from "./components/PostFormDrawer.vue";
+
+const { t } = useI18n();
+const { siteLocales, defaultLocale, previewLang, loadSiteLocales, localeLabel } = useSiteLocales();
+const { page, pageSize, total, pageParams, applyPageResult, resetPage } = useTablePage();
+
+const posts = ref<PostView[]>([]);
+const categories = ref<CategoryView[]>([]);
+const loading = ref(false);
+const drawerVisible = ref(false);
+const editingId = ref<number | null>(null);
+
+const localeSegmentOptions = computed(() =>
+  siteLocales.value.map((loc) => ({
+    label: localeLabel(loc),
+    value: loc,
+  })),
+);
+
+async function loadCategories() {
+  const res = await listCategoriesApi(previewLang.value, { page: 1, page_size: 500 });
+  categories.value = res.code === 0 && res.data ? res.data.list : [];
+}
+
+async function loadPosts() {
+  loading.value = true;
+  try {
+    const res = await listPostsApi(previewLang.value, pageParams.value);
+    posts.value = applyPageResult(res.code === 0 ? res.data : null);
+  } finally {
+    loading.value = false;
+  }
+}
+
+function openDrawer(id: number | null) {
+  editingId.value = id;
+  drawerVisible.value = true;
+}
+
+async function handleDelete(row: PostView) {
+  try {
+    await ElMessageBox.confirm(
+      t("menu.content.post.manage.deleteConfirm", { name: row.title }),
+      t("msg.remind"),
+      { type: "warning", confirmButtonText: t("button.delete"), cancelButtonText: t("button.cancel") },
+    );
+  } catch {
+    return;
+  }
+  const res = await deletePostApi(row.id);
+  if (res.code === 0) {
+    koiMsgSuccess(t("msg.success"));
+    await loadPosts();
+  } else {
+    koiMsgError(res.message || t("msg.fail"));
+  }
+}
+
+watch(previewLang, () => {
+  resetPage();
+  loadPosts();
+  loadCategories();
+});
+
+onMounted(async () => {
+  await loadSiteLocales();
+  await Promise.all([loadPosts(), loadCategories()]);
+});
+</script>
+
+<style scoped lang="scss">
+.post-page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+
+  &__title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--el-text-color-primary);
+  }
+
+  &__desc {
+    margin-top: 4px;
+    font-size: 13px;
+    color: var(--el-text-color-secondary);
+  }
+}
+
+.post-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-shrink: 0;
+
+  &__left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  &__label {
+    font-size: 13px;
+    color: var(--el-text-color-secondary);
+  }
+}
+
+.post-table {
+  width: 100%;
+}
+</style>

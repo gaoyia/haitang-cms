@@ -1,0 +1,11 @@
+/target
+/db/*.sqlite
+/db/*.sqlite-journal
+/db/*.sqlite-wal
+/docs/book
+node_modules
+dist
+/vendor/demo
+/vendor/koi-ui
+.cursor
+.cargo
