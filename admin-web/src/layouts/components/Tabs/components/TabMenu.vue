@@ -137,7 +137,7 @@ const calculateMenuPosition = (card: HTMLElement, clientX: number, clientY: numb
   return { left, top };
 };
 
-/** 从右键事件目标解析当前标签 path（手写标签 / 兼容旧 el-tabs id） */
+/** 从右键事件目标解析当前标签 path */
 const resolveContextTabPath = (e: MouseEvent): string | null => {
   const target = e.target as HTMLElement | null;
   if (!target) return null;
@@ -151,12 +151,6 @@ const resolveContextTabPath = (e: MouseEvent): string | null => {
       const tab = tabsStore.tabList[Number(idx)];
       if (tab?.path) return tab.path;
     }
-  }
-
-  const legacyEl = target.closest("[id^='tab-']") as HTMLElement | null;
-  const legacyId = legacyEl?.id ?? target.id;
-  if (legacyId?.startsWith("tab-")) {
-    return legacyId.slice(4);
   }
 
   return route.fullPath;

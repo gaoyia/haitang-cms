@@ -10,7 +10,7 @@
 | 全局字典 | `dict_value.lang = ""`（空串哨兵） |
 | 默认语言 | 字典项 `site_default_locale`，缺翻译时 fallback |
 | URL | `route_path` 存完整路径，如 `/zh-cn/posts/hello`；**同一 `(lang, route_path)` 非空时全局唯一**（管理端写入校验） |
-| 开发库重置 | 删除 `db/haitang.sqlite` 后 `cargo run` 自动建表并种子；旧库启动时会自动迁移 `post_metas.tags` → `post_i18ns.tags` |
+| 开发库重置 | 删除 `db/haitang.sqlite` 后 `cargo run` 自动建表并种子；默认轮播图位于 `static/uploads/seed/1/banner-1.png`，入库 `storage_key = seed/1/banner-1.png` |
 
 ## 表结构
 
@@ -37,6 +37,16 @@
 
 正文 Markdown 的编辑与公开渲染选型见 [Markdown 内容选型](./markdown.md)。
 
+### 资源
+
+| 表 | 主键 | 说明 |
+|----|------|------|
+| `assets` | `id` | `storage_key`、`original_name`、`upload_name`、`mime_type`、`size`、`purpose`（`cover` \| `content` \| `banner` \| `attachment`）、`created_at` |
+| `post_assets` | `(post_id, asset_id)` | `role`（`cover` \| `attachment`）、`sort_order` |
+| `banner_assets` | `(banner_id, asset_id)` | `role`（`image`）、`sort_order` |
+
+封面全语言共用，每篇最多 `post_cover_max` 条（字典，默认 3）`role=cover`；附件可多条；轮播图每条最多一张 `role=image`，并同步 `banners.image_url`。详见 [资源管理 API](./admin/assets.md)。
+
 ### 菜单
 
 | 表 | 主键 | 说明 |
@@ -57,8 +67,6 @@
 | `/<lang>/about` | 关于页 |
 
 `lang` 须为字典项 `site_locales` 中的语言码（如 `zh-cn`、`en-us`）；无效语言会重定向到默认语言首页。
-
-旧路径 `/posts`、`/about` 会重定向到默认语言对应页面。
 
 ---
 

@@ -28,9 +28,9 @@
 - 内置工具栏、实时预览、目录、代码块、表格、页内全屏/全屏，接入成本低（`v-model` 绑定字符串即可）。
 - 未选用 Vditor（体积与集成偏重）、Milkdown（插件体系复杂）、Toast UI Editor（维护节奏一般）。
 
-### 当前限制
+### 当前能力
 
-- 工具栏**未启用图片上传**（`image` 已排除）；待接入上传接口后再开启，并实现 `onUploadImg`。
+- 工具栏已启用 **图片上传**（`purpose=content`），上传后插入 Markdown 图片语法；接口见 [资源管理 API](../admin/assets.md)。
 - 多语言 Tab 下每个语言 Tab 各有一个编辑器实例，需传入唯一 `editor-id`（如 `post-content-zh-cn`）。
 
 ### 相关代码（管理端）

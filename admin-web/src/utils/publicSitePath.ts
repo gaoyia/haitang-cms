@@ -43,7 +43,7 @@ export function shouldSkipPublicRedirect(pathname: string): boolean {
 
 /**
  * 是否为公开站（Rocket Tera）路径，而非 admin SPA 路由。
- * 例如 /zh-cn/posts/1、/en-us/about、/posts
+ * 例如 /zh-cn/posts/1、/en-us/about
  */
 export function isPublicSitePath(
   pathname: string,
@@ -56,9 +56,6 @@ export function isPublicSitePath(
 
   const locales = parseLocales(localesRaw ?? import.meta.env.VITE_PUBLIC_LOCALES);
   if (buildLangPrefixPattern(locales).test(path)) {
-    return true;
-  }
-  if (/^\/(posts|about)(\/|$)/.test(path)) {
     return true;
   }
   if (path === "/static" || path.startsWith("/static/")) {

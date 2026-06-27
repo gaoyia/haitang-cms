@@ -239,13 +239,7 @@ pub async fn upsert_category_i18n(
 }
 
 /// 默认分类种子：(sort, zh-cn 名称, zh-cn 描述, en-us 名称, en-us 描述)
-type CategorySeedEntry = (
-    i64,
-    &'static str,
-    &'static str,
-    &'static str,
-    &'static str,
-);
+type CategorySeedEntry = (i64, &'static str, &'static str, &'static str, &'static str);
 
 fn default_category_seed() -> &'static [CategorySeedEntry] {
     &[

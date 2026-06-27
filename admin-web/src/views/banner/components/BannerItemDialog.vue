@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     v-model="visible"
-    :title="editId === null ? t('menu.banner.create') : t('menu.banner.edit')"
+    :title="editId === null && savedBannerId === null ? t('menu.banner.create') : t('menu.banner.edit')"
     width="560px"
     :close-on-click-modal="false"
     append-to-body
@@ -15,8 +15,14 @@
       <el-form-item :label="t('menu.banner.title')" prop="title">
         <el-input v-model="form.title" :placeholder="t('menu.banner.titlePh')" />
       </el-form-item>
-      <el-form-item :label="t('menu.banner.image')" prop="image_url">
-        <el-input v-model="form.image_url" :placeholder="t('menu.banner.imagePh')" />
+      <el-form-item :label="t('menu.banner.image')" prop="imageReady">
+        <BannerImageField
+          ref="imageFieldRef"
+          :banner-id="editId ?? savedBannerId"
+          :initial-image="initialImage"
+          :initial-image-enabled="initialImageEnabled"
+          @changed="onImageChanged"
+        />
       </el-form-item>
       <el-form-item :label="t('menu.banner.link')">
         <el-input v-model="form.link_url" :placeholder="t('menu.banner.linkPh')" />
@@ -42,15 +48,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from "vue";
+import { computed, nextTick, reactive, ref, watch } from "vue";
 import type { FormInstance, FormRules } from "element-plus";
 import { useI18n } from "vue-i18n";
+import BannerImageField from "@/components/assets/BannerImageField.vue";
 import {
   createBannerApi,
   getBannerApi,
   updateBannerApi,
-  type BannerGroup,
 } from "@/api/system/banners.ts";
+import { listBannerAssetsApi, type AssetView } from "@/api/system/assets.ts";
 import { koiMsgError, koiMsgSuccess } from "@/utils/koi.ts";
 
 const props = defineProps<{
@@ -67,52 +74,80 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const formRef = ref<FormInstance>();
+const imageFieldRef = ref<InstanceType<typeof BannerImageField>>();
 const detailLoading = ref(false);
 const saving = ref(false);
+const savedBannerId = ref<number | null>(null);
+const initialImage = ref<AssetView | null>(null);
+const initialImageEnabled = ref(true);
 
 const visible = computed({
   get: () => props.modelValue,
   set: (v) => emit("update:modelValue", v),
 });
 
+const bannerId = computed(() => props.editId ?? savedBannerId.value);
+
 const form = reactive({
   title: "",
-  image_url: "",
   link_url: "",
   description: "",
   sort: 0,
   status: 1,
+  imageReady: false,
 });
 
 const rules = computed<FormRules>(() => ({
   title: [{ required: true, message: t("menu.banner.titleRequired"), trigger: "blur" }],
-  image_url: [{ required: true, message: t("menu.banner.imageRequired"), trigger: "blur" }],
+      imageReady: [
+    {
+      validator: (_rule, _value, callback) => {
+        const id = props.editId ?? savedBannerId.value;
+        if (id != null && imageFieldRef.value?.hasImage()) {
+          callback();
+          return;
+        }
+        if (props.editId != null) {
+          callback(new Error(t("menu.banner.imageRequired")));
+          return;
+        }
+        callback();
+      },
+      trigger: "change",
+    },
+  ],
 }));
 
 function resetForm() {
   form.title = "";
-  form.image_url = "";
   form.link_url = "";
   form.description = "";
   form.sort = 0;
   form.status = 1;
+  form.imageReady = false;
+  savedBannerId.value = null;
+  initialImage.value = null;
+  initialImageEnabled.value = true;
 }
 
 async function loadDetail(id: number) {
   detailLoading.value = true;
   try {
-    const res = await getBannerApi(id);
-    if (res.code !== 0 || !res.data) {
-      koiMsgError(res.message || t("msg.fail"));
+    const [bannerRes, assetsRes] = await Promise.all([getBannerApi(id), listBannerAssetsApi(id)]);
+    if (bannerRes.code !== 0 || !bannerRes.data) {
+      koiMsgError(bannerRes.message || t("msg.fail"));
       return;
     }
-    const data = res.data;
+    const data = bannerRes.data;
     form.title = data.title;
-    form.image_url = data.image_url;
     form.link_url = data.link_url;
     form.description = data.description;
     form.sort = data.sort;
     form.status = data.status;
+    initialImage.value = assetsRes.code === 0 && assetsRes.data ? assetsRes.data.image : null;
+    initialImageEnabled.value =
+      assetsRes.code === 0 && assetsRes.data ? assetsRes.data.image_enabled : true;
+    form.imageReady = initialImage.value != null;
   } finally {
     detailLoading.value = false;
   }
@@ -127,10 +162,15 @@ watch(
       loadDetail(props.editId);
     }
   },
+  { immediate: true },
 );
 
 function onClosed() {
   formRef.value?.resetFields();
+}
+
+function onImageChanged() {
+  form.imageReady = true;
 }
 
 async function handleSave() {
@@ -142,23 +182,44 @@ async function handleSave() {
       const payload = {
         group_id: props.groupId,
         title: form.title.trim(),
-        image_url: form.image_url.trim(),
         link_url: form.link_url.trim(),
         description: form.description.trim(),
         sort: form.sort,
         status: form.status,
       };
-      const res =
-        props.editId === null
-          ? await createBannerApi(payload)
-          : await updateBannerApi(props.editId, payload);
-      if (res.code === 0) {
-        koiMsgSuccess(t("msg.success"));
-        visible.value = false;
-        emit("saved");
-      } else {
+      const isCreate = props.editId === null && savedBannerId.value === null;
+      const res = isCreate
+        ? await createBannerApi(payload)
+        : await updateBannerApi(bannerId.value!, payload);
+      if (res.code !== 0 || !res.data) {
         koiMsgError(res.message || t("msg.fail"));
+        return;
       }
+      if (isCreate) {
+        savedBannerId.value = res.data.id;
+        await nextTick();
+        if (imageFieldRef.value?.hasImage()) {
+          const linked = await imageFieldRef.value.ensurePendingLinked();
+          if (!linked) {
+            koiMsgError(t("menu.banner.imageRequired"));
+            return;
+          }
+          koiMsgSuccess(t("msg.success"));
+          visible.value = false;
+          emit("saved");
+          return;
+        }
+        koiMsgSuccess(t("msg.success"));
+        emit("saved");
+        return;
+      }
+      if (!imageFieldRef.value?.hasImage()) {
+        koiMsgError(t("menu.banner.imageRequired"));
+        return;
+      }
+      koiMsgSuccess(t("msg.success"));
+      visible.value = false;
+      emit("saved");
     } finally {
       saving.value = false;
     }

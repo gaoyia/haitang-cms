@@ -1,3 +1,4 @@
+pub mod assets;
 pub mod auth;
 pub mod banner_groups;
 pub mod banners;
@@ -66,5 +67,16 @@ pub fn routes() -> Vec<Route> {
         dicts::update,
         dicts::update_values,
         dicts::delete,
+        assets::upload,
+        assets::list,
+        assets::get,
+        assets::delete,
+        assets::list_post_assets,
+        assets::link_post,
+        assets::unlink_post,
+        assets::list_banner_assets,
+        assets::link_banner,
+        assets::unlink_banner,
+        assets::set_banner_image_enabled_route,
     ]
 }

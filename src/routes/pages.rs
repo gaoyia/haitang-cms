@@ -8,15 +8,13 @@ use rocket_dyn_templates::Template;
 use crate::models::dict::{get_site_default_locale, get_site_locales};
 use crate::models::load_public_banners_by_code;
 use crate::models::locale::{encode_uri_path, is_supported_locale, locale_path, normalize_lang};
-use crate::models::post::{post_to_view, resolve_post_id_from_public_key, PostMeta};
+use crate::models::post::{PostMeta, post_to_view, resolve_post_id_from_public_key};
 use crate::models::site_page_context;
 
 /// 汇总页面路由
 pub fn routes() -> Vec<Route> {
     routes![
         root_redirect,
-        posts_legacy_redirect,
-        about_legacy_redirect,
         index_lang,
         index_lang_no_slash,
         post_detail_lang,
@@ -31,22 +29,6 @@ pub async fn root_redirect(db: &State<toasty::Db>) -> Redirect {
     let mut db = db.inner().clone();
     let default = get_site_default_locale(&mut db).await;
     Redirect::to(locale_path(&default, ""))
-}
-
-/// 兼容旧路径：/posts → /{default}/posts
-#[get("/posts")]
-pub async fn posts_legacy_redirect(db: &State<toasty::Db>) -> Redirect {
-    let mut db = db.inner().clone();
-    let default = get_site_default_locale(&mut db).await;
-    Redirect::to(locale_path(&default, "posts"))
-}
-
-/// 兼容旧路径：/about → /{default}/about
-#[get("/about")]
-pub async fn about_legacy_redirect(db: &State<toasty::Db>) -> Redirect {
-    let mut db = db.inner().clone();
-    let default = get_site_default_locale(&mut db).await;
-    Redirect::to(locale_path(&default, "about"))
 }
 
 /// 多语言首页（带尾斜杠）

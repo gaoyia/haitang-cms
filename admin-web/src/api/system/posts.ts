@@ -1,5 +1,6 @@
 import axios, { type Result } from "@/utils/axios.ts";
 import type { PageParams, PageResult } from "@/types/page.ts";
+import type { AssetView } from "@/api/system/assets.ts";
 
 export interface PostView {
   id: number;
@@ -27,6 +28,8 @@ export interface PostDetailView {
   category_id: number;
   status: number;
   translations: Record<string, PostI18nPayload>;
+  covers?: AssetView[];
+  attachments?: AssetView[];
 }
 
 export interface CreatePostInput {

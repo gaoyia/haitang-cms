@@ -22,7 +22,17 @@ GET /api/admin/posts?lang=zh-cn&page=1&page_size=10
 GET /api/admin/posts/:id
 ```
 
-返回 `PostDetailView`，含 `translations` 对象（各语言文案）。
+返回 `PostDetailView`，含 `translations` 对象（各语言文案），以及 `covers`（数组）、`attachments`（数组）。资源关联见 [资源管理](./assets.md)。
+
+## 文章资源
+
+```
+GET /api/admin/posts/:id/assets
+POST /api/admin/posts/:id/assets
+DELETE /api/admin/posts/:id/assets/:asset_id?purge=
+```
+
+详见 [资源管理](./assets.md)。
 
 ## 创建文章
 

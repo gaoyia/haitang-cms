@@ -242,20 +242,15 @@ const getDefaultAdapter = (): AxiosAdapter => {
  */
 export const createThrottleAdapter = (
   adapter?: AxiosAdapter,
-  options: ThrottleAdapterOptions | number = {}
+  options: ThrottleAdapterOptions = {}
 ): AxiosAdapter => {
-  // 如果没有提供 adapter，则获取默认适配器
   const actualAdapter: AxiosAdapter = adapter || getDefaultAdapter();
   
-  // 验证 adapter 是否为函数
   if (typeof actualAdapter !== 'function') {
     throw new TypeError('[ThrottleAdapter] adapter 必须是一个函数');
   }
   
-  // 兼容旧版本：如果第二个参数是数字，则作为 threshold
-  const opts: ThrottleAdapterOptions = typeof options === 'number'
-    ? { threshold: options }
-    : options;
+  const opts = options;
 
   const {
     threshold = 1000,
@@ -474,14 +469,11 @@ export const createThrottleAdapter = (
  *   threshold: 2000,
  *   methods: ['get', 'post']
  * });
- * 
- * // 兼容旧版本：直接传入数字
- * applyThrottleAdapter(axiosInstance, 1500);
  * ```
  */
 export const applyThrottleAdapter = (
   instance: any,
-  options?: ThrottleAdapterOptions | number
+  options: ThrottleAdapterOptions = {}
 ): void => {
   if (!instance || !instance.defaults) {
     console.warn('[ThrottleAdapter] 无效的 axios 实例');

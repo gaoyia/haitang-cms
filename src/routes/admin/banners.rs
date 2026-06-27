@@ -4,7 +4,8 @@ use rocket::serde::json::Json;
 use crate::guards::AdminAuth;
 use crate::models::{
     ApiResponse, Banner, BannerView, CreateBanner, PageResult, UpdateBanner, banner_to_view,
-    banners_to_views, filter_banners_by_group, paginate_vec, validate_banner_group_id,
+    banners_to_views, delete_banner_asset_links, filter_banners_by_group, paginate_vec,
+    validate_banner_group_id,
 };
 use crate::routes::page::PageQuery;
 
@@ -41,7 +42,7 @@ pub async fn list(
 }
 
 /// 获取单个轮播图
-#[get("/api/admin/banners/item/<id>")]
+#[get("/api/admin/banners/<id>")]
 pub async fn get(
     _auth: AdminAuth,
     db: &State<toasty::Db>,
@@ -158,14 +159,17 @@ pub async fn delete(_auth: AdminAuth, db: &State<toasty::Db>, id: i64) -> Json<A
     let mut db = db.inner().clone();
 
     match Banner::get_by_id(&mut db, &id).await {
-        Ok(banner) => match banner.delete().exec(&mut db).await {
-            Ok(_) => Json(ApiResponse {
-                code: 0,
-                message: "删除成功".to_string(),
-                data: None,
-            }),
-            Err(e) => Json(ApiResponse::error(500, format!("删除失败: {e}"))),
-        },
+        Ok(banner) => {
+            let _ = delete_banner_asset_links(&mut db, id).await;
+            match banner.delete().exec(&mut db).await {
+                Ok(_) => Json(ApiResponse {
+                    code: 0,
+                    message: "删除成功".to_string(),
+                    data: None,
+                }),
+                Err(e) => Json(ApiResponse::error(500, format!("删除失败: {e}"))),
+            }
+        }
         Err(_) => Json(ApiResponse::error(404, "轮播图不存在")),
     }
 }

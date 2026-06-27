@@ -2,18 +2,20 @@
 extern crate rocket;
 
 mod config;
-mod db_migrate;
+mod db_patch;
 mod guards;
 mod models;
 mod routes;
+mod storage;
 
 use rocket::fs::{self, FileServer};
 use rocket_dyn_templates::Template;
 use std::path::Path;
 
-use config::AdminWebConfig;
+use config::{AdminWebConfig, StorageConfig};
 use guards::auth::JwtConfig;
-use routes::admin::auth::seed_admin;
+use routes::admin::auth::{seed_admin, seed_default_banner_data};
+use storage::StorageService;
 
 #[launch]
 async fn rocket() -> _ {
@@ -24,8 +26,14 @@ async fn rocket() -> _ {
     }
 
     // 初始化 Toasty 数据库（SQLite）
+    // Asset / PostAsset 须显式注册：仅 models!(crate::*) 时 inventory 可能未链接到 schema
     let db = toasty::Db::builder()
-        .models(toasty::models!(crate::*))
+        .models(toasty::models!(
+            crate::*,
+            crate::models::Asset,
+            crate::models::PostAsset,
+            crate::models::BannerAsset,
+        ))
         .connect("sqlite:db/haitang.sqlite")
         .await
         .expect("数据库连接失败");
@@ -38,14 +46,32 @@ async fn rocket() -> _ {
         }
     }
 
-    if let Err(e) = db_migrate::run() {
-        eprintln!("[错误] 数据库迁移失败: {e}");
+    // 为已有库补全新增列（push_schema 不会 ALTER 已有表）
+    {
+        let mut db_mut = db.clone();
+        db_patch::apply_schema_patches(&mut db_mut).await;
     }
 
-    // 种子数据：确保默认管理员账户存在
+    let admin_cfg = AdminWebConfig::from_env();
+    let storage_cfg = StorageConfig::from_env();
+    let storage = StorageService::from_config(storage_cfg.clone()).unwrap_or_else(|e| {
+        panic!("[错误] 存储配置无效: {e}");
+    });
+    if let Err(e) = storage.ensure_local_dir() {
+        eprintln!("[错误] 创建上传目录失败: {e}");
+    } else if storage_cfg.backend == "local" {
+        println!(
+            "[资源存储] 本地模式：{} → {}",
+            storage_cfg.local_dir.display(),
+            storage_cfg.public_url_prefix
+        );
+    }
+
+    // 种子数据：默认管理员、菜单、轮播图与资源等
     {
         let mut db_mut = db.clone();
         seed_admin(&mut db_mut).await;
+        seed_default_banner_data(&mut db_mut, &storage).await;
     }
 
     // JWT 密钥配置
@@ -54,7 +80,6 @@ async fn rocket() -> _ {
             .unwrap_or_else(|_| "haitang-cms-dev-secret".to_string()),
     };
 
-    let admin_cfg = AdminWebConfig::from_env();
     if admin_cfg.static_dir.join("index.html").is_file() {
         println!(
             "[管理后台] 静态 SPA：/{}/ → {}",
@@ -72,6 +97,7 @@ async fn rocket() -> _ {
         .manage(db)
         .manage(jwt_config)
         .manage(admin_cfg.clone())
+        .manage(storage)
         // 挂载静态资源（jQuery 等）
         .mount("/static", FileServer::new(fs::relative!("static")))
         // 管理后台 SPA（history 模式回退 index.html）

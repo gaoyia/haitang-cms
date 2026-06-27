@@ -189,6 +189,21 @@ pub const ALL_PERMISSIONS: &[PermissionDef] = &[
         label: "删除字典",
         group: "字典管理",
     },
+    PermissionDef {
+        code: "asset:read",
+        label: "查看资源",
+        group: "资源管理",
+    },
+    PermissionDef {
+        code: "asset:create",
+        label: "上传资源",
+        group: "资源管理",
+    },
+    PermissionDef {
+        code: "asset:delete",
+        label: "删除资源",
+        group: "资源管理",
+    },
 ];
 
 /// 所有权限代码列表（用于超级管理员）

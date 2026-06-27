@@ -13,6 +13,7 @@
   - [字典](./admin/dicts.md)
   - [文章](./admin/posts.md)
   - [分类](./admin/categories.md)
+  - [资源](./admin/assets.md)
   - [菜单](./admin/menus.md)
   - [轮播图组](./admin/banner-groups.md)
   - [轮播图](./admin/banners.md)

@@ -9,3 +9,9 @@ dist/
 # 编辑器
 .vscode/
 *.log
+
+# tsc 编译产物（Vite 优先加载 .js，会覆盖 vite.config.ts）
+vite.config.js
+vite.config.d.ts
+
+*.tsbuildinfo

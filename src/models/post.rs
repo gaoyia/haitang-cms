@@ -87,6 +87,10 @@ pub struct PostDetailView {
     pub category_id: i64,
     pub status: i64,
     pub translations: HashMap<String, PostI18nPayload>,
+    #[serde(default)]
+    pub covers: Vec<super::asset::AssetView>,
+    #[serde(default)]
+    pub attachments: Vec<super::asset::AssetView>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -131,10 +135,7 @@ pub fn normalize_post_route_path(lang: &str, raw: &str) -> Result<String, String
         return Err(format!("SEO 路径须以 {prefix} 开头"));
     };
 
-    let slug = path
-        .strip_prefix(&prefix)
-        .unwrap_or_default()
-        .trim();
+    let slug = path.strip_prefix(&prefix).unwrap_or_default().trim();
     if slug.is_empty()
         || slug
             .chars()
@@ -367,6 +368,8 @@ pub async fn post_detail_view(db: &mut toasty::Db, id: i64) -> Result<PostDetail
         category_id: meta.category_id,
         status: meta.status,
         translations,
+        covers: vec![],
+        attachments: vec![],
     })
 }
 
@@ -501,6 +504,9 @@ pub async fn delete_post(db: &mut toasty::Db, id: i64) -> Result<(), String> {
     let meta = PostMeta::get_by_id(db, &id)
         .await
         .map_err(|_| "文章不存在".to_string())?;
+
+    super::asset::delete_post_asset_links(db, id).await?;
+
     let rows = post_i18n_rows(db, id).await?;
     for row in rows {
         row.delete()

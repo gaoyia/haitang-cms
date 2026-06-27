@@ -42,6 +42,18 @@
         </el-radio-group>
       </el-form-item>
 
+      <el-divider content-position="left">{{ t("menu.content.post.manage.sectionAssets") }}</el-divider>
+      <el-form-item label=" " class="post-form-drawer__assets-note-item">
+        <p class="post-form-drawer__assets-note">
+          {{ t("menu.content.post.manage.assetsImmediateEffect") }}
+        </p>
+      </el-form-item>
+      <PostAssetsSection
+        :post-id="assetPostId"
+        :initial-covers="postCovers"
+        :initial-attachments="postAttachments"
+      />
+
       <el-divider content-position="left">{{ t("menu.content.post.manage.sectionI18n") }}</el-divider>
 
       <el-tabs v-model="activeLocale" type="border-card" class="post-locale-tabs">
@@ -81,6 +93,7 @@
               v-model="form.i18n[loc].content"
               :editor-id="`post-content-${loc}`"
               :placeholder="t('menu.content.post.manage.contentPh')"
+              enable-image-upload
             />
           </el-form-item>
           <el-form-item :label="t('menu.content.post.manage.publicUrl')">
@@ -136,7 +149,9 @@ import {
   updatePostApi,
   type PostI18nPayload,
 } from "@/api/system/posts.ts";
+import type { AssetView } from "@/api/system/assets.ts";
 import type { CategoryView } from "@/api/system/categories.ts";
+import PostAssetsSection from "@/components/assets/PostAssetsSection.vue";
 import { koiMsgError, koiMsgSuccess } from "@/utils/koi.ts";
 
 export type PostLocaleFormRow = Omit<PostI18nPayload, "tags" | "route_path"> & {
@@ -175,6 +190,9 @@ const formRef = ref<FormInstance>();
 const loading = ref(false);
 const saving = ref(false);
 const activeLocale = ref("zh-cn");
+const sessionPostId = ref<number | null>(null);
+const postCovers = ref<AssetView[]>([]);
+const postAttachments = ref<AssetView[]>([]);
 
 const visible = computed({
   get: () => props.modelValue,
@@ -182,15 +200,18 @@ const visible = computed({
 });
 
 const isEdit = computed(() => props.editId !== null);
-const canOpenPublicUrl = computed(() => isEdit.value && props.editId !== null && form.status === 1);
+const assetPostId = computed(() => props.editId ?? sessionPostId.value);
+const canOpenPublicUrl = computed(
+  () => assetPostId.value !== null && form.status === 1,
+);
 const drawerTitle = computed(() =>
   isEdit.value ? t("menu.content.post.manage.edit") : t("menu.content.post.manage.create"),
 );
 
 /** 当前语言下访客实际使用的公开路径 */
 function publicUrlPreview(loc: string): string {
-  const idPart = isEdit.value && props.editId
-    ? String(props.editId)
+  const idPart = assetPostId.value != null
+    ? String(assetPostId.value)
     : t("menu.content.post.manage.publicUrlPending");
   return `/${loc}/posts/${idPart}`;
 }
@@ -199,7 +220,7 @@ function seoPathPrefix(loc: string): string {
   return `/${loc}/posts/`;
 }
 
-/** 从完整 route_path 解析 slug；兼容旧数据 */
+/** 从完整 route_path 解析 slug */
 function parseSeoSlug(loc: string, routePath: string): string {
   const trimmed = routePath.trim();
   if (!trimmed) return "";
@@ -209,13 +230,11 @@ function parseSeoSlug(loc: string, routePath: string): string {
     return trimmed.slice(prefix.length);
   }
 
-  const marker = "/posts/";
-  const idx = trimmed.indexOf(marker);
-  if (idx >= 0) {
-    return trimmed.slice(idx + marker.length);
+  if (!trimmed.includes("/")) {
+    return trimmed;
   }
 
-  return trimmed.replace(/^\//, "");
+  return "";
 }
 
 function buildRoutePath(loc: string, slug: string): string {
@@ -278,6 +297,9 @@ function resetForm() {
   form.category_id = undefined;
   form.status = 0;
   form.i18n = emptyI18n();
+  sessionPostId.value = null;
+  postCovers.value = [];
+  postAttachments.value = [];
   activeLocale.value = props.defaultLocale || props.siteLocales[0] || "zh-cn";
 }
 
@@ -294,6 +316,8 @@ async function loadDetail() {
     const detail = res.data;
     form.category_id = detail.category_id || undefined;
     form.status = detail.status;
+    postCovers.value = detail.covers ?? [];
+    postAttachments.value = detail.attachments ?? [];
     for (const loc of props.siteLocales) {
       const tr = detail.translations[loc];
       if (tr) {
@@ -347,7 +371,9 @@ async function handleSave() {
       status: form.status,
     };
 
-    if (!isEdit.value) {
+    const updateTargetId = props.editId ?? sessionPostId.value;
+
+    if (updateTargetId === null) {
       const primary = form.i18n[props.defaultLocale];
       const createRes = await createPostApi({
         ...metaPayload,
@@ -363,6 +389,7 @@ async function handleSave() {
         return;
       }
       const newId = createRes.data.id;
+      sessionPostId.value = newId;
       for (const loc of props.siteLocales) {
         if (loc === props.defaultLocale) continue;
         const row = form.i18n[loc];
@@ -381,7 +408,7 @@ async function handleSave() {
         }
       }
     } else {
-      const metaRes = await updatePostApi(props.editId!, metaPayload);
+      const metaRes = await updatePostApi(updateTargetId, metaPayload);
       if (metaRes.code !== 0) {
         koiMsgError(metaRes.message || t("msg.fail"));
         return;
@@ -389,7 +416,7 @@ async function handleSave() {
       for (const loc of props.siteLocales) {
         const row = form.i18n[loc];
         if (!hasLocaleContent(row)) continue;
-        const res = await updatePostApi(props.editId!, {
+        const res = await updatePostApi(updateTargetId, {
           title: row.title.trim(),
           description: row.description.trim() || undefined,
           content: row.content.trim() || undefined,
@@ -405,8 +432,10 @@ async function handleSave() {
     }
 
     koiMsgSuccess(t("msg.success"));
-    visible.value = false;
     emit("saved");
+    if (props.editId !== null) {
+      visible.value = false;
+    }
   } finally {
     saving.value = false;
   }
@@ -485,6 +514,21 @@ async function handleSave() {
   font-size: 12px;
   line-height: 1.5;
   color: var(--el-text-color-secondary);
+}
+
+.post-form-drawer__assets-note-item {
+  margin-bottom: 4px;
+
+  :deep(.el-form-item__label) {
+    visibility: hidden;
+  }
+}
+
+.post-form-drawer__assets-note {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--el-color-primary);
 }
 
 :deep(.el-input-group__prepend) {

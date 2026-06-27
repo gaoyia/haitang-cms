@@ -6,5 +6,10 @@
 node_modules
 dist
 /static/haitang-cms-admin/
+/static/fileicon/
+/static/uploads/*
+!/static/uploads/.gitkeep
+!/static/uploads/seed/
+!/static/uploads/seed/**
 /vendor
 .cursor

@@ -67,3 +67,16 @@ impl User {
         }
     }
 }
+
+/// 查找默认管理员用户 ID（`username = admin`）
+pub async fn find_default_admin_user_id(db: &mut toasty::Db) -> Result<i64, String> {
+    let users = User::all()
+        .exec(db)
+        .await
+        .map_err(|e| format!("查询用户失败: {e}"))?;
+    users
+        .into_iter()
+        .find(|u| u.username == "admin")
+        .map(|u| u.id)
+        .ok_or_else(|| "未找到 admin 用户，无法初始化种子轮播图资源".to_string())
+}

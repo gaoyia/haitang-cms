@@ -89,6 +89,41 @@ pub async fn get_site_default_locale(db: &mut toasty::Db) -> String {
     }
 }
 
+/// 读取文章封面图数量上限（字典 `post_cover_max`，默认 3）
+pub async fn get_post_cover_max(db: &mut toasty::Db) -> i64 {
+    match DictValue::get_by_code_and_lang(db, "post_cover_max", LANG_GLOBAL).await {
+        Ok(v) => parse_post_cover_max(&v.value),
+        Err(_) => 3,
+    }
+}
+
+fn parse_post_cover_max(raw: &str) -> i64 {
+    raw.trim()
+        .parse::<i64>()
+        .ok()
+        .filter(|&n| (1..=20).contains(&n))
+        .unwrap_or(3)
+}
+
+#[cfg(test)]
+mod cover_max_tests {
+    use super::*;
+
+    #[test]
+    fn parse_cover_max_valid() {
+        assert_eq!(parse_post_cover_max("3"), 3);
+        assert_eq!(parse_post_cover_max("1"), 1);
+        assert_eq!(parse_post_cover_max("20"), 20);
+    }
+
+    #[test]
+    fn parse_cover_max_invalid() {
+        assert_eq!(parse_post_cover_max("0"), 3);
+        assert_eq!(parse_post_cover_max("21"), 3);
+        assert_eq!(parse_post_cover_max("abc"), 3);
+    }
+}
+
 /// 按 code 查找 meta
 pub async fn find_dict_meta_by_code(db: &mut toasty::Db, code: &str) -> Result<DictMeta, String> {
     DictMeta::get_by_code(db, code)
@@ -241,6 +276,15 @@ pub fn default_dict_seed() -> &'static [DictSeedEntry] {
             "Logo 地址，相对或绝对 URL",
             3,
             Some("/static/resources/logo.svg"),
+            &[],
+        ),
+        (
+            "post_cover_max",
+            "文章封面图上限",
+            false,
+            "每篇文章最多可关联的封面图数量（整数，建议 1～20）",
+            4,
+            Some("3"),
             &[],
         ),
         (

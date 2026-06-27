@@ -83,8 +83,8 @@
               <template #default="{ row }">
                 <el-image
                   v-if="row.image_url"
-                  :src="row.image_url"
-                  :preview-src-list="[row.image_url]"
+                  :src="resolveAssetUrl(row.image_url)"
+                  :preview-src-list="[resolveAssetUrl(row.image_url)]"
                   fit="cover"
                   class="banner-thumb"
                 />
@@ -144,6 +144,7 @@ import {
   type BannerGroup,
 } from "@/api/system/banners.ts";
 import { koiMsgError, koiMsgSuccess } from "@/utils/koi.ts";
+import { resolveAssetUrl } from "@/utils/siteAsset.ts";
 import { useTablePage } from "@/composables/useTablePage.ts";
 import BannerGroupDialog from "./components/BannerGroupDialog.vue";
 import BannerItemDialog from "./components/BannerItemDialog.vue";

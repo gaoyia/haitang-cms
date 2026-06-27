@@ -4,16 +4,17 @@ use rocket::serde::json::Json;
 use crate::guards::AdminAuth;
 use crate::models::{
     ApiResponse, CreatePost, PageResult, PostDetailView, PostI18n, PostMeta, PostView, UpdatePost,
-    create_post, delete_post, get_site_default_locale, paginate_vec, post_detail_view,
-    post_to_view, posts_to_views, upsert_post_i18n, validate_category_id,
+    create_post, delete_post, get_site_default_locale, paginate_vec, post_assets_view,
+    post_detail_view, post_to_view, posts_to_views, upsert_post_i18n, validate_category_id,
 };
+use crate::routes::page::LangPageQuery;
+use crate::storage::StorageService;
 
 fn is_post_route_path_client_error(message: &str) -> bool {
     message.starts_with("SEO 路径")
         || message.contains("已被文章 #")
         || message.contains("对应多篇文章")
 }
-use crate::routes::page::LangPageQuery;
 
 /// 创建新文章（需授权）
 #[post("/api/admin/posts", data = "<input>")]
@@ -177,17 +178,24 @@ pub async fn list(
     }
 }
 
-/// 获取单篇文章（管理端，含全部 translations）
+/// 获取单篇文章（管理端，含全部 translations 与资源）
 #[get("/api/admin/posts/<id>")]
 pub async fn get(
     _auth: AdminAuth,
     db: &State<toasty::Db>,
+    storage: &State<StorageService>,
     id: i64,
 ) -> Json<ApiResponse<PostDetailView>> {
     let mut db = db.inner().clone();
 
     match post_detail_view(&mut db, id).await {
-        Ok(detail) => Json(ApiResponse::success(detail)),
+        Ok(mut detail) => {
+            if let Ok(assets) = post_assets_view(&mut db, id, storage).await {
+                detail.covers = assets.covers;
+                detail.attachments = assets.attachments;
+            }
+            Json(ApiResponse::success(detail))
+        }
         Err(e) if e.contains("不存在") => Json(ApiResponse::error(404, e)),
         Err(e) => Json(ApiResponse::error(500, e)),
     }

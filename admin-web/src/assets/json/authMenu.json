@@ -100,6 +100,38 @@
 
     {
 
+      "menuId": 150,
+
+      "menuName": "menu.assets.auth",
+
+      "parentId": 0,
+
+      "menuType": "2",
+
+      "path": "/assets",
+
+      "name": "assetLibraryPage",
+
+      "component": "assets/index",
+
+      "icon": "koi-picture",
+
+      "isVisible": "1",
+
+      "linkUrl": "",
+
+      "isKeepAlive": "1",
+
+      "isTag": "1",
+
+      "isAffix": "0",
+
+      "redirect": ""
+
+    },
+
+    {
+
       "menuId": 200,
 
       "menuName": "menu.banner.auth",

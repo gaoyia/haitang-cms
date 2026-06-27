@@ -20,9 +20,12 @@
 
 ```
 haitang-cms/
+├── build.rs                 # 构建时将 admin-web/public/fileicon 同步到 static/fileicon
 ├── src/
 │   ├── main.rs              # 应用入口
 │   ├── models/              # 数据模型（含 meta + i18n 双表）
+│   │   ├── asset.rs         # assets + post_assets
+│   ├── storage/             # 可插拔存储（local / OSS 占位）
 │   │   ├── mod.rs           # 模块汇总 & re-export
 │   │   ├── locale.rs        # 语言码规范与 fallback
 │   │   ├── dict_meta.rs / dict_value.rs
@@ -46,6 +49,8 @@ haitang-cms/
 │       └── auth.rs          # AdminAuth JWT 守卫
 ├── templates/               # Tera 模板 (公开页面)
 ├── static/                  # 静态资源
+│   ├── fileicon/            # 文件类型 SVG（构建自 admin-web/public/fileicon，勿手改）
+│   ├── uploads/             # 上传目录；`seed/{admin_id}/` 含默认轮播图
 │   └── resources/           # logo、样式、jQuery 等
 │       ├── css/site.css     # 公开站点样式（DESIGN.md token）
 │       ├── css/github-markdown.min.css
@@ -76,7 +81,6 @@ haitang-cms/
 | `/api/admin/*` | 管理 API (JSON) | 需要 Bearer Token |
 | `/static/*` | 静态资源 | 无需 |
 | `/{ADMIN_WEB_PATH}/*` | 管理后台 SPA（默认 `/haitang-cms-admin/`） | 无需 |
-| `/admin` | 重定向至管理后台 SPA | 无需 |
 
 ### 公开首页
 
@@ -100,7 +104,7 @@ cd admin-web && pnpm build
 # VITE_BASE=/my-admin/ VITE_BUILD_OUT_DIR=../static/my-admin pnpm build
 ```
 
-构建后访问 `http://127.0.0.1:9000/haitang-cms-admin/`（`/admin` 会重定向至此）。后端路径由环境变量 `ADMIN_WEB_PATH` 控制，须与 `VITE_BASE` 的路径段一致。
+构建后访问 `http://127.0.0.1:9000/haitang-cms-admin/`。后端路径由环境变量 `ADMIN_WEB_PATH` 控制，须与 `VITE_BASE` 的路径段一致。
 
 ## 开发
 
@@ -136,6 +140,10 @@ cargo run
 | `JWT_SECRET` | `haitang-cms-dev-secret` | JWT 签名密钥 |
 | `ADMIN_WEB_PATH` | `haitang-cms-admin` | 管理后台 SPA URL 路径段（不含斜杠） |
 | `ADMIN_WEB_STATIC_DIR` | `static/{ADMIN_WEB_PATH}` | 管理后台构建产物目录 |
+| `STORAGE_BACKEND` | `local` | 资源存储后端（`aliyun` / `tencent` 预留） |
+| `STORAGE_LOCAL_DIR` | `static/uploads` | 本地存储目录 |
+| `STORAGE_PUBLIC_PREFIX` | `/static/uploads` | 上传文件公开 URL 前缀 |
+| `STORAGE_MAX_BYTES` | `10485760` | 单文件上传大小上限（字节） |
 
 ### admin-web 构建环境变量（`.env.production`）
 

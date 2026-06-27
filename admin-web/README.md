@@ -28,6 +28,10 @@ pnpm build
 
 构建产物默认写入项目根目录 `static/haitang-cms-admin/`，由 Rocket 在 `/{ADMIN_WEB_PATH}/` 提供（默认 `/haitang-cms-admin/`）。可通过环境变量覆盖：
 
+### 文件类型图标
+
+附件等非预览资源使用 SVG 图标，**源文件**放在 `public/fileicon/`（提交 Git）。`cargo build` 与 `pnpm dev` / `pnpm build` 会同步到仓库根目录 `static/fileicon/`，统一通过 `/static/fileicon/{slug}.svg` 访问。说明见 `docs/src/admin/assets.md`「文件类型图标」章节。
+
 | 变量 | 默认值 | 说明 |
 |------|-------|------|
 | `VITE_BASE` | `/haitang-cms-admin/` | 资源与路由 base（首尾 `/`） |

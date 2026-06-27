@@ -89,7 +89,7 @@ export function listBannersApi(groupId?: number, page?: PageParams): Promise<Res
 }
 
 export function getBannerApi(id: number): Promise<Result<Banner>> {
-  return axios.get(`/api/admin/banners/item/${id}`);
+  return axios.get(`/api/admin/banners/${id}`);
 }
 
 export function createBannerApi(input: CreateBannerInput): Promise<Result<Banner>> {

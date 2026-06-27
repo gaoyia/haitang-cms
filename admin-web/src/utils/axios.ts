@@ -38,31 +38,28 @@ export interface Result<T = any> {
 /** 是否为业务成功响应 */
 export function isBusinessSuccess(data: any): boolean {
   if (data == null || typeof data !== "object") return false;
-  if (Number(data.code) === 0) return true;
-  // 兼容 koi-ui 旧格式
-  if (Number(data.status) === 200) return true;
-  return false;
+  return Number(data.code) === 0;
 }
 
 /** 获取业务错误消息 */
 export function getBusinessMessage(data: any): string {
-  return data?.message ?? data?.msg ?? "请求失败";
+  return data?.message ?? "请求失败";
 }
 
 // 401 提示框显示标志，防止多个 401 请求同时弹出多个提示框
 let isShowing401MessageBox = false;
 
 /**
- * 解析响应体中的业务状态码（兼容 status / code，且任一为 401 时优先视为未授权）
+ * 解析响应体中的业务状态码（海棠 CMS 后端使用 code 字段）
  */
 export function getBusinessStatus(data: any): number | undefined {
   if (data == null || typeof data !== "object") {
     return undefined;
   }
-  if (Number(data.status) === 401 || Number(data.code) === 401) {
+  if (Number(data.code) === 401) {
     return 401;
   }
-  const raw = data.status ?? data.code;
+  const raw = data.code;
   if (raw === undefined || raw === null || raw === "") {
     return undefined;
   }

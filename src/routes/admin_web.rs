@@ -1,7 +1,6 @@
 use rocket::Route;
-use rocket::fs::NamedFile;
-use rocket::response::Redirect;
 use rocket::State;
+use rocket::fs::NamedFile;
 use std::path::PathBuf;
 
 use crate::config::AdminWebConfig;
@@ -9,16 +8,6 @@ use crate::config::AdminWebConfig;
 /// 管理后台 SPA 路由（挂载在 `/{ADMIN_WEB_PATH}`）
 pub fn spa_routes() -> Vec<Route> {
     routes![admin_spa_index, admin_spa]
-}
-
-/// 兼容旧入口 `/admin` → `/{ADMIN_WEB_PATH}/`
-pub fn legacy_routes() -> Vec<Route> {
-    routes![admin_legacy_redirect]
-}
-
-#[get("/admin")]
-pub fn admin_legacy_redirect(cfg: &State<AdminWebConfig>) -> Redirect {
-    Redirect::to(format!("{}/", cfg.mount_path))
 }
 
 #[get("/")]

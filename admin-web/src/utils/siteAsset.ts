@@ -13,6 +13,22 @@ const DEFAULT_SITE_NAME = import.meta.env.VITE_WEB_TITLE || "海棠 CMS";
 export const DEFAULT_SITE_LOGO = "/logo.svg";
 
 /**
+ * 解析资源 URL（上传文件、站点静态资源等）。
+ * - 完整 URL 原样返回
+ * - `/static/*` 开发环境拼接 VITE_SERVER
+ */
+export function resolveAssetUrl(raw: string | undefined | null): string {
+  const value = raw?.trim();
+  if (!value) return "";
+  if (/^https?:\/\//i.test(value)) return value;
+  if (value.startsWith("/static/")) {
+    const server = (import.meta.env.VITE_SERVER as string | undefined)?.replace(/\/$/, "") ?? "";
+    return server ? `${server}${value}` : value;
+  }
+  return value;
+}
+
+/**
  * 将字典中的 Logo 地址解析为可请求的 URL。
  * - 完整 URL 原样返回
  * - `/static/*` 走后端静态资源（开发环境拼接 VITE_SERVER）
@@ -23,12 +39,11 @@ export function resolveSiteLogoUrl(raw: string | undefined | null): string {
   if (!value) {
     return DEFAULT_SITE_LOGO;
   }
+  if (value.startsWith("/static/")) {
+    return resolveAssetUrl(value);
+  }
   if (/^https?:\/\//i.test(value)) {
     return value;
-  }
-  if (value.startsWith("/static/")) {
-    const server = (import.meta.env.VITE_SERVER as string | undefined)?.replace(/\/$/, "") ?? "";
-    return server ? `${server}${value}` : value;
   }
   return value;
 }

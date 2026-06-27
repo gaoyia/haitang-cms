@@ -10,7 +10,6 @@ use rocket::Route;
 /// 汇总所有路由
 pub fn routes() -> Vec<Route> {
     let mut routes = Vec::new();
-    routes.extend(admin_web::legacy_routes());
     routes.extend(pages::routes());
     routes.extend(api::routes());
     routes.extend(admin::routes());

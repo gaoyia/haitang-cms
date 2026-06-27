@@ -3,12 +3,14 @@ use jsonwebtoken::{EncodingKey, Header, encode};
 use rocket::State;
 use rocket::serde::json::Json;
 
+use crate::config::AdminWebConfig;
 use crate::guards::auth::JwtConfig;
 use crate::models::{
     ApiResponse, Banner, BannerGroup, Claims, LoginRequest, LoginResponse, LoginUserInfo,
-    MenuGroup, Role, User, UserRole, all_permission_codes, find_banner_group_by_code,
-    seed_menu_with_i18n,
+    MenuGroup, Role, User, UserRole, all_permission_codes, ensure_banner_seed_asset_link,
+    find_banner_group_by_code, seed_default_banner_asset, seed_menu_with_i18n,
 };
+use crate::storage::StorageService;
 
 /// bcrypt 密码哈希
 pub fn hash_password(password: &str) -> String {
@@ -32,7 +34,6 @@ pub fn epoch_secs() -> usize {
 pub async fn seed_admin(db: &mut toasty::Db) {
     sync_admin_role_permissions(db).await;
     seed_default_site_menus(db).await;
-    seed_default_banner_group(db).await;
     crate::models::seed_default_dicts(db).await;
     crate::models::seed_default_categories(db).await;
 
@@ -114,6 +115,7 @@ async fn sync_admin_role_permissions(db: &mut toasty::Db) {
 
 /// 种子数据：初始化公开页默认菜单组与菜单项
 async fn seed_default_site_menus(db: &mut toasty::Db) {
+    let admin_path = AdminWebConfig::from_env().mount_path;
     let groups = match MenuGroup::all().exec(db).await {
         Ok(g) => g,
         Err(_) => return,
@@ -148,7 +150,13 @@ async fn seed_default_site_menus(db: &mut toasty::Db) {
     let header_items: &[(&str, &str, &str, &str, i64)] = &[
         ("首页", "/zh-cn/", "Home", "/en-us/", 0),
         ("最新文章", "/zh-cn/posts", "Posts", "/en-us/posts", 10),
-        ("管理后台", "/admin", "Admin", "/admin", 20),
+        (
+            "管理后台",
+            admin_path.as_str(),
+            "Admin",
+            admin_path.as_str(),
+            20,
+        ),
     ];
     for (zh_title, zh_path, en_title, en_path, sort) in header_items {
         seed_menu_with_i18n(
@@ -170,7 +178,13 @@ async fn seed_default_site_menus(db: &mut toasty::Db) {
     let footer_items: &[(&str, &str, &str, &str, i64)] = &[
         ("首页", "/zh-cn/", "Home", "/en-us/", 0),
         ("最新文章", "/zh-cn/posts", "Posts", "/en-us/posts", 5),
-        ("管理后台", "/admin", "Admin", "/admin", 10),
+        (
+            "管理后台",
+            admin_path.as_str(),
+            "Admin",
+            admin_path.as_str(),
+            10,
+        ),
         ("关于我们", "/zh-cn/about", "About", "/en-us/about", 20),
     ];
     for (zh_title, zh_path, en_title, en_path, sort) in footer_items {
@@ -193,8 +207,8 @@ async fn seed_default_site_menus(db: &mut toasty::Db) {
     println!("[种子] 默认公开页菜单已创建");
 }
 
-/// 种子数据：初始化默认首页轮播图组及示例条目
-async fn seed_default_banner_group(db: &mut toasty::Db) {
+/// 种子数据：初始化默认首页轮播图组、示例条目及关联资源
+pub async fn seed_default_banner_data(db: &mut toasty::Db, storage: &StorageService) {
     let group = match find_banner_group_by_code(db, "home_banner").await {
         Ok(g) => g,
         Err(_) => {
@@ -221,30 +235,48 @@ async fn seed_default_banner_group(db: &mut toasty::Db) {
         }
     };
 
+    let asset = match seed_default_banner_asset(db, storage).await {
+        Ok(a) => a,
+        Err(e) => {
+            eprintln!("[种子] 默认轮播图资源: {e}");
+            return;
+        }
+    };
+
     let banners = match Banner::all().exec(db).await {
         Ok(list) => list,
         Err(_) => return,
     };
 
-    if banners.iter().any(|b| b.group_id == group.id) {
-        return;
-    }
+    let banner = if let Some(existing) = banners.iter().find(|b| b.group_id == group.id) {
+        existing.clone()
+    } else {
+        println!("[种子] 创建默认轮播图...");
 
-    println!("[种子] 创建默认轮播图...");
+        match Banner::create()
+            .group_id(group.id)
+            .title("简约工作台")
+            .image_url("")
+            .link_url("")
+            .description("明亮极简的工作空间，银色笔记本电脑与红色花卉。")
+            .sort(0)
+            .status(1)
+            .exec(db)
+            .await
+        {
+            Ok(b) => {
+                println!("[种子] 默认轮播图 banner-1 已创建");
+                b
+            }
+            Err(e) => {
+                eprintln!("[种子] 创建默认轮播图失败: {e}");
+                return;
+            }
+        }
+    };
 
-    match Banner::create()
-        .group_id(group.id)
-        .title("简约工作台")
-        .image_url("/static/resources/images/banner-1.png")
-        .link_url("")
-        .description("明亮极简的工作空间，银色笔记本电脑与红色花卉。")
-        .sort(0)
-        .status(1)
-        .exec(db)
-        .await
-    {
-        Ok(_) => println!("[种子] 默认轮播图 banner-1 已创建"),
-        Err(e) => eprintln!("[种子] 创建默认轮播图失败: {e}"),
+    if let Err(e) = ensure_banner_seed_asset_link(db, storage, banner.id, asset.id).await {
+        eprintln!("[种子] 关联默认轮播图资源失败: {e}");
     }
 }
 

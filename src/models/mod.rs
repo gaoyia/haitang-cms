@@ -1,4 +1,5 @@
 pub mod admin_sidebar;
+pub mod asset;
 pub mod auth;
 pub mod banner;
 pub mod banner_group;
@@ -21,6 +22,14 @@ pub mod user_role;
 pub use admin_sidebar::{
     ADMIN_SIDEBAR_CODE, get_admin_sidebar_nav, get_admin_sidebar_tree, is_admin_sidebar_code,
 };
+pub use asset::{
+    Asset, AssetView, BannerAsset, BannerAssetsView, LinkBannerAssetInput, LinkPostAssetInput,
+    PostAsset, PostAssetsView, SetBannerImageEnabledInput, asset_to_view_by_id, banner_assets_view,
+    create_asset_record, delete_asset_record, delete_banner_asset_links,
+    ensure_banner_seed_asset_link, link_banner_asset, link_post_asset, list_asset_views,
+    post_assets_view, seed_default_banner_asset, set_banner_image_enabled, unlink_banner_asset,
+    unlink_post_asset,
+};
 pub use auth::{Claims, LoginRequest, LoginResponse, LoginUserInfo};
 pub use banner::{
     Banner, BannerView, CreateBanner, UpdateBanner, banner_to_view, banners_to_views,
@@ -38,7 +47,8 @@ pub use category::{
 pub use dict::{
     CreateDictMeta, DictDetailView, DictMetaView, DictPublicView, UpdateDictMeta, UpsertDictValues,
     delete_dict_by_code, dict_detail_view, dict_public_views, find_dict_meta_by_code,
-    get_site_default_locale, load_dict_map, seed_default_dicts, upsert_dict_values,
+    get_post_cover_max, get_site_default_locale, load_dict_map, seed_default_dicts,
+    upsert_dict_values,
 };
 pub use dict_meta::DictMeta;
 pub use dict_value::DictValue;

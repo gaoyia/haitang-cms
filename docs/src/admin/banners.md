@@ -17,7 +17,7 @@ GET /api/admin/banners?group_id=1&page=1&page_size=10
 ## 获取轮播图详情
 
 ```
-GET /api/admin/banners/item/:id
+GET /api/admin/banners/:id
 ```
 
 ## 创建轮播图
