@@ -2,3 +2,8 @@
 title = "海棠 CMS API 文档"
 authors = ["Breeder"]
 language = "zh"
+
+# GitHub Pages 项目站点路径（gaoyia.github.io/haitang-cms/）
+[output.html]
+site-url = "/haitang-cms/"
+git-repository-url = "https://github.com/gaoyia/haitang-cms"

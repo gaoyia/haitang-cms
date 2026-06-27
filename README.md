@@ -92,6 +92,8 @@ cargo run
 # 构建 API 文档
 mdbook build docs
 
+在线文档（main 分支 push 后自动部署）：https://gaoyia.github.io/haitang-cms/
+
 # 启动管理后台前端
 cd admin-web && pnpm dev
 ```
