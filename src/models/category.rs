@@ -161,6 +161,14 @@ pub async fn validate_category_id(db: &mut toasty::Db, category_id: i64) -> Resu
     Ok(())
 }
 
+/// 文章分类必填且须存在
+pub async fn validate_post_category_id(db: &mut toasty::Db, category_id: i64) -> Result<(), String> {
+    if category_id == 0 {
+        return Err("请选择分类".to_string());
+    }
+    validate_category_id(db, category_id).await
+}
+
 pub async fn delete_category(db: &mut toasty::Db, id: i64) -> Result<(), String> {
     let meta = CategoryMeta::get_by_id(db, &id)
         .await

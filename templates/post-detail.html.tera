@@ -56,7 +56,8 @@
                 return;
             }
             var post = res.data;
-            if (post.status !== 1) {
+            var nowSec = Math.floor(Date.now() / 1000);
+            if (post.status !== 1 || !post.publish_time || post.publish_time > nowSec) {
                 $("#post-error").text(notFound).prop("hidden", false);
                 return;
             }

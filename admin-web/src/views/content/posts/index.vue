@@ -40,10 +40,18 @@
             {{ formatUnixTime(row.display_time) }}
           </template>
         </el-table-column>
-        <el-table-column prop="category_name" :label="t('menu.content.post.manage.category')" min-width="120" show-overflow-tooltip />
-        <el-table-column :label="t('menu.content.post.manage.status')" width="100" align="center">
+        <el-table-column :label="t('menu.content.post.manage.publishTime')" width="168" align="center">
           <template #default="{ row }">
-            <el-tag v-if="row.status === 1" type="success" size="small" effect="plain">
+            {{ formatUnixTime(row.publish_time) }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="category_name" :label="t('menu.content.post.manage.category')" min-width="120" show-overflow-tooltip />
+        <el-table-column :label="t('menu.content.post.manage.status')" width="108" align="center">
+          <template #default="{ row }">
+            <el-tag v-if="isScheduledPost(row)" type="warning" size="small" effect="plain">
+              {{ t("menu.content.post.manage.scheduled") }}
+            </el-tag>
+            <el-tag v-else-if="row.status === 1" type="success" size="small" effect="plain">
               {{ t("menu.content.post.manage.published") }}
             </el-tag>
             <el-tag v-else type="info" size="small" effect="plain">
@@ -54,7 +62,7 @@
         <el-table-column :label="t('menu.content.post.manage.publicUrl')" min-width="200" show-overflow-tooltip>
           <template #default="{ row }">
             <el-link
-              v-if="row.status === 1"
+              v-if="row.status === 1 && !isScheduledPost(row)"
               :href="publicPostUrl(row.id)"
               target="_blank"
               type="primary"
@@ -100,7 +108,7 @@ import { listCategoriesApi, type CategoryView } from "@/api/system/categories.ts
 import { useSiteLocales } from "@/composables/useSiteLocales.ts";
 import { useTablePage } from "@/composables/useTablePage.ts";
 import { koiMsgError, koiMsgSuccess } from "@/utils/koi.ts";
-import { formatUnixTime } from "@/utils/formatTime.ts";
+import { formatUnixTime, nowUnix } from "@/utils/formatTime.ts";
 import PostFormDrawer from "./components/PostFormDrawer.vue";
 
 const { t } = useI18n();
@@ -122,6 +130,10 @@ const localeSegmentOptions = computed(() =>
 
 function publicPostUrl(id: number): string {
   return `/${previewLang.value}/posts/${id}`;
+}
+
+function isScheduledPost(row: PostView): boolean {
+  return row.status === 1 && row.publish_time > nowUnix();
 }
 
 async function loadCategories() {

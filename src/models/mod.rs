@@ -65,8 +65,8 @@ pub use menu_item::{
 pub use permission::{ALL_PERMISSIONS, all_permission_codes};
 pub use post::{
     CreatePost, PostDetailView, PostMeta, PostView, UpdatePost,
-    count_posts_by_category, create_post, delete_post, post_detail_view, post_to_view,
-    posts_to_views, update_post,
+    count_posts_by_category, create_post, delete_post, is_post_publicly_visible, post_detail_view,
+    post_to_view, posts_to_views, update_post,
 };
 pub use response::{ApiResponse, PageResult, paginate_vec};
 pub use role::{CreateRole, Role, RoleView, UpdateRole};

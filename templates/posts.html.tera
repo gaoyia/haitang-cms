@@ -40,7 +40,10 @@
                 return;
             }
 
-            var published = res.data.filter(function (post) { return post.status === 1; });
+            var nowSec = Math.floor(Date.now() / 1000);
+            var published = res.data.filter(function (post) {
+                return post.status === 1 && post.publish_time > 0 && post.publish_time <= nowSec;
+            });
             published.sort(function (a, b) { return (b.display_time || 0) - (a.display_time || 0); });
             if (published.length === 0) {
                 $list.append('<li class="empty">' + emptyText + '</li>');

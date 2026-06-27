@@ -32,7 +32,7 @@
 
 | 表 | 主键 | 说明 |
 |----|------|------|
-| `post_meta` | `id` | `category_id`、`status`、`created_at`、`updated_at`、`published_at`、`display_time` |
+| `post_meta` | `id` | `category_id`、`status`、`created_at`、`updated_at`、`published_at`、`publish_time`、`display_time` |
 | `post_i18n` | `(post_id, lang)` | `title`、`description`、`content`（Markdown 源码）、`route_path`、`tags` |
 
 时间字段（均在 `post_meta`，Unix 秒）：
@@ -40,9 +40,10 @@
 | 字段 | 说明 |
 |------|------|
 | `created_at` | 创建时间，写入后不变 |
-| `updated_at` | 除「仅改状态」外的任意内容变更时刷新（分类、翻译、`display_time` 等） |
-| `published_at` | 首次从草稿（0）变为已发布（1）时写入；未发布过为 0 |
-| `display_time` | 前台展示时间，可手动编辑；创建时默认等于 `created_at`；列表按此字段降序 |
+| `updated_at` | 除「仅改状态」外的任意内容变更时刷新（分类、翻译、`display_time`、`publish_time` 等） |
+| `published_at` | 首次实际公开时间；未到计划发布时间或未发布过为 0 |
+| `publish_time` | 计划发布时间；`status = 1` 且留空时等于保存时刻；到达该时间后访客可见 |
+| `display_time` | 前台展示时间，可手动编辑；留空保存时使用服务端当前时间；列表按此字段降序 |
 
 正文 Markdown 的编辑与公开渲染选型见 [Markdown 内容选型](./markdown.md)。
 

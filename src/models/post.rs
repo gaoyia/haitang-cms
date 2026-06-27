@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use super::category::{load_category_map, validate_category_id};
+use super::category::{load_category_map, validate_post_category_id};
 use super::locale::{pick_i18n_row, resolve_locale};
 
 /// 文章结构（不分语言）
@@ -23,8 +23,11 @@ pub struct PostMeta {
     /// 最后内容变更时间（不含仅改状态）
     pub updated_at: i64,
 
-    /// 首次发布时间；未发布过为 0
+    /// 首次实际公开时间；未到计划发布时间或未发布过为 0
     pub published_at: i64,
+
+    /// 计划发布时间（Unix 秒）；已发布且留空时等于保存时刻
+    pub publish_time: i64,
 
     /// 前台展示时间
     pub display_time: i64,
@@ -62,8 +65,10 @@ pub struct CreatePost {
     pub route_path: Option<String>,
     pub lang: Option<String>,
     pub status: Option<i64>,
-    /// 前台展示时间（Unix 秒）
+    /// 前台展示时间（Unix 秒）；缺省或 0 表示使用服务端当前时间
     pub display_time: Option<i64>,
+    /// 计划发布时间（Unix 秒）；缺省或 0 时，已发布用当前时间，草稿为 0
+    pub publish_time: Option<i64>,
 }
 
 /// 更新文章
@@ -77,8 +82,10 @@ pub struct UpdatePost {
     pub route_path: Option<String>,
     pub lang: Option<String>,
     pub status: Option<i64>,
-    /// 前台展示时间（Unix 秒）；创建时缺省为当前时间
+    /// 前台展示时间（Unix 秒）；缺省或 0 表示使用服务端当前时间
     pub display_time: Option<i64>,
+    /// 计划发布时间（Unix 秒）；缺省或 0 时，已发布用当前时间，草稿为 0
+    pub publish_time: Option<i64>,
 }
 
 /// 文章视图（已 merge 当前语言）
@@ -97,6 +104,7 @@ pub struct PostView {
     pub created_at: i64,
     pub updated_at: i64,
     pub published_at: i64,
+    pub publish_time: i64,
     pub display_time: i64,
 }
 
@@ -109,6 +117,7 @@ pub struct PostDetailView {
     pub created_at: i64,
     pub updated_at: i64,
     pub published_at: i64,
+    pub publish_time: i64,
     pub display_time: i64,
     pub translations: HashMap<String, PostI18nPayload>,
     #[serde(default)]
@@ -126,13 +135,46 @@ pub struct PostI18nPayload {
     pub tags: String,
 }
 
-/// 规范化标签字符串：去空白、统一中英文逗号分隔符
 pub fn normalize_tags(raw: &str) -> String {
     raw.split([',', '，'])
         .map(str::trim)
         .filter(|s| !s.is_empty())
         .collect::<Vec<_>>()
         .join(", ")
+}
+
+/// 解析写入用的展示时间：缺省或 0 表示使用服务端当前时间
+fn resolve_display_time(raw: Option<i64>, now: i64) -> i64 {
+    match raw {
+        None | Some(0) => now,
+        Some(ts) => ts,
+    }
+}
+
+/// 解析计划发布时间：缺省或 0 时，已发布用当前时间，草稿为 0
+fn resolve_publish_time(raw: Option<i64>, status: i64, now: i64) -> i64 {
+    match raw {
+        None | Some(0) if status == 1 => now,
+        None | Some(0) => 0,
+        Some(ts) => ts,
+    }
+}
+
+/// 文章是否对访客可见（已发布且到达计划发布时间）
+pub fn is_post_publicly_visible(meta: &PostMeta, now: i64) -> bool {
+    meta.status == 1 && meta.publish_time > 0 && meta.publish_time <= now
+}
+
+/// 首次实际公开时间：已到计划发布时刻时写入
+fn resolve_published_at(status: i64, publish_time: i64, now: i64, existing: i64) -> i64 {
+    if existing > 0 {
+        return existing;
+    }
+    if status == 1 && publish_time > 0 && publish_time <= now {
+        now
+    } else {
+        0
+    }
 }
 
 /// 指定语言下文章 SEO 路径的固定前缀
@@ -303,8 +345,11 @@ pub async fn create_post(
     default_lang: &str,
 ) -> Result<PostMeta, String> {
     let lang = resolve_locale(input.lang.as_deref(), default_lang);
-    let category_id = input.category_id.unwrap_or(0);
-    validate_category_id(db, category_id).await?;
+    let category_id = input
+        .category_id
+        .filter(|&id| id > 0)
+        .ok_or_else(|| "请选择分类".to_string())?;
+    validate_post_category_id(db, category_id).await?;
 
     let description = input.description.as_deref().unwrap_or("");
     let content = input.content.as_deref().unwrap_or("");
@@ -313,8 +358,9 @@ pub async fn create_post(
     ensure_unique_post_route_path(db, &lang, &route_path, None).await?;
     let status = input.status.unwrap_or(1);
     let now = super::asset::now_unix();
-    let display_time = input.display_time.unwrap_or(now);
-    let published_at = if status == 1 { now } else { 0 };
+    let display_time = resolve_display_time(input.display_time, now);
+    let publish_time = resolve_publish_time(input.publish_time, status, now);
+    let published_at = resolve_published_at(status, publish_time, now, 0);
 
     let meta = PostMeta::create()
         .category_id(category_id)
@@ -322,6 +368,7 @@ pub async fn create_post(
         .created_at(now)
         .updated_at(now)
         .published_at(published_at)
+        .publish_time(publish_time)
         .display_time(display_time)
         .exec(db)
         .await
@@ -374,6 +421,7 @@ pub async fn post_to_view(
         created_at: meta.created_at,
         updated_at: meta.updated_at,
         published_at: meta.published_at,
+        publish_time: meta.publish_time,
         display_time: meta.display_time,
     })
 }
@@ -418,6 +466,7 @@ pub async fn post_detail_view(db: &mut toasty::Db, id: i64) -> Result<PostDetail
         created_at: meta.created_at,
         updated_at: meta.updated_at,
         published_at: meta.published_at,
+        publish_time: meta.publish_time,
         display_time: meta.display_time,
         translations,
         covers: vec![],
@@ -495,14 +544,18 @@ pub async fn update_post(
     let old_status = meta.status;
     let old_category_id = meta.category_id;
     let old_display_time = meta.display_time;
+    let old_publish_time = meta.publish_time;
+    let old_published_at = meta.published_at;
     let now = super::asset::now_unix();
+    let mut next_status = meta.status;
+    let mut next_publish_time = meta.publish_time;
 
     let mut builder = meta.update();
     let mut meta_changed = false;
     let mut touch_updated = false;
 
     if let Some(category_id) = input.category_id {
-        validate_category_id(db, category_id).await?;
+        validate_post_category_id(db, category_id).await?;
         if old_category_id != category_id {
             builder = builder.category_id(category_id);
             meta_changed = true;
@@ -514,16 +567,35 @@ pub async fn update_post(
     {
         builder = builder.status(status);
         meta_changed = true;
-        if old_status == 0 && status == 1 {
-            builder = builder.published_at(now);
+        next_status = status;
+    }
+    if input.publish_time.is_some() || input.status.is_some() {
+        let status = input.status.unwrap_or(old_status);
+        let raw = input.publish_time.or(if input.status.is_some() && old_publish_time == 0 {
+            None
+        } else {
+            Some(old_publish_time)
+        });
+        let publish_time = resolve_publish_time(raw, status, now);
+        if old_publish_time != publish_time {
+            builder = builder.publish_time(publish_time);
+            meta_changed = true;
+            touch_updated = true;
+            next_publish_time = publish_time;
         }
     }
-    if let Some(display_time) = input.display_time
-        && old_display_time != display_time
-    {
-        builder = builder.display_time(display_time);
+    if let Some(display_time) = input.display_time {
+        let display_time = resolve_display_time(Some(display_time), now);
+        if old_display_time != display_time {
+            builder = builder.display_time(display_time);
+            meta_changed = true;
+            touch_updated = true;
+        }
+    }
+    let published_at = resolve_published_at(next_status, next_publish_time, now, old_published_at);
+    if old_published_at != published_at {
+        builder = builder.published_at(published_at);
         meta_changed = true;
-        touch_updated = true;
     }
     if touch_updated {
         builder = builder.updated_at(now);
@@ -637,6 +709,42 @@ pub async fn count_posts_by_category(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn resolve_display_time_defaults_to_now() {
+        assert_eq!(super::resolve_display_time(None, 100), 100);
+        assert_eq!(super::resolve_display_time(Some(0), 100), 100);
+        assert_eq!(super::resolve_display_time(Some(50), 100), 50);
+    }
+
+    #[test]
+    fn resolve_publish_time_respects_status() {
+        assert_eq!(super::resolve_publish_time(None, 1, 100), 100);
+        assert_eq!(super::resolve_publish_time(Some(0), 1, 100), 100);
+        assert_eq!(super::resolve_publish_time(None, 0, 100), 0);
+        assert_eq!(super::resolve_publish_time(Some(200), 1, 100), 200);
+    }
+
+    #[test]
+    fn is_post_publicly_visible_checks_publish_time() {
+        let meta = PostMeta {
+            id: 1,
+            category_id: 1,
+            status: 1,
+            created_at: 0,
+            updated_at: 0,
+            published_at: 0,
+            publish_time: 100,
+            display_time: 100,
+        };
+        assert!(is_post_publicly_visible(&meta, 100));
+        assert!(is_post_publicly_visible(&meta, 200));
+        assert!(!is_post_publicly_visible(&meta, 99));
+        assert!(!is_post_publicly_visible(
+            &PostMeta { status: 0, ..meta.clone() },
+            200
+        ));
+    }
 
     #[test]
     fn empty_route_path_ok() {

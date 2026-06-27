@@ -21,11 +21,10 @@
       <el-divider content-position="left">{{ t("menu.content.post.manage.sectionMeta") }}</el-divider>
 
       <el-row :gutter="16" class="post-meta-row">
-        <el-col :xs="24" :lg="8">
-          <el-form-item :label="t('menu.content.post.manage.category')">
+        <el-col :xs="24" :sm="12" :lg="6">
+          <el-form-item :label="t('menu.content.post.manage.category')" required>
             <el-select
               v-model="form.category_id"
-              clearable
               filterable
               :placeholder="t('menu.content.post.manage.categoryPh')"
               style="width: 100%"
@@ -40,18 +39,33 @@
           </el-form-item>
         </el-col>
 
-        <el-col :xs="24" :lg="8">
+        <el-col :xs="24" :sm="12" :lg="6">
           <el-form-item :label="t('menu.content.post.manage.displayTime')">
             <el-date-picker
               v-model="displayTimeDate"
               type="datetime"
+              clearable
               :placeholder="t('menu.content.post.manage.displayTimePh')"
               style="width: 100%"
             />
+            <p class="post-field-hint">{{ t("menu.content.post.manage.displayTimeHint") }}</p>
           </el-form-item>
         </el-col>
 
-        <el-col :xs="24" :lg="8">
+        <el-col :xs="24" :sm="12" :lg="6">
+          <el-form-item :label="t('menu.content.post.manage.publishTime')">
+            <el-date-picker
+              v-model="publishTimeDate"
+              type="datetime"
+              clearable
+              :placeholder="t('menu.content.post.manage.publishTimePh')"
+              style="width: 100%"
+            />
+            <p class="post-field-hint">{{ t("menu.content.post.manage.publishTimeHint") }}</p>
+          </el-form-item>
+        </el-col>
+
+        <el-col :xs="24" :sm="12" :lg="6">
           <el-form-item :label="t('menu.content.post.manage.status')">
             <el-radio-group v-model="form.status">
               <el-radio :value="0">{{ t("menu.content.post.manage.draft") }}</el-radio>
@@ -68,6 +82,7 @@
         </p>
       </el-form-item>
       <PostAssetsSection
+        ref="assetsSectionRef"
         :post-id="assetPostId"
         :initial-covers="postCovers"
         :initial-attachments="postAttachments"
@@ -159,7 +174,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from "vue";
+import { computed, reactive, ref, watch, nextTick } from "vue";
 import type { FormInstance } from "element-plus";
 import { useBreakpoints } from "@vueuse/core";
 import { useI18n } from "vue-i18n";
@@ -216,6 +231,7 @@ const loading = ref(false);
 const saving = ref(false);
 const activeLocale = ref("zh-cn");
 const sessionPostId = ref<number | null>(null);
+const assetsSectionRef = ref<InstanceType<typeof PostAssetsSection> | null>(null);
 const postCovers = ref<AssetView[]>([]);
 const postAttachments = ref<AssetView[]>([]);
 
@@ -227,7 +243,10 @@ const visible = computed({
 const isEdit = computed(() => props.editId !== null);
 const assetPostId = computed(() => props.editId ?? sessionPostId.value);
 const canOpenPublicUrl = computed(
-  () => assetPostId.value !== null && form.status === 1,
+  () => assetPostId.value !== null
+    && form.status === 1
+    && form.publish_time > 0
+    && form.publish_time <= nowUnix(),
 );
 const drawerTitle = computed(() =>
   isEdit.value ? t("menu.content.post.manage.edit") : t("menu.content.post.manage.create"),
@@ -298,6 +317,7 @@ const form = reactive({
   category_id: undefined as number | undefined,
   status: 0,
   display_time: 0,
+  publish_time: 0,
   i18n: {} as PostLocaleForm,
 });
 
@@ -305,6 +325,13 @@ const displayTimeDate = computed({
   get: () => (form.display_time > 0 ? new Date(form.display_time * 1000) : null),
   set: (v: Date | null) => {
     form.display_time = v ? Math.floor(v.getTime() / 1000) : 0;
+  },
+});
+
+const publishTimeDate = computed({
+  get: () => (form.publish_time > 0 ? new Date(form.publish_time * 1000) : null),
+  set: (v: Date | null) => {
+    form.publish_time = v ? Math.floor(v.getTime() / 1000) : 0;
   },
 });
 
@@ -329,7 +356,8 @@ function hasLocaleContent(row: PostLocaleFormRow): boolean {
 function resetForm() {
   form.category_id = undefined;
   form.status = 0;
-  form.display_time = nowUnix();
+  form.display_time = 0;
+  form.publish_time = 0;
   form.i18n = emptyI18n();
   sessionPostId.value = null;
   postCovers.value = [];
@@ -351,6 +379,7 @@ async function loadDetail() {
     form.category_id = detail.category_id || undefined;
     form.status = detail.status;
     form.display_time = detail.display_time;
+    form.publish_time = detail.publish_time;
     postCovers.value = detail.covers ?? [];
     postAttachments.value = detail.attachments ?? [];
     for (const loc of props.siteLocales) {
@@ -399,12 +428,18 @@ async function handleSave() {
     return;
   }
 
+  if (!form.category_id) {
+    koiMsgError(t("menu.content.post.manage.categoryRequired"));
+    return;
+  }
+
   saving.value = true;
   try {
     const metaPayload = {
       category_id: form.category_id,
       status: form.status,
-      display_time: form.display_time || undefined,
+      display_time: form.display_time > 0 ? form.display_time : 0,
+      publish_time: form.publish_time > 0 ? form.publish_time : 0,
     };
 
     const updateTargetId = props.editId ?? sessionPostId.value;
@@ -427,6 +462,15 @@ async function handleSave() {
       const newId = createRes.data.id;
       sessionPostId.value = newId;
       form.display_time = createRes.data.display_time;
+      form.publish_time = createRes.data.publish_time;
+      await nextTick();
+      if (assetsSectionRef.value?.hasPendingAssets()) {
+        const linked = await assetsSectionRef.value.ensurePendingLinked();
+        if (!linked) {
+          koiMsgError(t("msg.fail"));
+          return;
+        }
+      }
       for (const loc of props.siteLocales) {
         if (loc === props.defaultLocale) continue;
         const row = form.i18n[loc];
@@ -498,6 +542,11 @@ async function handleSave() {
   &--stacked {
     :deep(.el-form-item) {
       margin-bottom: 16px;
+    }
+
+    :deep(.post-form-drawer__assets-note-item .el-form-item__label),
+    :deep(.post-assets-section__hint-item .el-form-item__label) {
+      display: none;
     }
   }
 }

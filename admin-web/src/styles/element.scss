@@ -164,3 +164,13 @@
     }
   }
 }
+
+/* el-drawer 全局：取消头部额外下边距，内容区顶内边距归零 */
+.el-drawer__header {
+  margin-bottom: 0;
+  padding-bottom: var(--el-drawer-padding-primary);
+}
+
+.el-drawer__body {
+  padding-top: 0;
+}

@@ -50,6 +50,7 @@ async fn ensure_post_meta_timestamps(db: &mut toasty::Db) {
         "created_at",
         "updated_at",
         "published_at",
+        "publish_time",
         "display_time",
     ] {
         add_i64_column(db, "post_metas", column).await;
@@ -76,5 +77,18 @@ async fn ensure_post_meta_timestamps(db: &mut toasty::Db) {
 
     if let Err(e) = publish_backfill {
         eprintln!("[警告] 回填 post_metas.published_at 失败: {e}");
+    }
+
+    let publish_time_backfill = toasty::sql::statement(
+        "UPDATE post_metas SET publish_time = CASE \
+         WHEN status = 1 THEN CASE WHEN published_at > 0 THEN published_at ELSE display_time END \
+         ELSE 0 END \
+         WHERE publish_time = 0",
+    )
+    .exec(db)
+    .await;
+
+    if let Err(e) = publish_time_backfill {
+        eprintln!("[警告] 回填 post_metas.publish_time 失败: {e}");
     }
 }

@@ -61,10 +61,12 @@ POST /api/admin/posts
 | `content` | `string` | 否 | 正文 |
 | `description` | `string` | 否 | 摘要 |
 | `tags` | `string` | 否 | 该语言下的标签，逗号分隔；保存时会规范化空白与分隔符 |
-| `category_id` | `i64` | 否 | 分类 ID |
+| `category_id` | `i64` | 是 | 分类 ID，须为有效分类 |
 | `lang` | `string` | 否 | 默认 `site_default_locale` |
 | `route_path` | `string` | 否 | 该语言的 SEO 完整路径或 slug；空串合法，非空时须匹配 `/{lang}/posts/{slug}`，且**同一语言下不可与其他文章重复** |
 | `status` | `i64` | 否 | `0` 草稿，`1` 已发布 |
+| `display_time` | `i64` | 否 | 前台展示时间（Unix 秒）；缺省或 `0` 时使用服务端当前时间 |
+| `publish_time` | `i64` | 否 | 计划发布时间（Unix 秒）；`status = 1` 且缺省或 `0` 时立即发布；未来时间用于定时发布 |
 
 ## 更新文章
 

@@ -2,9 +2,10 @@ use rocket::State;
 use rocket::serde::json::Json;
 
 use crate::models::{
-    ApiResponse, CategoryView, PostMeta, PostView, categories_to_views, post_to_view,
-    posts_to_views,
+    ApiResponse, CategoryView, PostMeta, PostView, categories_to_views, is_post_publicly_visible,
+    post_to_view, posts_to_views,
 };
+use crate::models::asset::now_unix;
 use crate::routes::lang::LangQuery;
 
 /// 获取所有文章列表（公开）
@@ -13,10 +14,17 @@ pub async fn list(db: &State<toasty::Db>, lang: LangQuery) -> Json<ApiResponse<V
     let mut db = db.inner().clone();
 
     match PostMeta::all().exec(&mut db).await {
-        Ok(posts) => match posts_to_views(&mut db, posts, lang.lang.as_deref()).await {
-            Ok(views) => Json(ApiResponse::success(views)),
-            Err(e) => Json(ApiResponse::error(500, e)),
-        },
+        Ok(posts) => {
+            let now = now_unix();
+            let visible: Vec<PostMeta> = posts
+                .into_iter()
+                .filter(|meta| is_post_publicly_visible(meta, now))
+                .collect();
+            match posts_to_views(&mut db, visible, lang.lang.as_deref()).await {
+                Ok(views) => Json(ApiResponse::success(views)),
+                Err(e) => Json(ApiResponse::error(500, e)),
+            }
+        }
         Err(e) => Json(ApiResponse::error(500, format!("查询失败: {e}"))),
     }
 }
@@ -27,10 +35,15 @@ pub async fn get(db: &State<toasty::Db>, id: i64, lang: LangQuery) -> Json<ApiRe
     let mut db = db.inner().clone();
 
     match PostMeta::get_by_id(&mut db, &id).await {
-        Ok(meta) => match post_to_view(&mut db, &meta, lang.lang.as_deref()).await {
-            Ok(view) => Json(ApiResponse::success(view)),
-            Err(e) => Json(ApiResponse::error(500, e)),
-        },
+        Ok(meta) => {
+            if !is_post_publicly_visible(&meta, now_unix()) {
+                return Json(ApiResponse::error(404, "文章不存在或未发布"));
+            }
+            match post_to_view(&mut db, &meta, lang.lang.as_deref()).await {
+                Ok(view) => Json(ApiResponse::success(view)),
+                Err(e) => Json(ApiResponse::error(500, e)),
+            }
+        }
         Err(_) => Json(ApiResponse::error(404, "文章不存在")),
     }
 }
