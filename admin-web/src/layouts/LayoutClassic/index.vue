@@ -20,7 +20,7 @@
               :router="false"
               :class="menuAnimate"
             >
-              <AsideSubMenu :menuList="menuList"></AsideSubMenu>
+              <AsideSubMenu :menu-list="menuList" :collapse="globalStore.isCollapse" />
             </el-menu>
           </div>
         </div>
@@ -119,5 +119,14 @@ const activeMenu = computed(() => (route.meta.activeMenu ? route.meta.activeMenu
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
+  overflow: hidden;
+}
+
+.layout-classic-aside:has(.el-menu--collapse) {
+  padding-left: 0;
+
+  .layout-classic-menu-pad {
+    padding-right: 0;
+  }
 }
 </style>

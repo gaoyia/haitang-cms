@@ -102,6 +102,45 @@
   }
 }
 
+/* 纵向 / 经典：el-menu--collapse 折叠窄栏布局（DOM 结构由 AsideSubMenu / AsideMenuLeaf 的 collapse prop 控制） */
+.el-menu.el-menu--vertical.el-menu--collapse {
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+
+  .menu-ellipsis {
+    display: none !important;
+  }
+
+  .el-sub-menu__icon-arrow {
+    display: none !important;
+  }
+
+  .icon-container {
+    transform: none !important;
+  }
+
+  .el-menu-item,
+  .el-sub-menu__title {
+    justify-content: center;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  .el-menu-item .el-menu-tooltip__trigger {
+    display: inline-flex !important;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    min-height: var(--el-menu-item-height);
+    padding: 0 !important;
+  }
+
+  .el-menu--inline {
+    display: none !important;
+  }
+}
+
 /* DIV el-tabs 或 el-segmented 中 el-table 自适应 */
 .koi-flex-tabs {
   @apply flex flex-col flex-1 overflow-hidden h-100% min-w-0;

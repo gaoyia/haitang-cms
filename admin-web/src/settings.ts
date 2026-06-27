@@ -51,9 +51,9 @@ export default {
   menuAnimate: "animate__animated animate__fadeInLeft",
 
   /**
-   * 左侧折叠宽度
+   * 左侧折叠宽度（与 Element Plus 折叠菜单 ~64px 一致）
    */
-  asideMenuCollapseWidth: "56px",
+  asideMenuCollapseWidth: "64px",
 
   /**
    * 左侧悬浮折叠宽度

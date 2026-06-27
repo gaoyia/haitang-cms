@@ -17,7 +17,7 @@
             :router="false"
             :class="menuAnimate"
           >
-            <AsideSubMenu :menuList="menuList"></AsideSubMenu>
+            <AsideSubMenu :menu-list="menuList" :collapse="globalStore.isCollapse" />
           </el-menu>
         </div>
       </div>
@@ -86,11 +86,20 @@ const activeMenu = computed(() => (route.meta.activeMenu ? route.meta.activeMenu
     box-sizing: border-box;
   }
 
-  /* 收缩宽度(如 56px)小于 EP 默认折叠菜单宽度(~64px)时会横向溢出，裁掉 menu-pad 的右侧留白 */
+  /* 折叠侧栏宽度与 EP 默认 ~64px 对齐，避免横向溢出 */
   .layout-vertical-aside :deep(.el-menu.el-menu--collapse) {
     width: 100%;
     max-width: 100%;
     box-sizing: border-box;
+    overflow: hidden;
+  }
+}
+
+.layout-vertical-aside:has(.el-menu--collapse) {
+  padding-left: 0;
+
+  .layout-vertical-menu-pad {
+    padding-right: 0;
   }
 }
 
