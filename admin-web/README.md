@@ -48,6 +48,8 @@ VITE_BASE=/cms-admin/ VITE_BUILD_OUT_DIR=../static/cms-admin pnpm build
 cargo run
 ```
 
+开发时若误在 Vite 端口（5174）打开公开站地址（如 `/zh-cn/posts/1`），会自动 302 重定向到 `VITE_SERVER` 对应页面。
+
 默认管理员：`admin` / `admin123`
 
 ## 目录说明

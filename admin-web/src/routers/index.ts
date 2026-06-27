@@ -11,6 +11,7 @@ import { ElMessageBox } from 'element-plus';
 import { useDebounceFn } from '@vueuse/core';
 import { initDynamicRouter, isDynamicRoutesMissing } from "@/routers/modules/dynamicRouter.ts";
 import { getMenuLanguage, isPathMatch } from "@/utils/index.ts";
+import { isPublicSitePath, redirectToPublicServer } from "@/utils/publicSitePath.ts";
 import i18n from '@/languages/index.ts';
 
 // .env配置文件读取
@@ -48,6 +49,13 @@ router.beforeEach(async (to: RouteLocationNormalized, from: RouteLocationNormali
 
   // 1、NProgress 开始
   nprogress.start();
+
+  // 开发环境：公开站路径（如 /zh-cn/posts/1）重定向至后端 VITE_SERVER
+  if (import.meta.env.DEV && isPublicSitePath(to.path)) {
+    redirectToPublicServer(to.fullPath);
+    return false;
+  }
+
   // 2、标题切换，没有放置后置路由，是因为页面路径不存在，title会变成undefined
   siteStore.applyDocumentTitle(getMenuLanguage(to.meta?.title as string));
 

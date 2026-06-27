@@ -4,6 +4,7 @@ import vueSetupExtend from "vite-plugin-vue-setup-extend";
 import { createSvgIconsPlugin } from "vite-plugin-svg-icons";
 import Unocss from "unocss/vite";
 import path from "path";
+import { devPublicRedirectPlugin } from "./vite/devPublicRedirectPlugin";
 
 /** 规范化 Vite base（必须以 / 开头和结尾） */
 function normalizeBase(raw: string | undefined): string {
@@ -42,6 +43,9 @@ export default defineConfig(({ mode }) => {
         iconDirs: [path.resolve(process.cwd(), "src/assets/icons")],
         symbolId: "icon-[dir]-[name]",
       }),
+      ...(mode === "development"
+        ? [devPublicRedirectPlugin(env.VITE_SERVER, env.VITE_PUBLIC_LOCALES)]
+        : []),
     ],
     resolve: {
       alias: {

@@ -8,6 +8,7 @@ interface ImportMetaEnv {
   readonly VITE_LOGIN_EN_TITLE: string;
   readonly VITE_WEB_BASE_API: string;
   readonly VITE_SERVER: string;
+  readonly VITE_PUBLIC_LOCALES: string;
   readonly VITE_ROUTER_MODE: string;
   readonly VITE_DROP_CONSOLE: string;
   /** 部署 base path，如 /haitang-cms-admin/ */
