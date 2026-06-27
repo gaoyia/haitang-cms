@@ -45,21 +45,25 @@ pub async fn update(
     };
 
     let mut builder = meta.update();
+    let mut meta_changed = false;
     if let Some(category_id) = input.category_id {
         if let Err(msg) = validate_category_id(&mut db, category_id).await {
             return Json(ApiResponse::error(400, msg));
         }
         builder = builder.category_id(category_id);
+        meta_changed = true;
     }
     if let Some(status) = input.status {
         builder = builder.status(status);
+        meta_changed = true;
     }
 
-    if let Err(e) = builder.exec(&mut db).await {
-        return Json(ApiResponse::error(500, format!("更新失败: {e}")));
+    if meta_changed {
+        if let Err(e) = builder.exec(&mut db).await {
+            return Json(ApiResponse::error(500, format!("更新失败: {e}")));
+        }
+        meta = PostMeta::get_by_id(&mut db, &id).await.expect("文章应存在");
     }
-
-    meta = PostMeta::get_by_id(&mut db, &id).await.expect("文章应存在");
 
     let lang = input
         .lang

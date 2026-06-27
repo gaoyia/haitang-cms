@@ -10,7 +10,7 @@
 | 全局字典 | `dict_value.lang = ""`（空串哨兵） |
 | 默认语言 | 字典项 `site_default_locale`，缺翻译时 fallback |
 | URL | `route_path` 存完整路径，如 `/zh-cn/posts/hello` |
-| 开发库重置 | 删除 `db/haitang.sqlite` 后 `cargo run` 自动建表并种子 |
+| 开发库重置 | 删除 `db/haitang.sqlite` 后 `cargo run` 自动建表并种子；旧库启动时会自动迁移 `post_metas.tags` → `post_i18ns.tags` |
 
 ## 表结构
 

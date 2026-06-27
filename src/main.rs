@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate rocket;
 
+mod db_migrate;
 mod guards;
 mod models;
 mod routes;
@@ -33,6 +34,10 @@ async fn rocket() -> _ {
         if !msg.contains("already exists") {
             eprintln!("[错误] 建表失败: {e}");
         }
+    }
+
+    if let Err(e) = db_migrate::run() {
+        eprintln!("[错误] 数据库迁移失败: {e}");
     }
 
     // 种子数据：确保默认管理员账户存在

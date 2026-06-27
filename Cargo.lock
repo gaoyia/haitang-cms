@@ -821,6 +821,7 @@ dependencies = [
  "jsonwebtoken",
  "rocket",
  "rocket_dyn_templates",
+ "rusqlite",
  "serde",
  "serde_json",
  "toasty",
