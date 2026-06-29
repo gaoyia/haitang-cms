@@ -76,6 +76,10 @@ export default defineConfig(({ mode }) => {
         "~": path.resolve("./src"),
       },
     },
+    assetsInclude: ["**/*.wasm"],
+    optimizeDeps: {
+      exclude: ["jieba-wasm"],
+    },
     css: {
       preprocessorOptions: {
         scss: {

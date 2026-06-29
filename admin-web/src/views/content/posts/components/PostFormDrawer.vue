@@ -189,15 +189,24 @@
             />
           </el-form-item>
           <el-form-item :label="t('menu.content.post.manage.tags')">
-            <el-input-tag
-              v-model="form.i18n[loc].tagList"
-              :placeholder="t('menu.content.post.manage.tagsPh')"
-              tag-type="primary"
-              tag-effect="plain"
-              delimiter=","
-              clearable
-              style="width: 100%"
-            />
+            <div class="post-tags-field">
+              <el-input-tag
+                :model-value="normalizeTagList(form.i18n[loc].tagList)"
+                :placeholder="t('menu.content.post.manage.tagsPh')"
+                size="small"
+                tag-type="primary"
+                tag-effect="plain"
+                delimiter=","
+                clearable
+                class="post-tags-field__input"
+                @update:model-value="onTagListUpdate(loc, $event)"
+                @clear="form.i18n[loc].tagList = []"
+              />
+              <TagExtract
+                v-model="form.i18n[loc].tagList"
+                :content="form.i18n[loc].content"
+              />
+            </div>
           </el-form-item>
           <el-form-item :label="t('menu.content.post.manage.content')" class="post-form-drawer__content-item">
             <KoiMarkdownEditor
@@ -264,7 +273,9 @@ import {
 import type { AssetView } from "@/api/system/assets.ts";
 import type { CategoryView } from "@/api/system/categories.ts";
 import PostAssetsSection from "@/components/assets/PostAssetsSection.vue";
+import TagExtract from "./TagExtract.vue";
 import { koiMsgError, koiMsgSuccess } from "@/utils/koi.ts";
+import { normalizeTagList, serializeTags } from "@/utils/tagList.ts";
 import { nowUnix } from "@/utils/formatTime.ts";
 import {
   buildAboutMetaJson,
@@ -293,9 +304,9 @@ function parseTags(raw: string): string[] {
   return raw.split(/[,，]/).map((s) => s.trim()).filter(Boolean);
 }
 
-/** 将标签数组序列化为 API 逗号分隔字符串 */
-function serializeTags(list: string[]): string {
-  return list.map((s) => s.trim()).filter(Boolean).join(", ");
+/** 同步 v-model，避免 el-input-tag 清空后 tagList 变为 undefined */
+function onTagListUpdate(loc: string, value: string[] | undefined) {
+  form.i18n[loc].tagList = normalizeTagList(value);
 }
 
 const props = defineProps<{
@@ -470,7 +481,7 @@ function hasLocaleContent(row: PostLocaleFormRow): boolean {
     || row.description.trim()
     || row.content.trim()
     || row.seoSlug.trim()
-    || row.tagList.length
+    || normalizeTagList(row.tagList).length
   );
 }
 
@@ -740,6 +751,19 @@ async function handleSave() {
   font-size: 12px;
   line-height: 1.5;
   color: var(--el-text-color-secondary);
+}
+
+.post-tags-field {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.post-tags-field__input {
+  flex: 1;
+  min-width: min(100%, 240px);
 }
 
 .post-form-drawer__assets-note-item {

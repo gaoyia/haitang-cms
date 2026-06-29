@@ -15,6 +15,7 @@
     "animate.css": "^4.1.1",
     "axios": "^1.17.0",
     "element-plus": "^2.14.2",
+    "jieba-wasm": "^2.4.0",
     "js-cookie": "^3.0.8",
     "md-editor-v3": "^6.5.3",
     "mitt": "^3.0.1",
