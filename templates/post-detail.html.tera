@@ -27,6 +27,9 @@
                 <p class="post-detail-description" id="post-description"{% if not post_description %} hidden{% endif %}>{% if post_description %}{{ post_description }}{% endif %}</p>
                 <div class="post-detail-meta" id="post-meta"></div>
             </header>
+            <figure class="post-detail-cover" id="post-cover" hidden>
+                <img class="post-detail-cover__img" id="post-cover-img" src="" alt="">
+            </figure>
             <div id="post-content" class="post-detail-body content-card markdown-body"></div>
             <p class="empty" id="post-error" hidden></p>
         </article>
@@ -142,6 +145,23 @@
             }
             if (meta.length) {
                 $("#post-meta").text(meta.join(" · "));
+            }
+
+            if (post.covers && post.covers.length > 0) {
+                $("#post-cover-img")
+                    .attr("src", post.covers[0].url)
+                    .attr("alt", post.title);
+                $("#post-cover").prop("hidden", false);
+            } else if (post.attachments && post.attachments.length > 0) {
+                var img = post.attachments.find(function (a) {
+                    return a.mime_type && a.mime_type.indexOf("image/") === 0;
+                });
+                if (img) {
+                    $("#post-cover-img")
+                        .attr("src", img.url)
+                        .attr("alt", post.title);
+                    $("#post-cover").prop("hidden", false);
+                }
             }
 
             if (!renderMarkdown(post.content, document.getElementById("post-content"))) {

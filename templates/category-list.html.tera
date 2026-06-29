@@ -36,6 +36,50 @@
             return localePrefix + "/posts/" + post.id;
         }
 
+        function coverUrl(post) {
+            if (post.covers && post.covers.length > 0) return post.covers[0].url;
+            if (post.attachments && post.attachments.length > 0) {
+                var img = post.attachments.find(function (a) {
+                    return a.mime_type && a.mime_type.indexOf("image/") === 0;
+                });
+                if (img) return img.url;
+            }
+            return null;
+        }
+
+        function renderPostItem(post) {
+            var summary = post.description;
+            if (!summary && post.content) {
+                summary = stripMarkdown(post.content);
+            }
+            if (summary && summary.length > maxSummary) {
+                summary = summary.substring(0, maxSummary) + "…";
+            }
+            var meta = [];
+            if (post.display_time) meta.push(formatDisplayTime(post.display_time));
+            if (post.tags) meta.push(("{{ lang }}" === "en-us" ? "Tags: " : "标签: ") + post.tags);
+            var detailUrl = postDetailUrl(post);
+            var thumb = coverUrl(post);
+            var itemClass = "post-item" + (thumb ? " post-item--with-thumb" : "");
+            var titleHtml = $("<span>").text(post.title).html();
+            var html = '<li class="' + itemClass + '">';
+            if (thumb) {
+                html += '<a class="post-item__link" href="' + detailUrl + '">';
+                html += '<div class="post-item__thumb"><img src="' + thumb + '" alt="" loading="lazy"></div>';
+                html += '<div class="post-item__body">';
+                html += '<h2>' + titleHtml + '</h2>';
+            } else {
+                html += '<h2><a href="' + detailUrl + '">' + titleHtml + '</a></h2>';
+            }
+            if (summary) html += '<p>' + $("<span>").text(summary).html() + '</p>';
+            if (meta.length) html += '<div class="meta">' + meta.join(' · ') + '</div>';
+            if (thumb) {
+                html += '</div></a>';
+            }
+            html += '</li>';
+            return html;
+        }
+
         $.getJSON("/api/categories/" + categoryId + "?lang={{ lang }}", function (catRes) {
             if (catRes.code === 0 && catRes.data) {
                 if (catRes.data.name) {
@@ -61,24 +105,7 @@
             });
 
             $.each(posts, function (i, post) {
-                var summary = post.description;
-                if (!summary && post.content) {
-                    summary = stripMarkdown(post.content);
-                }
-                if (summary && summary.length > maxSummary) {
-                    summary = summary.substring(0, maxSummary) + "…";
-                }
-                var meta = [];
-                if (post.display_time) meta.push(formatDisplayTime(post.display_time));
-                if (post.tags) meta.push(("{{ lang }}" === "en-us" ? "Tags: " : "标签: ") + post.tags);
-                var detailUrl = postDetailUrl(post);
-                $list.append(
-                    '<li class="post-item">' +
-                    '<h2><a href="' + detailUrl + '">' + $("<span>").text(post.title).html() + '</a></h2>' +
-                    (summary ? '<p>' + $("<span>").text(summary).html() + '</p>' : '') +
-                    (meta.length ? '<div class="meta">' + meta.join(' · ') + '</div>' : '') +
-                    '</li>'
-                );
+                $list.append(renderPostItem(post));
             });
         }).fail(function () {
             $("#post-list").html('<li class="empty">' + failText + '</li>');

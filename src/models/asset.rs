@@ -410,6 +410,29 @@ pub async fn link_post_asset(
     Ok(())
 }
 
+/// 若文章尚无封面，则关联指定资源为封面（幂等）
+pub async fn ensure_post_cover_link(
+    db: &mut toasty::Db,
+    post_id: i64,
+    asset_id: i64,
+) -> Result<bool, String> {
+    let count = count_post_covers(db, post_id).await?;
+    if count > 0 {
+        return Ok(false);
+    }
+    link_post_asset(
+        db,
+        post_id,
+        &LinkPostAssetInput {
+            asset_id,
+            role: PostAssetRole::Cover.as_str().to_string(),
+            sort_order: Some(0),
+        },
+    )
+    .await?;
+    Ok(true)
+}
+
 /// 按给定顺序全量更新文章附件的 `sort_order`
 pub async fn reorder_post_attachments(
     db: &mut toasty::Db,

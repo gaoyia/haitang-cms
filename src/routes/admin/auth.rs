@@ -10,7 +10,7 @@ use crate::models::{
     ApiResponse, Banner, BannerGroup, Claims, LoginRequest, LoginResponse, LoginUserInfo,
     MenuGroup, Role, User, UserRole, all_permission_codes, category_public_path_by_slug,
     ensure_banner_seed_asset_link, find_banner_group_by_code, seed_default_banner_asset,
-    seed_default_sample_posts, seed_menu_with_i18n,
+    seed_default_sample_posts, ensure_seed_sample_covers, seed_menu_with_i18n,
 };
 use crate::storage::StorageService;
 
@@ -61,6 +61,9 @@ pub async fn run_startup_seeds(db: &mut toasty::Db, storage: &StorageService, ap
     seed_default_banner_data(db, storage).await;
     if let Err(e) = seed_default_sample_posts(db, storage).await {
         eprintln!("[种子] 预制示例文章: {e}");
+    }
+    if let Err(e) = ensure_seed_sample_covers(db, storage).await {
+        eprintln!("[种子] 补全示例文章封面: {e}");
     }
 }
 

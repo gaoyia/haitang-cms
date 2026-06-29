@@ -2,7 +2,9 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use super::asset::{link_post_asset, seed_default_gallery_assets, LinkPostAssetInput};
+use super::asset::{
+    ensure_post_cover_link, link_post_asset, seed_default_gallery_assets, LinkPostAssetInput,
+};
 use super::category::{
     category_public_url, category_templates, load_category_map, resolve_category_id_from_public_key,
     validate_post_category_id,
@@ -944,7 +946,51 @@ pub async fn seed_default_sample_posts(
     seed_default_gallery_post(db, storage).await?;
     seed_default_recruitment_post(db).await?;
     seed_default_about_post(db).await?;
+    ensure_seed_sample_covers(db, storage).await?;
     Ok(())
+}
+
+/// 为预制示例文章补全封面（幂等；development 每次启动、新库首次写入后均会执行）
+pub async fn ensure_seed_sample_covers(
+    db: &mut toasty::Db,
+    storage: &StorageService,
+) -> Result<(), String> {
+    let assets = match seed_default_gallery_assets(db, storage).await {
+        Ok(a) => a,
+        Err(e) => {
+            eprintln!("[种子] 示例封面资源不可用: {e}");
+            return Ok(());
+        }
+    };
+
+    let mut linked = 0;
+    for slug in ["site-launch", "about-haitang-cms"] {
+        let Some(post_id) = find_post_id_by_public_slug(db, "zh-cn", slug).await? else {
+            continue;
+        };
+        if ensure_post_cover_link(db, post_id, assets.cover.id).await? {
+            linked += 1;
+            println!("[种子] 已为文章 #{post_id}（{slug}）补全封面");
+        }
+    }
+
+    if linked > 0 {
+        println!("[种子] 示例文章封面补全完成（{linked} 篇）");
+    }
+    Ok(())
+}
+
+async fn find_post_id_by_public_slug(
+    db: &mut toasty::Db,
+    lang: &str,
+    slug: &str,
+) -> Result<Option<i64>, String> {
+    let rows = PostI18n::all()
+        .exec(db)
+        .await
+        .map_err(|e| format!("查询文章翻译失败: {e}"))?;
+    let ids = collect_post_ids_for_public_key(&rows, lang, slug);
+    Ok(ids.first().copied())
 }
 
 async fn seed_default_news_post(db: &mut toasty::Db) -> Result<(), String> {
