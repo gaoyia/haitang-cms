@@ -107,7 +107,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
 import { Plus } from "@element-plus/icons-vue";
 import { ElMessageBox } from "element-plus";
@@ -122,6 +123,8 @@ import PostFormDrawer from "./components/PostFormDrawer.vue";
 import PublicUrlPopover from "@/components/PublicUrlPopover.vue";
 
 const { t } = useI18n();
+const route = useRoute();
+const router = useRouter();
 const { siteLocales, defaultLocale, previewLang, loadSiteLocales, localeLabel } = useSiteLocales();
 const { page, pageSize, total, pageParams, applyPageResult, resetPage } = useTablePage();
 
@@ -132,6 +135,8 @@ const drawerVisible = ref(false);
 const editingId = ref<number | null>(null);
 /** 0 表示全部分类 */
 const filterCategoryId = ref(0);
+/** 避免 URL 回写与 router.replace 互相触发 */
+const syncingFromRoute = ref(false);
 
 const localeSegmentOptions = computed(() =>
   siteLocales.value.map((loc) => ({
@@ -153,6 +158,65 @@ const listQueryParams = computed(() => ({
   category_id: filterCategoryId.value > 0 ? filterCategoryId.value : undefined,
 }));
 
+function postListQueryFromState(): Record<string, string> {
+  const query: Record<string, string> = { lang: previewLang.value };
+  if (filterCategoryId.value > 0) {
+    query.category_id = String(filterCategoryId.value);
+  }
+  if (page.value > 1) {
+    query.page = String(page.value);
+  }
+  if (pageSize.value !== 10) {
+    query.page_size = String(pageSize.value);
+  }
+  return query;
+}
+
+function queryMatchesRoute(next: Record<string, string>): boolean {
+  const cur = route.query;
+  const curLang = typeof cur.lang === "string" ? cur.lang : defaultLocale.value;
+  const curCategory = cur.category_id ? String(cur.category_id) : "";
+  const curPage = cur.page ? String(cur.page) : "1";
+  const curPageSize = cur.page_size ? String(cur.page_size) : "10";
+  return (
+    curLang === next.lang
+    && curCategory === (next.category_id ?? "")
+    && curPage === (next.page ?? "1")
+    && curPageSize === (next.page_size ?? "10")
+  );
+}
+
+function applyQueryFromRoute() {
+  const q = route.query;
+  const lang = typeof q.lang === "string" ? q.lang : "";
+  if (lang && siteLocales.value.includes(lang)) {
+    previewLang.value = lang;
+  }
+
+  const rawCategory = q.category_id;
+  const categoryId =
+    rawCategory != null && rawCategory !== "" ? Number(rawCategory) : 0;
+  filterCategoryId.value =
+    Number.isFinite(categoryId) && categoryId >= 0 ? categoryId : 0;
+
+  const rawPage = q.page ? Number(q.page) : 1;
+  page.value = Number.isFinite(rawPage) && rawPage >= 1 ? rawPage : 1;
+
+  const rawPageSize = q.page_size ? Number(q.page_size) : 10;
+  pageSize.value = Number.isFinite(rawPageSize) && rawPageSize >= 1 ? rawPageSize : 10;
+}
+
+function syncRouteQuery() {
+  if (syncingFromRoute.value) return;
+  const next = postListQueryFromState();
+  if (queryMatchesRoute(next)) return;
+  syncingFromRoute.value = true;
+  router.replace({ query: next });
+  nextTick(() => {
+    syncingFromRoute.value = false;
+  });
+}
+
 function postIdUrl(id: number): string {
   return `/${previewLang.value}/posts/${id}`;
 }
@@ -169,6 +233,13 @@ function isScheduledPost(row: PostView): boolean {
 async function loadCategories() {
   const res = await listCategoriesApi(previewLang.value, { page: 1, page_size: 500 });
   categories.value = res.code === 0 && res.data ? res.data.list : [];
+  if (
+    filterCategoryId.value > 0
+    && !categories.value.some((cat) => cat.id === filterCategoryId.value)
+  ) {
+    filterCategoryId.value = 0;
+    syncRouteQuery();
+  }
 }
 
 async function loadPosts() {
@@ -176,6 +247,7 @@ async function loadPosts() {
   try {
     const res = await listPostsApi(previewLang.value, listQueryParams.value);
     posts.value = applyPageResult(res.code === 0 ? res.data : null);
+    syncRouteQuery();
   } finally {
     loading.value = false;
   }
@@ -205,20 +277,44 @@ async function handleDelete(row: PostView) {
   }
 }
 
-watch(previewLang, () => {
+watch(previewLang, async () => {
+  if (syncingFromRoute.value) return;
   resetPage();
-  loadPosts();
-  loadCategories();
+  syncRouteQuery();
+  await loadCategories();
+  await loadPosts();
 });
 
-watch(filterCategoryId, () => {
+watch(filterCategoryId, async () => {
+  if (syncingFromRoute.value) return;
   resetPage();
-  loadPosts();
+  syncRouteQuery();
+  await loadPosts();
 });
+
+watch(
+  () => route.query,
+  async () => {
+    if (syncingFromRoute.value) return;
+    syncingFromRoute.value = true;
+    applyQueryFromRoute();
+    await loadCategories();
+    await loadPosts();
+    nextTick(() => {
+      syncingFromRoute.value = false;
+    });
+  },
+);
 
 onMounted(async () => {
   await loadSiteLocales();
-  await Promise.all([loadPosts(), loadCategories()]);
+  syncingFromRoute.value = true;
+  applyQueryFromRoute();
+  await loadCategories();
+  await loadPosts();
+  nextTick(() => {
+    syncingFromRoute.value = false;
+  });
 });
 </script>
 

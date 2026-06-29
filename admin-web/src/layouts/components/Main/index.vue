@@ -5,10 +5,10 @@
       <Tabs v-show="showTabs" />
       <el-main class="main-content">
         <div class="main-content__inner">
-          <router-view v-slot="{ Component, route }">
+          <router-view v-if="isRouterShow" v-slot="{ Component, route }">
             <transition :name="transition" mode="out-in" appear>
               <keep-alive :max="16" :include="keepAliveStore.keepAliveName">
-                <component :is="Component" :key="route.fullPath" v-if="isRouterShow" />
+                <component :is="Component" :key="route.path" />
               </keep-alive>
             </transition>
           </router-view>
