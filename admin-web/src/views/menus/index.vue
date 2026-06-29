@@ -79,7 +79,11 @@
         </aside>
 
         <!-- 右侧：菜单树 -->
-        <section class="koi-split-layout__main menu-tree-panel" v-loading="treeLoading">
+        <section
+          class="koi-split-layout__main menu-tree-panel"
+          :class="{ 'menu-tree-panel--mobile': isMobile }"
+          v-loading="treeLoading"
+        >
           <div class="menu-tree-toolbar">
             <div class="menu-tree-toolbar__left">
               <span class="menu-tree-toolbar__label">{{ t("menu.menu.manage.previewLang") }}</span>
@@ -141,6 +145,7 @@
             node-key="id"
             default-expand-all
             :expand-on-click-node="false"
+            :indent="isMobile ? 14 : 18"
             :draggable="!currentGroup?.readonly"
             :allow-drag="allowMenuDrag"
             :allow-drop="allowMenuDrop"
@@ -158,18 +163,20 @@
                 >
                   <Rank />
                 </el-icon>
-                <span class="menu-tree-node__icon">
-                  <KoiGlobalIcon v-if="isKoiIcon(data.icon)" :name="data.icon" size="16" />
-                  <img v-else-if="isImgIcon(data.icon)" :src="data.icon" alt="" class="menu-tree-node__img" />
-                  <span v-else-if="data.icon">{{ data.icon }}</span>
-                  <el-icon v-else><Document /></el-icon>
-                </span>
-                <span class="menu-tree-node__title">{{ menuItemTitle(data.title) }}</span>
-                <el-tag v-if="data.status === 0" size="small" type="danger" effect="plain">
-                  {{ t("menu.menu.manage.disabled") }}
-                </el-tag>
-                <span v-if="data.path" class="menu-tree-node__path">{{ data.path }}</span>
-                <span v-if="data.permission" class="menu-tree-node__perm">{{ data.permission }}</span>
+                <div class="menu-tree-node__main">
+                  <span class="menu-tree-node__icon">
+                    <KoiGlobalIcon v-if="isKoiIcon(data.icon)" :name="data.icon" size="16" />
+                    <img v-else-if="isImgIcon(data.icon)" :src="data.icon" alt="" class="menu-tree-node__img" />
+                    <span v-else-if="data.icon">{{ data.icon }}</span>
+                    <el-icon v-else><Document /></el-icon>
+                  </span>
+                  <span class="menu-tree-node__title">{{ menuItemTitle(data.title) }}</span>
+                  <el-tag v-if="data.status === 0" size="small" type="danger" effect="plain">
+                    {{ t("menu.menu.manage.disabled") }}
+                  </el-tag>
+                  <span v-if="!isMobile && data.path" class="menu-tree-node__path">{{ data.path }}</span>
+                  <span v-if="!isMobile && data.permission" class="menu-tree-node__perm">{{ data.permission }}</span>
+                </div>
                 <span class="menu-tree-node__actions" @mousedown.stop>
                   <template v-if="isMobile">
                     <ActionsDropdown
@@ -736,6 +743,14 @@ onMounted(async () => {
   min-width: 0;
   padding-right: 8px;
 
+  &__main {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+  }
+
   &__drag {
     flex-shrink: 0;
     cursor: grab;
@@ -789,26 +804,58 @@ onMounted(async () => {
   }
 }
 
-@media (max-width: 767px) {
-  .menu-tree-node {
-    flex-wrap: wrap;
-    align-items: flex-start;
-    padding-top: 4px;
-    padding-bottom: 4px;
+.menu-tree-panel--mobile {
+  .menu-tree-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
 
-    &__title {
-      max-width: 100%;
+    &__left {
+      width: 100%;
     }
 
-    &__path,
-    &__perm {
-      display: none;
+    &__right {
+      display: flex;
+      justify-content: flex-end;
+    }
+  }
+
+  .menu-tree-drag-hint {
+    display: none;
+  }
+
+  .menu-el-tree {
+    --el-tree-node-content-height: auto;
+
+    :deep(.el-tree-node__content) {
+      height: auto !important;
+      min-height: 44px;
+      align-items: center;
+      padding-top: 6px;
+      padding-bottom: 6px;
+    }
+  }
+
+  .menu-tree-node {
+    gap: 6px;
+    padding-right: 0;
+
+    &__drag {
+      flex-shrink: 0;
+    }
+
+    &__main {
+      gap: 6px;
+    }
+
+    &__title {
+      flex: 1;
+      min-width: 0;
+      max-width: none;
     }
 
     &__actions {
-      width: 100%;
       margin-left: 0;
-      margin-top: 4px;
     }
   }
 }
