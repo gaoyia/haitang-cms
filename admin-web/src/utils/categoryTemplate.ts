@@ -1,8 +1,8 @@
 import type { CategoryDetailTemplate, CategoryListTemplate } from "@/api/system/categories.ts";
 
-/** Element Plus Tag 外观配置 */
+/** Element Plus Tag 外观配置；不设 type 时使用默认色 */
 export interface CategoryTemplateTagStyle {
-  type: "" | "success" | "info" | "warning" | "danger";
+  type?: "primary" | "success" | "info" | "warning" | "danger";
   effect: "light" | "dark" | "plain";
 }
 
@@ -16,7 +16,7 @@ export const CATEGORY_TEMPLATE_TAG: Record<CategoryTemplateTagKey, CategoryTempl
   default: { type: "info", effect: "plain" },
   gallery: { type: "warning", effect: "plain" },
   recruitment: { type: "success", effect: "plain" },
-  about: { type: "", effect: "dark" },
+  about: { effect: "dark" },
 };
 
 const FALLBACK_TAG: CategoryTemplateTagStyle = { type: "info", effect: "plain" };
