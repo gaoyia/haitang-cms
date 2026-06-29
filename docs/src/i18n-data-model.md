@@ -83,7 +83,8 @@
 |------|------|
 | `/` | 302 重定向至 `/{site_default_locale}/` |
 | `/<lang>/` | 首页 |
-| `/<lang>/posts` | 文章列表 |
+| `/<lang>/rss` | 全站文章 RSS 2.0 订阅（`application/rss+xml`） |
+| `/<lang>/posts` | 302 重定向至 `/<lang>/`（保留旧链接兼容） |
 | `/<lang>/posts/<key>` | 文章详情（`<key>` 为 ID 或 SEO slug，Markdown 渲染） |
 | `/<lang>/categories/<key>` | 分类归档（default / gallery 模板） |
 | `/<lang>/about` | 关于页 |

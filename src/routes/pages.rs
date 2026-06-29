@@ -1,8 +1,9 @@
 use rocket::Route;
 use rocket::State;
-use rocket::http::Status;
+use rocket::http::{ContentType, Status};
+use rocket::http::uri::Host;
 use rocket::request::Request;
-use rocket::response::{self, Redirect, Responder};
+use rocket::response::{self, Redirect, Responder, Response};
 use rocket_dyn_templates::Template;
 
 use crate::models::dict::{get_site_default_locale, get_site_locales};
@@ -15,6 +16,8 @@ use crate::models::category::{
 };
 use crate::models::post::{PostMeta, post_to_view, resolve_post_id_from_public_key};
 use crate::models::site_page_context;
+use crate::rss::build_posts_rss_feed;
+use crate::storage::StorageService;
 
 /// 汇总页面路由
 pub fn routes() -> Vec<Route> {
@@ -24,7 +27,8 @@ pub fn routes() -> Vec<Route> {
         index_lang_no_slash,
         category_archive_lang,
         post_detail_lang,
-        posts_lang,
+        posts_index_redirect,
+        rss_lang,
         about_lang,
     ]
 }
@@ -202,10 +206,31 @@ impl<'r> Responder<'r, 'static> for CategoryArchiveError {
     }
 }
 
-/// 多语言文章列表页
+/// 原全站文章列表路径，重定向至首页
 #[get("/<lang>/posts")]
-pub async fn posts_lang(lang: &str, db: &State<toasty::Db>) -> Result<Template, Redirect> {
-    render_public_page(db, lang, "posts").await
+pub async fn posts_index_redirect(lang: &str, db: &State<toasty::Db>) -> Redirect {
+    let mut db = db.inner().clone();
+    match resolve_public_lang(&mut db, lang).await {
+        Ok(resolved) => Redirect::to(locale_path(&resolved, "")),
+        Err(r) => r,
+    }
+}
+
+/// 多语言 RSS 订阅
+#[get("/<lang>/rss")]
+pub async fn rss_lang(
+    lang: &str,
+    db: &State<toasty::Db>,
+    storage: &State<StorageService>,
+    host: &Host<'_>,
+) -> Result<RssResponse, Redirect> {
+    let mut db = db.inner().clone();
+    let resolved = resolve_public_lang(&mut db, lang).await?;
+    let origin = request_site_origin(host);
+    let feed = build_posts_rss_feed(&mut db, storage.inner(), &resolved, &origin)
+        .await
+        .map_err(|_| Redirect::to(locale_path(&resolved, "")))?;
+    Ok(RssResponse(Template::render("rss", feed)))
 }
 
 /// 多语言关于页
@@ -251,8 +276,24 @@ async fn render_public_page(
     }
 
     Ok(match page_slug {
-        "posts" => Template::render("posts", ctx),
         "about" => Template::render("about", ctx),
         _ => Template::render("index", ctx),
     })
+}
+
+/// RSS 响应（application/rss+xml）
+pub(crate) struct RssResponse(Template);
+
+#[rocket::async_trait]
+impl<'r> Responder<'r, 'static> for RssResponse {
+    fn respond_to(self, req: &'r rocket::Request<'_>) -> response::Result<'static> {
+        Response::build()
+            .header(ContentType::new("application", "rss+xml"))
+            .merge(self.0.respond_to(req)?)
+            .ok()
+    }
+}
+
+fn request_site_origin(host: &Host<'_>) -> String {
+    format!("http://{host}")
 }

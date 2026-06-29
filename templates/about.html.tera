@@ -15,7 +15,7 @@
             <p style="margin-top: 1rem;">设计理念遵循「结构化优雅」——在高效实用与温暖精致之间取得平衡，详见项目设计文档。</p>
             {% endif %}
             <p style="margin-top: 1.5rem;">
-                <a class="btn btn-primary" href="{{ locale_prefix }}/posts">{% if lang == "en-us" %}Browse Posts{% else %}浏览文章{% endif %}</a>
+                <a class="btn btn-primary" href="{{ locale_prefix }}/categories/news">{% if lang == "en-us" %}Browse News{% else %}浏览新闻{% endif %}</a>
                 <a class="btn btn-secondary" href="/admin" style="margin-left: 0.75rem;">{% if lang == "en-us" %}Admin{% else %}管理后台{% endif %}</a>
             </p>
         </div>

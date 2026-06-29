@@ -13,7 +13,7 @@
 <section class="page-section post-detail-section">
     <div class="container container-narrow">
         <nav class="post-detail-nav">
-            <a class="post-detail-back" id="post-detail-back" href="{% if category_route_path %}{{ category_route_path | safe }}{% else %}{{ locale_prefix | safe }}/posts{% endif %}">
+            <a class="post-detail-back" id="post-detail-back" href="{% if category_route_path %}{{ category_route_path | safe }}{% else %}{{ locale_prefix | safe }}/{% endif %}">
                 {% if lang == "en-us" %}
                     {% if category_name %}← Back to {{ category_name }}{% else %}← Back to posts{% endif %}
                 {% else %}
@@ -45,7 +45,7 @@
     $(function () {
         var postId = {{ post_id }};
         var lang = "{{ lang }}";
-        var postsFallback = "{{ locale_prefix | safe }}/posts";
+        var postsFallback = "{{ locale_prefix | safe }}/";
         var loadFailed = "{{ lang }}" === "en-us" ? "Failed to load article." : "文章加载失败，请稍后重试。";
         var notFound = "{{ lang }}" === "en-us" ? "Article not found or unpublished." : "文章不存在或未发布。";
 

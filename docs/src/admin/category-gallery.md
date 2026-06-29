@@ -23,7 +23,7 @@
 | 相册归档 | `/<lang>/categories/<slug>` | 卡片网格，封面缩略图 + 标题 |
 | 相册详情 | `/<lang>/posts/<slug>` | 大图封面 + 附件照片网格 + 说明 |
 
-全站文章列表 `/<lang>/posts` 仍展示所有分类文章，不受分类模板影响。
+分类归档 `/<lang>/categories/<key>` 使用各分类的列表模板（如 `category-list`、`gallery-list`），与全站 RSS `/<lang>/rss` 无关。
 
 ## 4. 手测清单
 

@@ -6,6 +6,7 @@ mod db_patch;
 mod guards;
 mod models;
 mod routes;
+mod rss;
 mod storage;
 
 use rocket::fs::{self, FileServer};

@@ -40,7 +40,7 @@
         <h1 class="hero-title">让数字内容 <em>如花绽放</em> 成艺术。</h1>
         <p class="hero-desc">{{ site_name }} 为追求优雅与性能的创作者提供结构化的工作空间。公开站点由 Tera 模板驱动，管理后台由 Vue 3 独立构建。</p>
         <div class="hero-actions">
-            <a class="btn btn-primary btn-lg" href="{{ locale_prefix }}/posts">{% if lang == "en-us" %}Browse Posts{% else %}浏览最新文章{% endif %}</a>
+            <a class="btn btn-primary btn-lg" href="{{ locale_prefix }}/categories/news">{% if lang == "en-us" %}Browse News{% else %}浏览新闻{% endif %}</a>
             <a class="btn btn-secondary btn-lg" href="{{ locale_prefix }}/about">{% if lang == "en-us" %}Learn More{% else %}了解更多{% endif %}</a>
         </div>
     </div>

@@ -15,7 +15,7 @@
 <section class="page-section gallery-detail">
     <div class="container">
         <nav class="gallery-detail__nav">
-            <a class="post-detail-back" id="gallery-back" href="{% if category_route_path %}{{ category_route_path | safe }}{% else %}{{ locale_prefix | safe }}/posts{% endif %}">
+            <a class="post-detail-back" id="gallery-back" href="{% if category_route_path %}{{ category_route_path | safe }}{% else %}{{ locale_prefix | safe }}/{% endif %}">
                 {% if lang == "en-us" %}
                     {% if category_name %}← Back to {{ category_name }}{% else %}← Back{% endif %}
                 {% else %}
@@ -53,7 +53,7 @@
     $(function () {
         var postId = {{ post_id }};
         var lang = "{{ lang }}";
-        var postsFallback = "{{ locale_prefix | safe }}/posts";
+        var postsFallback = "{{ locale_prefix | safe }}/";
         var loadFailed = "{{ lang }}" === "en-us" ? "Failed to load." : "加载失败";
         var notFound = "{{ lang }}" === "en-us" ? "Not found or unpublished." : "不存在或未发布";
         var noPhotos = "{{ lang }}" === "en-us" ? "No photos in this album." : "本相册暂无图片";

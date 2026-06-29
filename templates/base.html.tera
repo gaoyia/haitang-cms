@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/resources/css/site.css">
+    <link rel="alternate" type="application/rss+xml" title="{{ site_name }} RSS" href="{{ locale_prefix }}/rss">
     {% block extra_head %}{% endblock extra_head %}
 </head>
 <body>
@@ -27,7 +28,7 @@
                 <a href="{{ link.url }}"{% if link.active %} class="active"{% endif %}>{{ link.label }}</a>
                 {% endfor %}
             </nav>
-            <a class="btn btn-ghost" href="{{ locale_prefix }}/posts">{% if lang == "en-us" %}Posts{% else %}浏览文章{% endif %}</a>
+            <a class="btn btn-ghost" href="{{ locale_prefix }}/rss">{% if lang == "en-us" %}RSS{% else %}RSS 订阅{% endif %}</a>
             <a class="btn btn-primary" href="/admin">{% if lang == "en-us" %}Admin{% else %}管理后台{% endif %}</a>
         </div>
     </header>

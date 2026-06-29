@@ -72,7 +72,7 @@
 | `static/resources/js/purify.min.js` | HTML 消毒 |
 | `static/resources/css/github-markdown.min.css` | 阅读样式 |
 | `templates/post-detail.html.tera` | 文章详情页 |
-| `templates/posts.html.tera` | 列表页摘要与链接 |
+| `templates/category-list.html.tera` 等 | 分类归档列表页摘要与链接 |
 | `src/routes/pages.rs` | `GET /<lang>/posts/<key>`（数字 ID 或 SEO slug） |
 | `static/resources/css/site.css` | `.markdown-body`、`.post-detail-*` 样式 |
 
@@ -113,7 +113,7 @@ post_i18n.content (Markdown)
 
 3. **文章详情页**：`GET /<lang>/posts/<key>`，`<key>` 可为文章 ID 或该语言 SEO slug（如 `/zh-cn/posts/测试测试`）；模板 `templates/post-detail.html.tera`，调用 `GET /api/posts/:id?lang=` 并执行 `renderMarkdown`（仅展示 `status = 1` 的已发布文章）。
 
-4. **列表页摘要**（`templates/posts.html.tera`）：优先使用 `description`；若无摘要，通过 `stripMarkdown(content)` 去标记后截断；列表项链接至详情页。
+4. **分类归档列表**（如 `templates/category-list.html.tera`）：优先使用 `description`；若无摘要，通过 `stripMarkdown(content)` 去标记后截断；列表项链接至详情页。全站 RSS 见 `GET /<lang>/rss`（`templates/rss.xml.tera`）。
 
 5. **样式微调**：`static/resources/css/site.css` 中 `.markdown-body` 与 `.post-detail-*` 与站点 token 对齐。
 

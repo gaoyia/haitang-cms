@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>{{ channel_title | escape }}</title>
+    <link>{{ site_url }}</link>
+    <description>{{ channel_description | escape }}</description>
+    <language>{{ lang }}</language>
+    <lastBuildDate>{{ last_build_date }}</lastBuildDate>
+    <generator>{{ site_name | escape }}</generator>
+    {% for item in items %}
+    <item>
+      <title>{{ item.title | escape }}</title>
+      <link>{{ item.link }}</link>
+      <guid isPermaLink="true">{{ item.guid }}</guid>
+      {% if item.description %}
+      <description><![CDATA[{{ item.description }}]]></description>
+      {% endif %}
+      {% if item.pub_date %}
+      <pubDate>{{ item.pub_date }}</pubDate>
+      {% endif %}
+    </item>
+    {% endfor %}
+  </channel>
+</rss>

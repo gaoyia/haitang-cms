@@ -76,7 +76,7 @@ haitang-cms/
 |---------|------|------|
 | `/` | 重定向至 `/{默认语言}/` | 无需 |
 | `/<lang>/` | 多语言公开首页 | 无需 |
-| `/<lang>/posts`、`/<lang>/posts/<id>`、`/<lang>/about` | 多语言公开页 | 无需 |
+| `/<lang>/rss`、`/<lang>/posts/<id>`（订阅 / 详情）、`/<lang>/about` | 多语言公开页 | 无需 |
 | `/api/*` | 公开 API (JSON) | 无需 |
 | `/api/admin/*` | 管理 API (JSON) | 需要 Bearer Token |
 | `/static/*` | 静态资源 | 无需 |
@@ -84,7 +84,7 @@ haitang-cms/
 
 ### 公开首页
 
-首页使用 Rocket 的 Tera 模板引擎渲染 HTML 页面，URL 带语言前缀（如 `/zh-cn/`、`/en-us/posts`）。访问 `/` 会重定向到字典项 `site_default_locale` 对应的首页。模板文件位于 `templates/` 目录。
+首页使用 Rocket 的 Tera 模板引擎渲染 HTML 页面，URL 带语言前缀（如 `/zh-cn/`、`/en-us/rss` 为 RSS 订阅）。访问 `/` 会重定向到字典项 `site_default_locale` 对应的首页。模板文件位于 `templates/` 目录。
 
 ### 管理后台
 
