@@ -217,9 +217,9 @@ const localeSegmentOptions = computed(() =>
 );
 
 function templateLabel(tpl: CategoryTemplate): string {
-  return tpl === "gallery"
-    ? t("menu.content.category.templateGallery")
-    : t("menu.content.category.templateDefault");
+  if (tpl === "gallery") return t("menu.content.category.templateGallery");
+  if (tpl === "recruitment") return t("menu.content.category.templateRecruitment");
+  return t("menu.content.category.templateDefault");
 }
 
 function seoPathPrefix(loc: string): string {

@@ -1,0 +1,110 @@
+{% extends "base" %}
+
+{% block title %}{{ title }}{% endblock title %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="/static/resources/css/recruitment.css">
+<link rel="stylesheet" href="/static/resources/css/github-markdown.min.css">
+{% if post_description %}
+<meta name="description" content="{{ post_description }}">
+{% endif %}
+{% endblock extra_head %}
+
+{% block content %}
+<section class="page-section recruitment-detail-section">
+    <div class="container container-narrow">
+        <nav class="recruitment-detail-nav">
+            <a class="recruitment-detail-back" id="recruitment-back" href="{% if category_route_path %}{{ category_route_path | safe }}{% else %}{{ locale_prefix | safe }}/posts{% endif %}">
+                {% if lang == "en-us" %}
+                    {% if category_name %}← Back to {{ category_name }}{% else %}← Back{% endif %}
+                {% else %}
+                    {% if category_name %}← 返回{{ category_name }}{% else %}← 返回{% endif %}
+                {% endif %}
+            </a>
+        </nav>
+        <article class="recruitment-detail">
+            <header class="recruitment-detail__header">
+                <h1 class="recruitment-detail__title" id="post-title">{{ title }}</h1>
+                <p class="recruitment-detail__summary" id="post-description"{% if not post_description %} hidden{% endif %}>{% if post_description %}{{ post_description }}{% endif %}</p>
+                <dl class="recruitment-detail__facts" id="post-meta-facts"></dl>
+            </header>
+            <div id="post-content" class="recruitment-detail__body content-card markdown-body"></div>
+            <p class="empty" id="post-error" hidden></p>
+        </article>
+    </div>
+</section>
+{% endblock content %}
+
+{% block scripts %}
+<script src="/static/resources/js/marked.min.js"></script>
+<script src="/static/resources/js/purify.min.js"></script>
+<script src="/static/resources/js/markdown-render.js"></script>
+<script>
+    $(function () {
+        var postId = {{ post_id }};
+        var lang = "{{ lang }}";
+        var isEn = lang === "en-us";
+        var postsFallback = "{{ locale_prefix | safe }}/posts";
+        var loadFailed = isEn ? "Failed to load job." : "岗位加载失败，请稍后重试。";
+        var notFound = isEn ? "Job not found or unpublished." : "岗位不存在或未发布。";
+        var labels = {
+            salary: isEn ? "Salary" : "薪资",
+            location: isEn ? "Location" : "地点",
+            employment_type: isEn ? "Employment" : "用工类型",
+            department: isEn ? "Department" : "部门"
+        };
+
+        function parseMeta(raw) {
+            if (!raw) return {};
+            try {
+                var obj = JSON.parse(raw);
+                return obj && typeof obj === "object" ? obj : {};
+            } catch (e) {
+                return {};
+            }
+        }
+
+        function renderFacts(meta) {
+            var $facts = $("#post-meta-facts");
+            $facts.empty();
+            ["salary", "location", "employment_type", "department"].forEach(function (key) {
+                var val = meta[key];
+                if (!val) return;
+                $facts.append(
+                    '<div class="recruitment-fact">' +
+                    '<dt>' + labels[key] + '</dt>' +
+                    '<dd>' + $("<span>").text(val).html() + '</dd>' +
+                    '</div>'
+                );
+            });
+        }
+
+        $.getJSON("/api/posts/" + postId + "?lang=" + lang, function (res) {
+            if (res.code !== 0 || !res.data) {
+                $("#post-error").text(notFound).prop("hidden", false);
+                return;
+            }
+            var post = res.data;
+            if (post.title) {
+                $("#post-title").text(post.title);
+                document.title = post.title + " - {{ site_name }}";
+            }
+            if (post.description) {
+                $("#post-description").text(post.description).prop("hidden", false);
+            }
+            renderFacts(parseMeta(post.meta_json));
+            if (post.content) {
+                $("#post-content").html(renderMarkdown(post.content));
+            }
+            var categoryHref = post.category_route_path || "";
+            if (categoryHref) {
+                $("#recruitment-back").attr("href", categoryHref);
+            } else {
+                $("#recruitment-back").attr("href", postsFallback);
+            }
+        }).fail(function () {
+            $("#post-error").text(loadFailed).prop("hidden", false);
+        });
+    });
+</script>
+{% endblock scripts %}

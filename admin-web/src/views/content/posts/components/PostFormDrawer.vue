@@ -76,6 +76,44 @@
         </el-col>
       </el-row>
 
+      <template v-if="isRecruitmentCategory">
+        <el-divider content-position="left">{{ t("menu.content.post.manage.sectionRecruitmentMeta") }}</el-divider>
+        <el-row :gutter="16" class="post-meta-row">
+          <el-col :xs="24" :sm="12" :lg="6">
+            <el-form-item :label="t('menu.content.post.manage.recruitmentSalary')">
+              <el-input
+                v-model="form.recruitmentMeta.salary"
+                :placeholder="t('menu.content.post.manage.recruitmentSalaryPh')"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12" :lg="6">
+            <el-form-item :label="t('menu.content.post.manage.recruitmentLocation')">
+              <el-input
+                v-model="form.recruitmentMeta.location"
+                :placeholder="t('menu.content.post.manage.recruitmentLocationPh')"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12" :lg="6">
+            <el-form-item :label="t('menu.content.post.manage.recruitmentEmploymentType')">
+              <el-input
+                v-model="form.recruitmentMeta.employment_type"
+                :placeholder="t('menu.content.post.manage.recruitmentEmploymentTypePh')"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12" :lg="6">
+            <el-form-item :label="t('menu.content.post.manage.recruitmentDepartment')">
+              <el-input
+                v-model="form.recruitmentMeta.department"
+                :placeholder="t('menu.content.post.manage.recruitmentDepartmentPh')"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </template>
+
       <el-divider content-position="left">{{ t("menu.content.post.manage.sectionAssets") }}</el-divider>
       <el-form-item label=" " class="post-form-drawer__assets-note-item">
         <p class="post-form-drawer__assets-note">
@@ -190,6 +228,12 @@ import type { CategoryView } from "@/api/system/categories.ts";
 import PostAssetsSection from "@/components/assets/PostAssetsSection.vue";
 import { koiMsgError, koiMsgSuccess } from "@/utils/koi.ts";
 import { nowUnix } from "@/utils/formatTime.ts";
+import {
+  buildRecruitmentMetaJson,
+  emptyRecruitmentMeta,
+  parseRecruitmentMeta,
+  type RecruitmentPostMeta,
+} from "@/utils/postMeta.ts";
 import { breakpointsEnum } from "@/hooks/screen/index.ts";
 
 /** 宽度 < 768px 时表单改为标签在上、字段纵向排列 */
@@ -259,9 +303,23 @@ const selectedCategoryTemplateHint = computed(() => {
   if (!cat) return "";
   const label = cat.detail_template === "gallery"
     ? t("menu.content.post.manage.categoryTemplateGallery")
-    : t("menu.content.post.manage.categoryTemplateDefault");
+    : cat.detail_template === "recruitment"
+      ? t("menu.content.post.manage.categoryTemplateRecruitment")
+      : t("menu.content.post.manage.categoryTemplateDefault");
   return t("menu.content.post.manage.categoryTemplateHint", { template: label });
 });
+
+const isRecruitmentCategory = computed(() => {
+  if (!form.category_id) return false;
+  const cat = props.categories.find((c) => c.id === form.category_id);
+  return cat?.detail_template === "recruitment";
+});
+
+function resolveMetaJsonPayload(): string {
+  return isRecruitmentCategory.value
+    ? buildRecruitmentMetaJson(form.recruitmentMeta)
+    : "{}";
+}
 
 /** 当前语言下访客实际使用的公开路径 */
 function publicUrlPreview(loc: string): string {
@@ -329,6 +387,7 @@ const form = reactive({
   status: 0,
   display_time: 0,
   publish_time: 0,
+  recruitmentMeta: emptyRecruitmentMeta() as RecruitmentPostMeta,
   i18n: {} as PostLocaleForm,
 });
 
@@ -369,6 +428,7 @@ function resetForm() {
   form.status = 0;
   form.display_time = 0;
   form.publish_time = 0;
+  form.recruitmentMeta = emptyRecruitmentMeta();
   form.i18n = emptyI18n();
   sessionPostId.value = null;
   postCovers.value = [];
@@ -391,6 +451,7 @@ async function loadDetail() {
     form.status = detail.status;
     form.display_time = detail.display_time;
     form.publish_time = detail.publish_time;
+    form.recruitmentMeta = parseRecruitmentMeta(detail.meta_json);
     postCovers.value = detail.covers ?? [];
     postAttachments.value = detail.attachments ?? [];
     for (const loc of props.siteLocales) {
@@ -451,6 +512,7 @@ async function handleSave() {
       status: form.status,
       display_time: form.display_time > 0 ? form.display_time : 0,
       publish_time: form.publish_time > 0 ? form.publish_time : 0,
+      meta_json: resolveMetaJsonPayload(),
     };
 
     const updateTargetId = props.editId ?? sessionPostId.value;

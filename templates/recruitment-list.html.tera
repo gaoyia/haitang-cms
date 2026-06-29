@@ -1,0 +1,106 @@
+{% extends "base" %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="/static/resources/css/recruitment.css">
+{% endblock extra_head %}
+
+{% block content %}
+<section class="page-section recruitment-archive">
+    <div class="container container-narrow">
+        <header class="recruitment-archive__header">
+            <h1 class="page-title" id="category-title">{{ title }}</h1>
+            <p class="recruitment-archive__desc" id="category-desc" hidden></p>
+        </header>
+        <ul class="recruitment-list" id="recruitment-list">
+            <li class="empty">{% if lang == "en-us" %}Loading…{% else %}加载中…{% endif %}</li>
+        </ul>
+    </div>
+</section>
+{% endblock content %}
+
+{% block scripts %}
+<script>
+    $(function () {
+        var categoryId = {{ category_id }};
+        var localePrefix = "{{ locale_prefix | safe }}";
+        var isEn = "{{ lang }}" === "en-us";
+        var emptyText = isEn ? "No openings yet." : "暂无招聘岗位";
+        var failText = isEn ? "Failed to load." : "加载失败，请稍后重试";
+        var labels = {
+            salary: isEn ? "Salary" : "薪资",
+            location: isEn ? "Location" : "地点",
+            employment_type: isEn ? "Type" : "用工",
+            department: isEn ? "Department" : "部门"
+        };
+
+        function postDetailUrl(post) {
+            if (post.route_path) return post.route_path;
+            return localePrefix + "/posts/" + post.id;
+        }
+
+        function parseMeta(raw) {
+            if (!raw) return {};
+            try {
+                var obj = JSON.parse(raw);
+                return obj && typeof obj === "object" ? obj : {};
+            } catch (e) {
+                return {};
+            }
+        }
+
+        function metaChips(meta) {
+            var keys = ["salary", "location", "employment_type", "department"];
+            var html = "";
+            keys.forEach(function (key) {
+                var val = meta[key];
+                if (!val) return;
+                html += '<span class="recruitment-chip"><span class="recruitment-chip__label">' +
+                    labels[key] + '：</span>' + $("<span>").text(val).html() + "</span>";
+            });
+            return html;
+        }
+
+        $.getJSON("/api/categories/" + categoryId + "?lang={{ lang }}", function (catRes) {
+            if (catRes.code === 0 && catRes.data) {
+                if (catRes.data.name) {
+                    $("#category-title").text(catRes.data.name);
+                    document.title = catRes.data.name + " - {{ site_name }}";
+                }
+                if (catRes.data.description) {
+                    $("#category-desc").text(catRes.data.description).prop("hidden", false);
+                }
+            }
+        });
+
+        $.getJSON("/api/posts?lang={{ lang }}&category_id=" + categoryId, function (res) {
+            var $list = $("#recruitment-list");
+            $list.empty();
+            if (res.code !== 0 || !res.data || res.data.length === 0) {
+                $list.append('<li class="empty">' + emptyText + '</li>');
+                return;
+            }
+
+            var posts = res.data.slice().sort(function (a, b) {
+                return (b.display_time || 0) - (a.display_time || 0);
+            });
+
+            $.each(posts, function (i, post) {
+                var meta = parseMeta(post.meta_json);
+                var summary = post.description || "";
+                var chips = metaChips(meta);
+                var href = postDetailUrl(post);
+                $list.append(
+                    '<li class="recruitment-item">' +
+                    '<a class="recruitment-item__link" href="' + href + '">' +
+                    '<h2 class="recruitment-item__title">' + $("<span>").text(post.title).html() + '</h2>' +
+                    (summary ? '<p class="recruitment-item__summary">' + $("<span>").text(summary).html() + '</p>' : '') +
+                    (chips ? '<div class="recruitment-item__meta">' + chips + '</div>' : '') +
+                    '</a></li>'
+                );
+            });
+        }).fail(function () {
+            $("#recruitment-list").html('<li class="empty">' + failText + '</li>');
+        });
+    });
+</script>
+{% endblock scripts %}

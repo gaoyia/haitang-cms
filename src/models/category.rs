@@ -4,6 +4,7 @@ use super::locale::{pick_i18n_row, resolve_locale};
 
 pub const CATEGORY_TEMPLATE_DEFAULT: &str = "default";
 pub const CATEGORY_TEMPLATE_GALLERY: &str = "gallery";
+pub const CATEGORY_TEMPLATE_RECRUITMENT: &str = "recruitment";
 
 /// 分类结构（不分语言）
 #[derive(Debug, Clone, toasty::Model)]
@@ -14,10 +15,10 @@ pub struct CategoryMeta {
 
     pub sort: i64,
 
-    /// 列表页模板：default | gallery
+    /// 列表页模板：default | gallery | recruitment
     pub list_template: String,
 
-    /// 详情页模板：default | gallery
+    /// 详情页模板：default | gallery | recruitment
     pub detail_template: String,
 }
 
@@ -95,6 +96,7 @@ pub fn normalize_category_template(raw: &str) -> Result<String, String> {
     match raw.trim() {
         "" | CATEGORY_TEMPLATE_DEFAULT => Ok(CATEGORY_TEMPLATE_DEFAULT.to_string()),
         CATEGORY_TEMPLATE_GALLERY => Ok(CATEGORY_TEMPLATE_GALLERY.to_string()),
+        CATEGORY_TEMPLATE_RECRUITMENT => Ok(CATEGORY_TEMPLATE_RECRUITMENT.to_string()),
         other => Err(format!("不支持的模板类型: {other}")),
     }
 }
@@ -103,6 +105,7 @@ pub fn normalize_category_template(raw: &str) -> Result<String, String> {
 pub fn category_list_tera_template(list_template: &str) -> &'static str {
     match list_template {
         CATEGORY_TEMPLATE_GALLERY => "gallery-list",
+        CATEGORY_TEMPLATE_RECRUITMENT => "recruitment-list",
         _ => "category-list",
     }
 }
@@ -111,6 +114,7 @@ pub fn category_list_tera_template(list_template: &str) -> &'static str {
 pub fn category_detail_tera_template(detail_template: &str) -> &'static str {
     match detail_template {
         CATEGORY_TEMPLATE_GALLERY => "gallery-detail",
+        CATEGORY_TEMPLATE_RECRUITMENT => "recruitment-detail",
         _ => "post-detail",
     }
 }
@@ -617,11 +621,11 @@ fn default_category_seed() -> &'static [CategorySeedEntry] {
             sort: 2,
             slug: "join",
             zh_name: "加入我们",
-            zh_desc: "招聘与合作（后续模板）",
+            zh_desc: "招聘岗位与团队加入",
             en_name: "Join Us",
-            en_desc: "Careers and partnerships (template TBD)",
-            list_template: CATEGORY_TEMPLATE_DEFAULT,
-            detail_template: CATEGORY_TEMPLATE_DEFAULT,
+            en_desc: "Job openings and careers",
+            list_template: CATEGORY_TEMPLATE_RECRUITMENT,
+            detail_template: CATEGORY_TEMPLATE_RECRUITMENT,
         },
         CategorySeedEntry {
             sort: 3,
@@ -724,6 +728,10 @@ mod tests {
             "default"
         );
         assert_eq!(normalize_category_template("gallery").unwrap(), "gallery");
+        assert_eq!(
+            normalize_category_template("recruitment").unwrap(),
+            "recruitment"
+        );
         assert!(normalize_category_template("evil").is_err());
     }
 

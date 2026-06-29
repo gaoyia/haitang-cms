@@ -37,6 +37,9 @@ pub struct PostMeta {
 
     /// 前台展示时间
     pub display_time: i64,
+
+    /// 扩展字段 JSON（如招聘岗位薪资、地点等）
+    pub meta_json: String,
 }
 
 /// 文章文案与 SEO 路径（按语言）
@@ -75,6 +78,7 @@ pub struct CreatePost {
     pub display_time: Option<i64>,
     /// 计划发布时间（Unix 秒）；缺省或 0 时，已发布用当前时间，草稿为 0
     pub publish_time: Option<i64>,
+    pub meta_json: Option<String>,
 }
 
 /// 更新文章
@@ -92,6 +96,21 @@ pub struct UpdatePost {
     pub display_time: Option<i64>,
     /// 计划发布时间（Unix 秒）；缺省或 0 时，已发布用当前时间，草稿为 0
     pub publish_time: Option<i64>,
+    pub meta_json: Option<String>,
+}
+
+/// 校验并规范化文章 meta_json（须为 JSON 对象）
+pub fn normalize_post_meta_json(raw: &str) -> Result<String, String> {
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return Ok("{}".to_string());
+    }
+    let value: serde_json::Value =
+        serde_json::from_str(trimmed).map_err(|e| format!("meta_json 不是合法 JSON: {e}"))?;
+    if !value.is_object() {
+        return Err("meta_json 必须是 JSON 对象".to_string());
+    }
+    Ok(value.to_string())
 }
 
 /// 文章视图（已 merge 当前语言）
@@ -120,6 +139,12 @@ pub struct PostView {
     pub attachments: Vec<super::asset::AssetView>,
     pub list_template: String,
     pub detail_template: String,
+    #[serde(default = "default_post_meta_json")]
+    pub meta_json: String,
+}
+
+fn default_post_meta_json() -> String {
+    "{}".to_string()
 }
 
 /// 管理端文章详情
@@ -133,6 +158,8 @@ pub struct PostDetailView {
     pub published_at: i64,
     pub publish_time: i64,
     pub display_time: i64,
+    #[serde(default = "default_post_meta_json")]
+    pub meta_json: String,
     pub translations: HashMap<String, PostI18nPayload>,
     #[serde(default)]
     pub covers: Vec<super::asset::AssetView>,
@@ -375,6 +402,7 @@ pub async fn create_post(
     let display_time = resolve_display_time(input.display_time, now);
     let publish_time = resolve_publish_time(input.publish_time, status, now);
     let published_at = resolve_published_at(status, publish_time, now, 0);
+    let meta_json = normalize_post_meta_json(input.meta_json.as_deref().unwrap_or("{}"))?;
 
     let meta = PostMeta::create()
         .category_id(category_id)
@@ -384,6 +412,7 @@ pub async fn create_post(
         .published_at(published_at)
         .publish_time(publish_time)
         .display_time(display_time)
+        .meta_json(&meta_json)
         .exec(db)
         .await
         .map_err(|e| format!("创建文章失败: {e}"))?;
@@ -472,6 +501,7 @@ async fn post_to_view_inner(
         attachments,
         list_template,
         detail_template,
+        meta_json: meta.meta_json.clone(),
     })
 }
 
@@ -517,6 +547,7 @@ pub async fn post_detail_view(db: &mut toasty::Db, id: i64) -> Result<PostDetail
         published_at: meta.published_at,
         publish_time: meta.publish_time,
         display_time: meta.display_time,
+        meta_json: meta.meta_json.clone(),
         translations,
         covers: vec![],
         attachments: vec![],
@@ -599,6 +630,7 @@ pub async fn update_post(
     let mut next_status = meta.status;
     let mut next_publish_time = meta.publish_time;
 
+    let old_meta_json = meta.meta_json.clone();
     let mut builder = meta.update();
     let mut meta_changed = false;
     let mut touch_updated = false;
@@ -645,6 +677,14 @@ pub async fn update_post(
     if old_published_at != published_at {
         builder = builder.published_at(published_at);
         meta_changed = true;
+    }
+    if let Some(ref json) = input.meta_json {
+        let meta_json = normalize_post_meta_json(json)?;
+        if old_meta_json != meta_json {
+            builder = builder.meta_json(meta_json.as_str());
+            meta_changed = true;
+            touch_updated = true;
+        }
     }
     if touch_updated {
         builder = builder.updated_at(now);
@@ -775,6 +815,17 @@ mod tests {
     }
 
     #[test]
+    fn normalize_post_meta_json_requires_object() {
+        assert_eq!(super::normalize_post_meta_json("").unwrap(), "{}");
+        assert_eq!(
+            super::normalize_post_meta_json(r#"{"salary":"15K"}"#).unwrap(),
+            r#"{"salary":"15K"}"#
+        );
+        assert!(super::normalize_post_meta_json("[]").is_err());
+        assert!(super::normalize_post_meta_json("{bad").is_err());
+    }
+
+    #[test]
     fn is_post_publicly_visible_checks_publish_time() {
         let meta = PostMeta {
             id: 1,
@@ -785,6 +836,7 @@ mod tests {
             published_at: 0,
             publish_time: 100,
             display_time: 100,
+            meta_json: "{}".to_string(),
         };
         assert!(is_post_publicly_visible(&meta, 100));
         assert!(is_post_publicly_visible(&meta, 200));
@@ -890,6 +942,7 @@ pub async fn seed_default_sample_posts(
 
     seed_default_news_post(db).await?;
     seed_default_gallery_post(db, storage).await?;
+    seed_default_recruitment_post(db).await?;
     Ok(())
 }
 
@@ -924,6 +977,7 @@ async fn seed_default_news_post(db: &mut toasty::Db) -> Result<(), String> {
             status: Some(1),
             display_time: None,
             publish_time: None,
+            meta_json: None,
         },
         &default_lang,
     )
@@ -993,6 +1047,7 @@ async fn seed_default_gallery_post(
             status: Some(1),
             display_time: None,
             publish_time: None,
+            meta_json: None,
         },
         &default_lang,
     )
@@ -1043,5 +1098,75 @@ async fn seed_default_gallery_post(
         meta.id,
         assets.attachments.len()
     );
+    Ok(())
+}
+
+/// 写入预制招聘岗位（由 `seed_default_sample_posts` 在空库时调用）
+async fn seed_default_recruitment_post(db: &mut toasty::Db) -> Result<(), String> {
+    let Some(category_id) = resolve_category_id_from_public_key(db, "zh-cn", "join").await? else {
+        println!("[种子] 未找到「加入我们」分类，跳过预制招聘文章");
+        return Ok(());
+    };
+
+    let default_lang = get_site_default_locale(db).await;
+    println!("[种子] 创建预制招聘岗位...");
+
+    let meta_json = r#"{"salary":"15K-25K","location":"北京","employment_type":"全职","department":"研发"}"#;
+
+    let meta = create_post(
+        db,
+        &CreatePost {
+            title: "Rust 后端工程师".to_string(),
+            description: Some(
+                "负责海棠 CMS 公开站与管理端 API 的设计与实现，参与内容模型与多语言能力建设。"
+                    .to_string(),
+            ),
+            content: Some(
+                "## 岗位职责\n\n\
+                - 使用 Rust（Rocket）设计与实现 REST API\n\
+                - 维护 toasty 数据模型与 SQLite 迁移\n\
+                - 与前端协作完成管理端与公开站功能\n\n\
+                ## 任职要求\n\n\
+                - 熟悉 Rust 与 Web 后端开发\n\
+                - 了解 SQL 与 REST 设计\n\
+                - 有 CMS 或多语言站点经验者优先"
+                    .to_string(),
+            ),
+            tags: Some("Rust,后端,全职".to_string()),
+            category_id: Some(category_id),
+            route_path: Some("rust-backend-engineer".to_string()),
+            lang: Some("zh-cn".to_string()),
+            status: Some(1),
+            display_time: None,
+            publish_time: None,
+            meta_json: Some(meta_json.to_string()),
+        },
+        &default_lang,
+    )
+    .await?;
+
+    upsert_post_i18n(
+        db,
+        meta.id,
+        PostI18nUpsert {
+            lang: "en-us",
+            title: "Rust Backend Engineer",
+            description:
+                "Build and maintain public-site and admin APIs for Haitang CMS, including content models and i18n.",
+            content: "## Responsibilities\n\n\
+                - Design REST APIs with Rust (Rocket)\n\
+                - Maintain toasty models and SQLite patches\n\
+                - Collaborate with the admin-web team\n\n\
+                ## Requirements\n\n\
+                - Solid Rust and backend experience\n\
+                - SQL and REST API design\n\
+                - CMS or multilingual site experience is a plus",
+            route_path: "rust-backend-engineer",
+            tags: "Rust,backend,full-time",
+        },
+    )
+    .await?;
+
+    println!("[种子] 预制招聘岗位已创建（post_id={}）", meta.id);
     Ok(())
 }

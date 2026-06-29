@@ -15,6 +15,7 @@ export interface CategoryTemplateTagStyle {
 export const CATEGORY_TEMPLATE_TAG: Record<CategoryTemplate, CategoryTemplateTagStyle> = {
   default: { type: "info", effect: "plain" },
   gallery: { type: "warning", effect: "plain" },
+  recruitment: { type: "success", effect: "plain" },
 };
 
 const FALLBACK_TAG: CategoryTemplateTagStyle = { type: "info", effect: "plain" };
@@ -25,4 +26,8 @@ export function getCategoryTemplateTagStyle(tpl: CategoryTemplate): CategoryTemp
 }
 
 /** 当前系统支持的分类模板值（与后端 normalize 保持一致） */
-export const CATEGORY_TEMPLATE_VALUES: readonly CategoryTemplate[] = ["default", "gallery"];
+export const CATEGORY_TEMPLATE_VALUES: readonly CategoryTemplate[] = [
+  "default",
+  "gallery",
+  "recruitment",
+];

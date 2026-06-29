@@ -22,6 +22,7 @@ export interface PostView {
   attachments?: AssetView[];
   list_template?: string;
   detail_template?: string;
+  meta_json?: string;
 }
 
 export interface PostI18nPayload {
@@ -44,6 +45,7 @@ export interface PostDetailView {
   translations: Record<string, PostI18nPayload>;
   covers?: AssetView[];
   attachments?: AssetView[];
+  meta_json?: string;
 }
 
 export interface CreatePostInput {
@@ -57,6 +59,7 @@ export interface CreatePostInput {
   status?: number;
   display_time?: number;
   publish_time?: number;
+  meta_json?: string;
 }
 
 export interface UpdatePostInput {
@@ -70,6 +73,7 @@ export interface UpdatePostInput {
   status?: number;
   display_time?: number;
   publish_time?: number;
+  meta_json?: string;
 }
 
 export interface PostListParams extends PageParams {
