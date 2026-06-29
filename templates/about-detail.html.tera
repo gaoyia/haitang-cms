@@ -1,0 +1,110 @@
+{% extends "base" %}
+
+{% block title %}{{ title }}{% endblock title %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="/static/resources/css/about.css">
+<link rel="stylesheet" href="/static/resources/css/github-markdown.min.css">
+{% if post_description %}
+<meta name="description" content="{{ post_description }}">
+{% endif %}
+{% endblock extra_head %}
+
+{% block content %}
+<section class="page-section about-detail-section">
+    <div class="container container-narrow">
+        <nav class="about-detail-nav">
+            <a class="about-detail-back" id="about-back" href="{% if category_route_path %}{{ category_route_path | safe }}{% else %}{{ locale_prefix | safe }}/posts{% endif %}">
+                {% if lang == "en-us" %}
+                    {% if category_name %}← Back to {{ category_name }}{% else %}← Back{% endif %}
+                {% else %}
+                    {% if category_name %}← 返回{{ category_name }}{% else %}← 返回{% endif %}
+                {% endif %}
+            </a>
+        </nav>
+        <article class="about-detail">
+            <header class="about-detail__header">
+                <h1 class="about-detail__title" id="post-title">{{ title }}</h1>
+                <p class="about-detail__summary" id="post-description"{% if not post_description %} hidden{% endif %}>{% if post_description %}{{ post_description }}{% endif %}</p>
+                <dl class="about-detail__facts" id="post-meta-facts"></dl>
+            </header>
+            <div id="post-content" class="about-detail__body content-card markdown-body"></div>
+            <p class="empty" id="post-error" hidden></p>
+        </article>
+    </div>
+</section>
+{% endblock content %}
+
+{% block scripts %}
+<script src="/static/resources/js/marked.min.js"></script>
+<script src="/static/resources/js/purify.min.js"></script>
+<script src="/static/resources/js/markdown-render.js"></script>
+<script>
+    $(function () {
+        var postId = {{ post_id }};
+        var lang = "{{ lang }}";
+        var isEn = lang === "en-us";
+        var postsFallback = "{{ locale_prefix | safe }}/posts";
+        var loadFailed = isEn ? "Failed to load content." : "内容加载失败，请稍后重试。";
+        var notFound = isEn ? "Content not found or unpublished." : "内容不存在或未发布。";
+        var labels = {
+            highlight: isEn ? "Highlight" : "亮点",
+            founded: isEn ? "Founded" : "成立时间",
+            location: isEn ? "Location" : "所在地",
+            contact: isEn ? "Contact" : "联系方式"
+        };
+
+        function parseMeta(raw) {
+            if (!raw) return {};
+            try {
+                var obj = JSON.parse(raw);
+                return obj && typeof obj === "object" ? obj : {};
+            } catch (e) {
+                return {};
+            }
+        }
+
+        function renderFacts(meta) {
+            var $facts = $("#post-meta-facts");
+            $facts.empty();
+            ["highlight", "founded", "location", "contact"].forEach(function (key) {
+                var val = meta[key];
+                if (!val) return;
+                $facts.append(
+                    '<div class="about-fact">' +
+                    '<dt>' + labels[key] + '</dt>' +
+                    '<dd>' + $("<span>").text(val).html() + '</dd>' +
+                    '</div>'
+                );
+            });
+        }
+
+        $.getJSON("/api/posts/" + postId + "?lang=" + lang, function (res) {
+            if (res.code !== 0 || !res.data) {
+                $("#post-error").text(notFound).prop("hidden", false);
+                return;
+            }
+            var post = res.data;
+            if (post.title) {
+                $("#post-title").text(post.title);
+                document.title = post.title + " - {{ site_name }}";
+            }
+            if (post.description) {
+                $("#post-description").text(post.description).prop("hidden", false);
+            }
+            renderFacts(parseMeta(post.meta_json));
+            if (post.content) {
+                $("#post-content").html(renderMarkdown(post.content));
+            }
+            var categoryHref = post.category_route_path || "";
+            if (categoryHref) {
+                $("#about-back").attr("href", categoryHref);
+            } else {
+                $("#about-back").attr("href", postsFallback);
+            }
+        }).fail(function () {
+            $("#post-error").text(loadFailed).prop("hidden", false);
+        });
+    });
+</script>
+{% endblock scripts %}

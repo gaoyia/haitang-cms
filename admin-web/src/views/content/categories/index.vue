@@ -219,6 +219,7 @@ const localeSegmentOptions = computed(() =>
 function templateLabel(tpl: CategoryTemplate): string {
   if (tpl === "gallery") return t("menu.content.category.templateGallery");
   if (tpl === "recruitment") return t("menu.content.category.templateRecruitment");
+  if (tpl === "about") return t("menu.content.category.templateAbout");
   return t("menu.content.category.templateDefault");
 }
 

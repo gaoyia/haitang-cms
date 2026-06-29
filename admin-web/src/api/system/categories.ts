@@ -1,7 +1,7 @@
 import axios, { type Result } from "@/utils/axios.ts";
 import type { PageParams, PageResult } from "@/types/page.ts";
 
-export type CategoryTemplate = "default" | "gallery" | "recruitment";
+export type CategoryTemplate = "default" | "gallery" | "recruitment" | "about";
 
 export interface CategoryView {
   id: number;

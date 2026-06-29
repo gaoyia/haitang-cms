@@ -11,11 +11,14 @@ export interface CategoryTemplateTagStyle {
  *
  * - default：信息蓝，常规文字列表 / Markdown 详情
  * - gallery：警告橙，相册卡片列表 / 图片为主详情
+ * - recruitment：成功绿，招聘列表 / 岗位详情
+ * - about：主色深，关于我们卡片列表 / 介绍详情
  */
 export const CATEGORY_TEMPLATE_TAG: Record<CategoryTemplate, CategoryTemplateTagStyle> = {
   default: { type: "info", effect: "plain" },
   gallery: { type: "warning", effect: "plain" },
   recruitment: { type: "success", effect: "plain" },
+  about: { type: "", effect: "dark" },
 };
 
 const FALLBACK_TAG: CategoryTemplateTagStyle = { type: "info", effect: "plain" };
@@ -30,4 +33,5 @@ export const CATEGORY_TEMPLATE_VALUES: readonly CategoryTemplate[] = [
   "default",
   "gallery",
   "recruitment",
+  "about",
 ];

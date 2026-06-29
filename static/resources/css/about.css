@@ -1,0 +1,126 @@
+.about-archive__header {
+  margin-bottom: 1.75rem;
+  text-align: center;
+}
+
+.about-archive__desc {
+  margin-top: 0.75rem;
+  color: var(--text-muted, #6b7280);
+  line-height: 1.7;
+}
+
+.about-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 16px;
+}
+
+@media (min-width: 640px) {
+  .about-list {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+}
+
+.about-item {
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 12px;
+  background: var(--card-bg, #fff);
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+
+.about-item:hover {
+  border-color: #7c3aed;
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.08);
+  transform: translateY(-2px);
+}
+
+.about-item__link {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 20px 22px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.about-item__title {
+  margin: 0 0 10px;
+  font-size: 1.125rem;
+}
+
+.about-item__summary {
+  margin: 0 0 12px;
+  flex: 1;
+  color: var(--text-muted, #6b7280);
+  line-height: 1.65;
+}
+
+.about-item__meta {
+  margin: 0 0 12px;
+  font-size: 0.8125rem;
+  color: #7c3aed;
+}
+
+.about-item__more {
+  font-size: 0.875rem;
+  color: #7c3aed;
+  font-weight: 500;
+}
+
+.about-detail-nav {
+  margin-bottom: 1rem;
+}
+
+.about-detail-back {
+  color: #7c3aed;
+  text-decoration: none;
+}
+
+.about-detail__header {
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.about-detail__title {
+  margin: 0 0 0.75rem;
+  font-size: 1.75rem;
+}
+
+.about-detail__summary {
+  margin: 0 auto 1.25rem;
+  max-width: 36rem;
+  color: var(--text-muted, #6b7280);
+  line-height: 1.7;
+}
+
+.about-detail__facts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px 24px;
+  margin: 0;
+}
+
+.about-fact {
+  text-align: center;
+}
+
+.about-fact dt {
+  margin: 0 0 4px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted, #6b7280);
+}
+
+.about-fact dd {
+  margin: 0;
+  font-weight: 600;
+  color: #7c3aed;
+}
+
+.about-detail__body {
+  padding: 1.5rem 1.75rem;
+}

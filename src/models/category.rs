@@ -5,6 +5,7 @@ use super::locale::{pick_i18n_row, resolve_locale};
 pub const CATEGORY_TEMPLATE_DEFAULT: &str = "default";
 pub const CATEGORY_TEMPLATE_GALLERY: &str = "gallery";
 pub const CATEGORY_TEMPLATE_RECRUITMENT: &str = "recruitment";
+pub const CATEGORY_TEMPLATE_ABOUT: &str = "about";
 
 /// 分类结构（不分语言）
 #[derive(Debug, Clone, toasty::Model)]
@@ -15,10 +16,10 @@ pub struct CategoryMeta {
 
     pub sort: i64,
 
-    /// 列表页模板：default | gallery | recruitment
+    /// 列表页模板：default | gallery | recruitment | about
     pub list_template: String,
 
-    /// 详情页模板：default | gallery | recruitment
+    /// 详情页模板：default | gallery | recruitment | about
     pub detail_template: String,
 }
 
@@ -97,6 +98,7 @@ pub fn normalize_category_template(raw: &str) -> Result<String, String> {
         "" | CATEGORY_TEMPLATE_DEFAULT => Ok(CATEGORY_TEMPLATE_DEFAULT.to_string()),
         CATEGORY_TEMPLATE_GALLERY => Ok(CATEGORY_TEMPLATE_GALLERY.to_string()),
         CATEGORY_TEMPLATE_RECRUITMENT => Ok(CATEGORY_TEMPLATE_RECRUITMENT.to_string()),
+        CATEGORY_TEMPLATE_ABOUT => Ok(CATEGORY_TEMPLATE_ABOUT.to_string()),
         other => Err(format!("不支持的模板类型: {other}")),
     }
 }
@@ -106,6 +108,7 @@ pub fn category_list_tera_template(list_template: &str) -> &'static str {
     match list_template {
         CATEGORY_TEMPLATE_GALLERY => "gallery-list",
         CATEGORY_TEMPLATE_RECRUITMENT => "recruitment-list",
+        CATEGORY_TEMPLATE_ABOUT => "about-list",
         _ => "category-list",
     }
 }
@@ -115,6 +118,7 @@ pub fn category_detail_tera_template(detail_template: &str) -> &'static str {
     match detail_template {
         CATEGORY_TEMPLATE_GALLERY => "gallery-detail",
         CATEGORY_TEMPLATE_RECRUITMENT => "recruitment-detail",
+        CATEGORY_TEMPLATE_ABOUT => "about-detail",
         _ => "post-detail",
     }
 }
@@ -631,11 +635,11 @@ fn default_category_seed() -> &'static [CategorySeedEntry] {
             sort: 3,
             slug: "about",
             zh_name: "关于我们",
-            zh_desc: "站点与团队介绍（后续模板）",
+            zh_desc: "站点与团队介绍",
             en_name: "About Us",
-            en_desc: "About the site and team (template TBD)",
-            list_template: CATEGORY_TEMPLATE_DEFAULT,
-            detail_template: CATEGORY_TEMPLATE_DEFAULT,
+            en_desc: "About the site and team",
+            list_template: CATEGORY_TEMPLATE_ABOUT,
+            detail_template: CATEGORY_TEMPLATE_ABOUT,
         },
     ]
 }
@@ -732,6 +736,7 @@ mod tests {
             normalize_category_template("recruitment").unwrap(),
             "recruitment"
         );
+        assert_eq!(normalize_category_template("about").unwrap(), "about");
         assert!(normalize_category_template("evil").is_err());
     }
 

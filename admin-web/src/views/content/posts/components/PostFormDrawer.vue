@@ -114,6 +114,44 @@
         </el-row>
       </template>
 
+      <template v-if="isAboutCategory">
+        <el-divider content-position="left">{{ t("menu.content.post.manage.sectionAboutMeta") }}</el-divider>
+        <el-row :gutter="16" class="post-meta-row">
+          <el-col :xs="24" :sm="12" :lg="6">
+            <el-form-item :label="t('menu.content.post.manage.aboutHighlight')">
+              <el-input
+                v-model="form.aboutMeta.highlight"
+                :placeholder="t('menu.content.post.manage.aboutHighlightPh')"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12" :lg="6">
+            <el-form-item :label="t('menu.content.post.manage.aboutFounded')">
+              <el-input
+                v-model="form.aboutMeta.founded"
+                :placeholder="t('menu.content.post.manage.aboutFoundedPh')"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12" :lg="6">
+            <el-form-item :label="t('menu.content.post.manage.aboutLocation')">
+              <el-input
+                v-model="form.aboutMeta.location"
+                :placeholder="t('menu.content.post.manage.aboutLocationPh')"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :xs="24" :sm="12" :lg="6">
+            <el-form-item :label="t('menu.content.post.manage.aboutContact')">
+              <el-input
+                v-model="form.aboutMeta.contact"
+                :placeholder="t('menu.content.post.manage.aboutContactPh')"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </template>
+
       <el-divider content-position="left">{{ t("menu.content.post.manage.sectionAssets") }}</el-divider>
       <el-form-item label=" " class="post-form-drawer__assets-note-item">
         <p class="post-form-drawer__assets-note">
@@ -229,9 +267,13 @@ import PostAssetsSection from "@/components/assets/PostAssetsSection.vue";
 import { koiMsgError, koiMsgSuccess } from "@/utils/koi.ts";
 import { nowUnix } from "@/utils/formatTime.ts";
 import {
+  buildAboutMetaJson,
   buildRecruitmentMetaJson,
+  emptyAboutMeta,
   emptyRecruitmentMeta,
+  parseAboutMeta,
   parseRecruitmentMeta,
+  type AboutPostMeta,
   type RecruitmentPostMeta,
 } from "@/utils/postMeta.ts";
 import { breakpointsEnum } from "@/hooks/screen/index.ts";
@@ -305,7 +347,9 @@ const selectedCategoryTemplateHint = computed(() => {
     ? t("menu.content.post.manage.categoryTemplateGallery")
     : cat.detail_template === "recruitment"
       ? t("menu.content.post.manage.categoryTemplateRecruitment")
-      : t("menu.content.post.manage.categoryTemplateDefault");
+      : cat.detail_template === "about"
+        ? t("menu.content.post.manage.categoryTemplateAbout")
+        : t("menu.content.post.manage.categoryTemplateDefault");
   return t("menu.content.post.manage.categoryTemplateHint", { template: label });
 });
 
@@ -315,10 +359,16 @@ const isRecruitmentCategory = computed(() => {
   return cat?.detail_template === "recruitment";
 });
 
+const isAboutCategory = computed(() => {
+  if (!form.category_id) return false;
+  const cat = props.categories.find((c) => c.id === form.category_id);
+  return cat?.detail_template === "about";
+});
+
 function resolveMetaJsonPayload(): string {
-  return isRecruitmentCategory.value
-    ? buildRecruitmentMetaJson(form.recruitmentMeta)
-    : "{}";
+  if (isRecruitmentCategory.value) return buildRecruitmentMetaJson(form.recruitmentMeta);
+  if (isAboutCategory.value) return buildAboutMetaJson(form.aboutMeta);
+  return "{}";
 }
 
 /** 当前语言下访客实际使用的公开路径 */
@@ -388,6 +438,7 @@ const form = reactive({
   display_time: 0,
   publish_time: 0,
   recruitmentMeta: emptyRecruitmentMeta() as RecruitmentPostMeta,
+  aboutMeta: emptyAboutMeta() as AboutPostMeta,
   i18n: {} as PostLocaleForm,
 });
 
@@ -429,6 +480,7 @@ function resetForm() {
   form.display_time = 0;
   form.publish_time = 0;
   form.recruitmentMeta = emptyRecruitmentMeta();
+  form.aboutMeta = emptyAboutMeta();
   form.i18n = emptyI18n();
   sessionPostId.value = null;
   postCovers.value = [];
@@ -452,6 +504,7 @@ async function loadDetail() {
     form.display_time = detail.display_time;
     form.publish_time = detail.publish_time;
     form.recruitmentMeta = parseRecruitmentMeta(detail.meta_json);
+    form.aboutMeta = parseAboutMeta(detail.meta_json);
     postCovers.value = detail.covers ?? [];
     postAttachments.value = detail.attachments ?? [];
     for (const loc of props.siteLocales) {

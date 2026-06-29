@@ -10,7 +10,7 @@
 | 全局字典 | `dict_value.lang = ""`（空串哨兵） |
 | 默认语言 | 字典项 `site_default_locale`，缺翻译时 fallback |
 | URL | `route_path` 存完整路径，如 `/zh-cn/posts/hello`；**同一 `(lang, route_path)` 非空时全局唯一**（管理端写入校验） |
-| 开发库重置 | 删除 `db/haitang.sqlite` 后 `cargo run` 自动建表；**development** 下每次启动会幂等写入种子（字典、菜单、轮播图、admin 等）；**production** 仅在库中尚无用户时写入一次初始数据。启动时 `db_patch` 在任何环境下都会为已有库补列（如 `assets.upload_name`、`post_metas.meta_json` 等），与种子无关。首次安装且尚无文章时会写入预制内容：新闻「站点上线公告」、画廊「春日花园」、招聘「Rust 后端工程师」（加入我们分类，`recruitment` 模板） |
+| 开发库重置 | 删除 `db/haitang.sqlite` 后 `cargo run` 自动建表；**development** 下每次启动会幂等写入种子（字典、菜单、轮播图、admin 等）；**production** 仅在库中尚无用户时写入一次初始数据。启动时 `db_patch` 在任何环境下都会为已有库补列（如 `assets.upload_name`、`post_metas.meta_json` 等），与种子无关。首次安装且尚无文章时会写入预制内容：新闻「站点上线公告」、画廊「春日花园」、招聘「Rust 后端工程师」（加入我们分类，`recruitment` 模板）、关于我们「关于海棠 CMS」（`about` 模板） |
 
 ## 表结构
 
@@ -30,11 +30,11 @@
 
 | 字段 | 说明 |
 |------|------|
-| `list_template` | 分类归档页模板：`default`、`gallery` 或 `recruitment`（招聘列表） |
-| `detail_template` | 该分类下文章详情模板：`default`、`gallery` 或 `recruitment` |
+| `list_template` | 分类归档页模板：`default`、`gallery`、`recruitment` 或 `about` |
+| `detail_template` | 该分类下文章详情模板：`default`、`gallery`、`recruitment` 或 `about` |
 | `route_path` | 分类归档 SEO 完整路径，如 `/zh-cn/categories/gallery`；空串时公开 URL 使用数字 ID |
 
-公开归档页：`GET /<lang>/categories/<key>`，`<key>` 为分类 ID 或 slug，按 `list_template` 渲染 `category-list`、`gallery-list` 或 `recruitment-list`。
+公开归档页：`GET /<lang>/categories/<key>`，`<key>` 为分类 ID 或 slug，按 `list_template` 渲染 `category-list`、`gallery-list`、`recruitment-list` 或 `about-list`。
 
 ### 文章
 
@@ -52,7 +52,7 @@
 | `published_at` | 首次实际公开时间；未到计划发布时间或未发布过为 0 |
 | `publish_time` | 计划发布时间；`status = 1` 且留空时等于保存时刻；到达该时间后访客可见 |
 | `display_time` | 前台展示时间，可手动编辑；留空保存时使用服务端当前时间；列表按此字段降序 |
-| `meta_json` | JSON 对象字符串，默认 `{}`；招聘模板岗位可存 `salary`、`location`、`employment_type`、`department` 等 |
+| `meta_json` | JSON 对象字符串，默认 `{}`；招聘模板可存 `salary`、`location`、`employment_type`、`department`；关于我们模板可存 `highlight`、`founded`、`location`、`contact` |
 
 正文 Markdown 的编辑与公开渲染选型见 [Markdown 内容选型](./markdown.md)。
 

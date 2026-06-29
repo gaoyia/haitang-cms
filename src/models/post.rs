@@ -943,6 +943,7 @@ pub async fn seed_default_sample_posts(
     seed_default_news_post(db).await?;
     seed_default_gallery_post(db, storage).await?;
     seed_default_recruitment_post(db).await?;
+    seed_default_about_post(db).await?;
     Ok(())
 }
 
@@ -1168,5 +1169,70 @@ async fn seed_default_recruitment_post(db: &mut toasty::Db) -> Result<(), String
     .await?;
 
     println!("[种子] 预制招聘岗位已创建（post_id={}）", meta.id);
+    Ok(())
+}
+
+/// 写入预制「关于我们」介绍页（由 `seed_default_sample_posts` 在空库时调用）
+async fn seed_default_about_post(db: &mut toasty::Db) -> Result<(), String> {
+    let Some(category_id) = resolve_category_id_from_public_key(db, "zh-cn", "about").await? else {
+        println!("[种子] 未找到「关于我们」分类，跳过预制介绍文章");
+        return Ok(());
+    };
+
+    let default_lang = get_site_default_locale(db).await;
+    println!("[种子] 创建预制关于我们文章...");
+
+    let meta_json = r#"{"highlight":"结构化优雅","founded":"2024","location":"北京","contact":"hello@example.com"}"#;
+
+    let meta = create_post(
+        db,
+        &CreatePost {
+            title: "关于海棠 CMS".to_string(),
+            description: Some(
+                "轻量级内容管理系统，Rust + Rocket 后端，Tera 公开站，Vue 3 管理端。".to_string(),
+            ),
+            content: Some(
+                "**海棠 CMS** 是一个轻量级内容管理系统，采用 Rust + Rocket 作为后端，SQLite 作为数据库，公开站点使用 Tera 模板引擎，管理后台使用 Vue 3 + Vite 构建。\n\n\
+                ## 技术栈\n\n\
+                - Rocket、Toasty ORM、Tera\n\
+                - Vue 3 管理端、JWT 认证\n\n\
+                ## 设计理念\n\n\
+                遵循「结构化优雅」——在高效实用与温暖精致之间取得平衡。"
+                    .to_string(),
+            ),
+            tags: Some("CMS,Rust,介绍".to_string()),
+            category_id: Some(category_id),
+            route_path: Some("about-haitang-cms".to_string()),
+            lang: Some("zh-cn".to_string()),
+            status: Some(1),
+            display_time: None,
+            publish_time: None,
+            meta_json: Some(meta_json.to_string()),
+        },
+        &default_lang,
+    )
+    .await?;
+
+    upsert_post_i18n(
+        db,
+        meta.id,
+        PostI18nUpsert {
+            lang: "en-us",
+            title: "About Haitang CMS",
+            description:
+                "A lightweight CMS with Rust + Rocket, Tera public site, and Vue 3 admin.",
+            content: "**Haitang CMS** is a lightweight content management system built with Rust and Rocket, SQLite for storage, Tera templates for the public site, and Vue 3 for the admin panel.\n\n\
+                ## Stack\n\n\
+                - Rocket, Toasty ORM, Tera\n\
+                - Vue 3 admin, JWT auth\n\n\
+                ## Design\n\n\
+                Structured elegance — balancing efficiency with a warm, refined experience.",
+            route_path: "about-haitang-cms",
+            tags: "CMS,Rust,intro",
+        },
+    )
+    .await?;
+
+    println!("[种子] 预制关于我们文章已创建（post_id={}）", meta.id);
     Ok(())
 }
