@@ -20,7 +20,8 @@ pub mod user;
 pub mod user_role;
 
 pub use admin_sidebar::{
-    ADMIN_SIDEBAR_CODE, get_admin_sidebar_nav, get_admin_sidebar_tree, is_admin_sidebar_code,
+    ADMIN_SIDEBAR_CODE, AdminNavMenuJsonItem, get_admin_sidebar_item, get_admin_sidebar_nav_items,
+    get_admin_sidebar_tree, is_admin_sidebar_code,
 };
 pub use asset::{
     Asset, AssetView, BannerAsset, BannerAssetsView, LinkBannerAssetInput, LinkPostAssetInput,

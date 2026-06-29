@@ -1,10 +1,9 @@
 // 定义权限小仓库[选择式Api写法]
 import { defineStore } from "pinia";
 import { staticRouter } from "@/routers/modules/staticRouter";
-import authMenu from "@/assets/json/authMenu.json";
 import { generateRoutes, generateFlattenRoutes } from "@/utils/filterRoute.ts";
 import { getShowStaticAndDynamicMenuList, getAllBreadcrumbList } from "@/utils/index.ts";
-import { getMeApi } from "@/api/system/auth.ts";
+import { getMeApi, getNavApi } from "@/api/system/auth.ts";
 
 // 权限数据，不进行持久化。否则刷新浏览器无法获取新的数据。
 const authStore = defineStore("auth", {
@@ -24,13 +23,18 @@ const authStore = defineStore("auth", {
     };
   },
   actions: {
-    /** 获取菜单数据（首期使用静态 JSON，后续对接 /api/admin/nav） */
+    /** 从后端获取后台侧栏菜单并生成动态路由 */
     async listRouters() {
-      this.menuList = generateFlattenRoutes(authMenu.data);
+      const res = await getNavApi();
+      if (res.code !== 0 || !Array.isArray(res.data)) {
+        throw new Error(res.message || "获取菜单失败");
+      }
+      const menuData = res.data;
+      this.menuList = generateFlattenRoutes(menuData);
       this.recursiveMenuList = getShowStaticAndDynamicMenuList(staticRouter).concat(
-        generateRoutes(getShowStaticAndDynamicMenuList(authMenu.data), 0),
+        generateRoutes(getShowStaticAndDynamicMenuList(menuData), 0),
       );
-      this.breadcrumbList = staticRouter.concat(generateRoutes(authMenu.data, 0));
+      this.breadcrumbList = staticRouter.concat(generateRoutes(menuData, 0));
     },
     /** 从后端获取当前用户信息 */
     async getLoginUserInfo() {

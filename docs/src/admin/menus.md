@@ -41,6 +41,6 @@ DELETE /api/admin/menus/:id
 GET /api/admin/nav?code=admin_sidebar
 ```
 
-按当前用户权限过滤后台侧边栏菜单树。目前仅支持 `code=admin_sidebar`；公开站菜单组（如 `site_header`）请使用 `menus?group_id=` 接口。
+按当前用户权限过滤后台侧边栏，返回与 admin-web 动态路由生成器对齐的**扁平菜单列表**（字段同原 `authMenu.json`：`menuId`、`menuName`、`path`、`component`、`icon` 等）。目前仅支持 `code=admin_sidebar`；公开站菜单组（如 `site_header`）请使用 `menus?group_id=` 接口。
 
 `admin_sidebar` 菜单组为内置只读；公开站菜单组如 `site_header`、`site_footer` 可编辑。

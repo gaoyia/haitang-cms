@@ -82,7 +82,7 @@
 
       "component": "content/categories/index",
 
-      "icon": "koi-directory",
+      "icon": "koi-copy",
 
       "isVisible": "1",
 
@@ -274,7 +274,7 @@
 
       "component": "menus/index",
 
-      "icon": "koi-slack",
+      "icon": "koi-tree-right",
 
       "isVisible": "1",
 

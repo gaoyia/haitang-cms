@@ -5,8 +5,9 @@ use crate::guards::AdminAuth;
 use crate::models::{
     ADMIN_SIDEBAR_CODE, ApiResponse, CreateMenuItem, MenuGroup, MenuGroupTreeView, MenuItemMeta,
     MenuView, UpdateMenuItem, all_menu_group_trees, create_menu_item, delete_menu_item,
-    get_admin_sidebar_nav, get_admin_sidebar_tree, get_db_menu_tree, get_site_default_locale,
-    menu_has_children, merged_menu_item, upsert_menu_i18n, validate_parent_id,
+    get_admin_sidebar_item, get_admin_sidebar_nav_items, get_admin_sidebar_tree, get_db_menu_tree,
+    get_site_default_locale, menu_has_children, merged_menu_item, upsert_menu_i18n,
+    validate_parent_id,
 };
 use crate::routes::admin::auth::{get_roles_info, get_user_role_ids};
 use crate::routes::lang::LangQuery;
@@ -46,19 +47,19 @@ pub async fn list_by_group(
     }
 }
 
-/// 获取当前用户可见的导航菜单树
+/// 获取当前用户可见的导航菜单（admin-web 动态侧栏）
 #[get("/api/admin/nav?<code>")]
 pub async fn nav(
     auth: AdminAuth,
     db: &State<toasty::Db>,
     code: &str,
-) -> Json<ApiResponse<Vec<MenuView>>> {
+) -> Json<ApiResponse<Vec<crate::models::AdminNavMenuJsonItem>>> {
     if code == ADMIN_SIDEBAR_CODE {
         let mut db = db.inner().clone();
         let role_ids = get_user_role_ids(&mut db, auth.claims.user_id).await;
         let (_, permissions) = get_roles_info(&mut db, &role_ids).await;
-        let tree = get_admin_sidebar_nav(&permissions);
-        return Json(ApiResponse::success(tree));
+        let items = get_admin_sidebar_nav_items(&permissions);
+        return Json(ApiResponse::success(items));
     }
 
     Json(ApiResponse::error(404, "该菜单组不支持导航接口"))
@@ -72,6 +73,11 @@ pub async fn get_item(
     id: i64,
     lang: LangQuery,
 ) -> Json<ApiResponse<MenuView>> {
+    if let Some(item) = get_admin_sidebar_item(id) {
+        let _ = lang;
+        return Json(ApiResponse::success(item));
+    }
+
     let mut db = db.inner().clone();
 
     match MenuItemMeta::get_by_id(&mut db, &id).await {

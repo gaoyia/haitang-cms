@@ -44,12 +44,7 @@
       </el-form-item>
 
       <el-form-item :label="t('menu.menu.manage.icon')">
-        <KoiSelectIcon v-if="useKoiIcon" v-model="form.icon" width="100%" />
-        <el-input
-          v-else
-          v-model="form.icon"
-          :placeholder="t('menu.menu.manage.iconPh')"
-        />
+        <KoiSelectIcon v-model="form.icon" width="100%" :disabled="readonly" />
       </el-form-item>
 
       <el-form-item v-if="showPermission" :label="t('menu.menu.manage.permission')">
@@ -171,10 +166,12 @@ const visible = computed({
 });
 
 const isEdit = computed(() => props.editId !== null);
-const drawerTitle = computed(() =>
-  isEdit.value ? t("menu.menu.manage.itemEdit") : t("menu.menu.manage.itemCreate"),
-);
-const useKoiIcon = computed(() => props.groupCode === "admin_sidebar");
+const drawerTitle = computed(() => {
+  if (props.readonly && isEdit.value) {
+    return t("button.view");
+  }
+  return isEdit.value ? t("menu.menu.manage.itemEdit") : t("menu.menu.manage.itemCreate");
+});
 const showPermission = computed(() => props.groupCode === "admin_sidebar");
 
 const form = reactive({

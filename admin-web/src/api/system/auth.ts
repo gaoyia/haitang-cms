@@ -1,4 +1,4 @@
-import axios from "@/utils/axios.ts";
+import axios, { type Result } from "@/utils/axios.ts";
 
 /** 登录请求参数 */
 export interface LoginInput {
@@ -21,6 +21,24 @@ export interface LoginResponse {
   user: LoginUserInfo;
 }
 
+/** 后台侧栏导航项（与后端 AdminNavMenuJsonItem / 原 authMenu.json 对齐） */
+export interface AdminNavMenuJsonItem {
+  menuId: number;
+  menuName: string;
+  parentId: number;
+  menuType: string;
+  path: string;
+  name: string;
+  component: string;
+  icon: string;
+  isVisible: string;
+  linkUrl: string;
+  isKeepAlive: string;
+  isTag: string;
+  isAffix: string;
+  redirect: string;
+}
+
 /** 管理员登录 */
 export function loginApi(input: LoginInput) {
   return axios.post<LoginResponse>("/api/admin/login", input);
@@ -32,20 +50,8 @@ export function getMeApi() {
 }
 
 /** 获取后台侧边栏导航（code=admin_sidebar） */
-export function getNavApi(code = "admin_sidebar") {
-  return axios.get<NavMenuItem[]>(`/api/admin/nav?code=${encodeURIComponent(code)}`);
-}
-
-/** 导航菜单项（与后端 MenuView 对齐） */
-export interface NavMenuItem {
-  id: number;
-  group_id?: number;
-  parent_id: number;
-  title: string;
-  path: string;
-  icon: string;
-  permission: string;
-  sort: number;
-  status?: number;
-  children: NavMenuItem[];
+export function getNavApi(code = "admin_sidebar"): Promise<Result<AdminNavMenuJsonItem[]>> {
+  return axios.get("/api/admin/nav", {
+    params: { code },
+  });
 }

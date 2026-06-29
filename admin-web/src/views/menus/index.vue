@@ -110,7 +110,7 @@
                   <span v-else-if="data.icon">{{ data.icon }}</span>
                   <el-icon v-else><Document /></el-icon>
                 </span>
-                <span class="menu-tree-node__title">{{ data.title || t("menu.menu.manage.untitled") }}</span>
+                <span class="menu-tree-node__title">{{ menuItemTitle(data.title) }}</span>
                 <el-tag v-if="!data.path" size="small" type="info" effect="plain">
                   {{ t("button.catalog") }}
                 </el-tag>
@@ -180,6 +180,7 @@ import {
 } from "@/api/system/menus.ts";
 import { getDictMapApi } from "@/api/system/dict.ts";
 import { uiLangToApiLocale } from "@/utils/apiLocale.ts";
+import { getMenuLanguage } from "@/utils/index.ts";
 import { koiMsgError, koiMsgSuccess } from "@/utils/koi.ts";
 import useGlobalStore from "@/stores/modules/global.ts";
 import MenuGroupDialog from "./components/MenuGroupDialog.vue";
@@ -222,6 +223,11 @@ function isKoiIcon(icon: string): boolean {
 
 function isImgIcon(icon: string): boolean {
   return icon.startsWith("http://") || icon.startsWith("https://");
+}
+
+function menuItemTitle(title: string): string {
+  if (!title) return t("menu.menu.manage.untitled");
+  return getMenuLanguage(title);
 }
 
 async function loadSiteLocales() {
