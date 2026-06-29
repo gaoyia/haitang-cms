@@ -49,8 +49,15 @@
             </div>
           </template>
         </el-table-column>
-        <el-table-column :label="t('menu.content.category.listTemplate')" width="120" align="center">
-          <template #default="{ row }">{{ templateLabel(row.list_template) }}</template>
+        <el-table-column :label="t('menu.content.category.listTemplate')" width="100" align="center">
+          <template #default="{ row }">
+            <CategoryTemplateTag :template="row.list_template" :label="templateLabel(row.list_template)" />
+          </template>
+        </el-table-column>
+        <el-table-column :label="t('menu.content.category.detailTemplate')" width="100" align="center">
+          <template #default="{ row }">
+            <CategoryTemplateTag :template="row.detail_template" :label="templateLabel(row.detail_template)" />
+          </template>
         </el-table-column>
         <el-table-column
           prop="description"
@@ -83,14 +90,26 @@
         </el-form-item>
         <el-form-item :label="t('menu.content.category.listTemplate')">
           <el-select v-model="form.list_template" style="width: 100%">
-            <el-option value="default" :label="t('menu.content.category.templateDefault')" />
-            <el-option value="gallery" :label="t('menu.content.category.templateGallery')" />
+            <el-option
+              v-for="tpl in CATEGORY_TEMPLATE_VALUES"
+              :key="tpl"
+              :value="tpl"
+              :label="templateLabel(tpl)"
+            >
+              <CategoryTemplateTag :template="tpl" :label="templateLabel(tpl)" />
+            </el-option>
           </el-select>
         </el-form-item>
         <el-form-item :label="t('menu.content.category.detailTemplate')">
           <el-select v-model="form.detail_template" style="width: 100%">
-            <el-option value="default" :label="t('menu.content.category.templateDefault')" />
-            <el-option value="gallery" :label="t('menu.content.category.templateGallery')" />
+            <el-option
+              v-for="tpl in CATEGORY_TEMPLATE_VALUES"
+              :key="tpl"
+              :value="tpl"
+              :label="templateLabel(tpl)"
+            >
+              <CategoryTemplateTag :template="tpl" :label="templateLabel(tpl)" />
+            </el-option>
           </el-select>
         </el-form-item>
 
@@ -161,7 +180,9 @@ import { useSiteLocales } from "@/composables/useSiteLocales.ts";
 import { useTablePage } from "@/composables/useTablePage.ts";
 import { koiMsgError, koiMsgSuccess } from "@/utils/koi.ts";
 import { primaryPublicUrl } from "@/utils/publicUrl.ts";
+import { CATEGORY_TEMPLATE_VALUES } from "@/utils/categoryTemplate.ts";
 import PublicUrlPopover from "@/components/PublicUrlPopover.vue";
+import CategoryTemplateTag from "@/components/CategoryTemplateTag.vue";
 
 type LocaleFormRow = { name: string; description: string; seoSlug: string };
 type LocaleForm = Record<string, LocaleFormRow>;
