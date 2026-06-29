@@ -3,7 +3,8 @@
 {% block content %}
 <section class="page-section">
     <div class="container container-narrow">
-        <h1 class="page-title">{{ title }}</h1>
+        <h1 class="page-title" id="category-title">{{ title }}</h1>
+        <p class="page-subtitle" id="category-desc" hidden></p>
         <ul class="post-list" id="post-list">
             <li class="empty">{% if lang == "en-us" %}Loading…{% else %}加载中…{% endif %}</li>
         </ul>
@@ -15,8 +16,9 @@
 <script src="/static/resources/js/markdown-render.js"></script>
 <script>
     $(function () {
+        var categoryId = {{ category_id }};
         var localePrefix = "{{ locale_prefix | safe }}";
-        var emptyText = "{{ lang }}" === "en-us" ? "No posts yet." : "暂无文章";
+        var emptyText = "{{ lang }}" === "en-us" ? "No posts in this category." : "该分类下暂无文章";
         var failText = "{{ lang }}" === "en-us" ? "Failed to load. Please retry." : "加载失败，请稍后重试";
         var maxSummary = 200;
 
@@ -24,15 +26,29 @@
             if (!ts) return "";
             var d = new Date(ts * 1000);
             return d.toLocaleString("{{ lang }}" === "en-us" ? "en-US" : "zh-CN", {
-                year: "numeric",
-                month: "2-digit",
-                day: "2-digit",
-                hour: "2-digit",
-                minute: "2-digit"
+                year: "numeric", month: "2-digit", day: "2-digit",
+                hour: "2-digit", minute: "2-digit"
             });
         }
 
-        $.getJSON("/api/posts?lang={{ lang }}", function (res) {
+        function postDetailUrl(post) {
+            if (post.route_path) return post.route_path;
+            return localePrefix + "/posts/" + post.id;
+        }
+
+        $.getJSON("/api/categories/" + categoryId + "?lang={{ lang }}", function (catRes) {
+            if (catRes.code === 0 && catRes.data) {
+                if (catRes.data.name) {
+                    $("#category-title").text(catRes.data.name);
+                    document.title = catRes.data.name + " - {{ site_name }}";
+                }
+                if (catRes.data.description) {
+                    $("#category-desc").text(catRes.data.description).prop("hidden", false);
+                }
+            }
+        });
+
+        $.getJSON("/api/posts?lang={{ lang }}&category_id=" + categoryId, function (res) {
             var $list = $("#post-list");
             $list.empty();
             if (res.code !== 0 || !res.data || res.data.length === 0) {
@@ -40,17 +56,11 @@
                 return;
             }
 
-            var nowSec = Math.floor(Date.now() / 1000);
-            var published = res.data.filter(function (post) {
-                return post.status === 1 && post.publish_time > 0 && post.publish_time <= nowSec;
+            var posts = res.data.slice().sort(function (a, b) {
+                return (b.display_time || 0) - (a.display_time || 0);
             });
-            published.sort(function (a, b) { return (b.display_time || 0) - (a.display_time || 0); });
-            if (published.length === 0) {
-                $list.append('<li class="empty">' + emptyText + '</li>');
-                return;
-            }
 
-            $.each(published, function (i, post) {
+            $.each(posts, function (i, post) {
                 var summary = post.description;
                 if (!summary && post.content) {
                     summary = stripMarkdown(post.content);
@@ -59,16 +69,9 @@
                     summary = summary.substring(0, maxSummary) + "…";
                 }
                 var meta = [];
-                if (post.display_time) {
-                    meta.push(formatDisplayTime(post.display_time));
-                }
-                if (post.category_name) {
-                    meta.push(("{{ lang }}" === "en-us" ? "Category: " : "分类: ") + post.category_name);
-                }
-                if (post.tags) {
-                    meta.push(("{{ lang }}" === "en-us" ? "Tags: " : "标签: ") + post.tags);
-                }
-                var detailUrl = localePrefix + "/posts/" + post.id;
+                if (post.display_time) meta.push(formatDisplayTime(post.display_time));
+                if (post.tags) meta.push(("{{ lang }}" === "en-us" ? "Tags: " : "标签: ") + post.tags);
+                var detailUrl = postDetailUrl(post);
                 $list.append(
                     '<li class="post-item">' +
                     '<h2><a href="' + detailUrl + '">' + $("<span>").text(post.title).html() + '</a></h2>' +

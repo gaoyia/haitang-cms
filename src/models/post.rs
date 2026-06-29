@@ -2,8 +2,14 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use super::category::{load_category_map, validate_post_category_id};
+use super::asset::{link_post_asset, seed_default_gallery_assets, LinkPostAssetInput};
+use super::category::{
+    category_public_url, category_templates, load_category_map, resolve_category_id_from_public_key,
+    validate_post_category_id,
+};
+use super::dict::get_site_default_locale;
 use super::locale::{pick_i18n_row, resolve_locale};
+use crate::storage::{PostAssetRole, StorageService};
 
 /// 文章结构（不分语言）
 #[derive(Debug, Clone, toasty::Model)]
@@ -98,6 +104,8 @@ pub struct PostView {
     pub tags: String,
     pub category_id: i64,
     pub category_name: String,
+    /// 所属分类公开页 URL（SEO 路径或 /{lang}/categories/{id}）
+    pub category_route_path: String,
     pub route_path: String,
     pub status: i64,
     pub lang: String,
@@ -106,6 +114,12 @@ pub struct PostView {
     pub published_at: i64,
     pub publish_time: i64,
     pub display_time: i64,
+    #[serde(default)]
+    pub covers: Vec<super::asset::AssetView>,
+    #[serde(default)]
+    pub attachments: Vec<super::asset::AssetView>,
+    pub list_template: String,
+    pub detail_template: String,
 }
 
 /// 管理端文章详情
@@ -394,6 +408,24 @@ pub async fn post_to_view(
     meta: &PostMeta,
     lang: Option<&str>,
 ) -> Result<PostView, String> {
+    post_to_view_inner(db, meta, lang, None).await
+}
+
+pub async fn post_to_view_with_storage(
+    db: &mut toasty::Db,
+    meta: &PostMeta,
+    lang: Option<&str>,
+    storage: &crate::storage::StorageService,
+) -> Result<PostView, String> {
+    post_to_view_inner(db, meta, lang, Some(storage)).await
+}
+
+async fn post_to_view_inner(
+    db: &mut toasty::Db,
+    meta: &PostMeta,
+    lang: Option<&str>,
+    storage: Option<&crate::storage::StorageService>,
+) -> Result<PostView, String> {
     let default = super::dict::get_site_default_locale(db).await;
     let resolved = resolve_locale(lang, &default);
     let rows = post_i18n_rows(db, meta.id).await?;
@@ -407,6 +439,18 @@ pub async fn post_to_view(
         cat_map.get(&meta.category_id).cloned().unwrap_or_default()
     };
 
+    let category_route_path =
+        category_public_url(db, meta.category_id, &resolved, &default).await;
+
+    let (list_template, detail_template) = category_templates(db, meta.category_id).await?;
+
+    let (covers, attachments) = if let Some(storage) = storage {
+        let assets = super::asset::post_assets_view(db, meta.id, storage).await?;
+        (assets.covers, assets.attachments)
+    } else {
+        (vec![], vec![])
+    };
+
     Ok(PostView {
         id: meta.id,
         title: i18n.title.clone(),
@@ -415,6 +459,7 @@ pub async fn post_to_view(
         tags: i18n.tags.clone(),
         category_id: meta.category_id,
         category_name,
+        category_route_path,
         route_path: i18n.route_path.clone(),
         status: meta.status,
         lang: i18n.lang.clone(),
@@ -423,6 +468,10 @@ pub async fn post_to_view(
         published_at: meta.published_at,
         publish_time: meta.publish_time,
         display_time: meta.display_time,
+        covers,
+        attachments,
+        list_template,
+        detail_template,
     })
 }
 
@@ -824,4 +873,175 @@ mod tests {
             vec![1]
         );
     }
+}
+
+/// 写入预制示例文章（新闻 + 相册；仅当尚无文章时执行）
+pub async fn seed_default_sample_posts(
+    db: &mut toasty::Db,
+    storage: &StorageService,
+) -> Result<(), String> {
+    let posts = PostMeta::all()
+        .exec(db)
+        .await
+        .map_err(|e| format!("查询文章失败: {e}"))?;
+    if !posts.is_empty() {
+        return Ok(());
+    }
+
+    seed_default_news_post(db).await?;
+    seed_default_gallery_post(db, storage).await?;
+    Ok(())
+}
+
+async fn seed_default_news_post(db: &mut toasty::Db) -> Result<(), String> {
+    let Some(category_id) = resolve_category_id_from_public_key(db, "zh-cn", "news").await? else {
+        println!("[种子] 未找到「新闻」分类，跳过预制新闻文章");
+        return Ok(());
+    };
+
+    let default_lang = get_site_default_locale(db).await;
+    println!("[种子] 创建预制新闻文章...");
+
+    let meta = create_post(
+        db,
+        &CreatePost {
+            title: "站点上线公告".to_string(),
+            description: Some(
+                "海棠 CMS 公开站点已正式上线，欢迎浏览新闻与画廊等栏目。".to_string(),
+            ),
+            content: Some(
+                "感谢访问本站。\n\n\
+                我们已完成公开站点的首批内容搭建，当前提供**新闻**与**画廊**两个主要栏目：\
+                新闻用于发布站点动态与公告，画廊用于展示以图片为主的内容。\n\n\
+                后续将陆续完善「加入我们」「关于我们」等页面。\
+                若你在使用过程中有任何建议，欢迎通过管理后台与我们联系。"
+                    .to_string(),
+            ),
+            tags: Some("公告,站点".to_string()),
+            category_id: Some(category_id),
+            route_path: Some("site-launch".to_string()),
+            lang: Some("zh-cn".to_string()),
+            status: Some(1),
+            display_time: None,
+            publish_time: None,
+        },
+        &default_lang,
+    )
+    .await?;
+
+    upsert_post_i18n(
+        db,
+        meta.id,
+        PostI18nUpsert {
+            lang: "en-us",
+            title: "Site Launch Announcement",
+            description:
+                "The public site is now live. Explore news, gallery, and more.",
+            content: "Thank you for visiting.\n\n\
+                We have published the first batch of public content. \
+                **News** covers announcements and updates; **Gallery** highlights image-focused stories.\n\n\
+                Pages such as Join Us and About Us will be expanded soon. \
+                We welcome your feedback through the admin console.",
+            route_path: "site-launch",
+            tags: "announcement,site",
+        },
+    )
+    .await?;
+
+    println!("[种子] 预制新闻文章已创建（post_id={}）", meta.id);
+    Ok(())
+}
+
+/// 写入预制相册文章（由 `seed_default_sample_posts` 在空库时调用）
+async fn seed_default_gallery_post(
+    db: &mut toasty::Db,
+    storage: &StorageService,
+) -> Result<(), String> {
+    let Some(category_id) = resolve_category_id_from_public_key(db, "zh-cn", "gallery").await?
+    else {
+        println!("[种子] 未找到「画廊」分类，跳过预制相册文章");
+        return Ok(());
+    };
+
+    let assets = match seed_default_gallery_assets(db, storage).await {
+        Ok(a) => a,
+        Err(e) => {
+            eprintln!("[种子] 预制相册资源失败: {e}");
+            return Ok(());
+        }
+    };
+
+    let default_lang = get_site_default_locale(db).await;
+    println!("[种子] 创建预制相册文章...");
+
+    let meta = create_post(
+        db,
+        &CreatePost {
+            title: "春日花园".to_string(),
+            description: Some(
+                "一组春日花卉摄影，记录花开时节的细腻色彩与自然光影。".to_string(),
+            ),
+            content: Some(
+                "本组照片拍摄于早春，涵盖白樱、海棠与各色球根花卉。\
+                希望这些画面能为你带来一点关于季节更替的温柔记忆。"
+                    .to_string(),
+            ),
+            tags: Some("摄影,自然,春天".to_string()),
+            category_id: Some(category_id),
+            route_path: Some("spring-garden".to_string()),
+            lang: Some("zh-cn".to_string()),
+            status: Some(1),
+            display_time: None,
+            publish_time: None,
+        },
+        &default_lang,
+    )
+    .await?;
+
+    upsert_post_i18n(
+        db,
+        meta.id,
+        PostI18nUpsert {
+            lang: "en-us",
+            title: "Spring Garden",
+            description:
+                "A spring floral photography set capturing soft colors and natural light.",
+            content: "Shot in early spring, this set features cherry blossoms, crabapples, \
+                and seasonal blooms. May these images bring a gentle reminder of the turning seasons.",
+            route_path: "spring-garden",
+            tags: "photography,nature,spring",
+        },
+    )
+    .await?;
+
+    link_post_asset(
+        db,
+        meta.id,
+        &LinkPostAssetInput {
+            asset_id: assets.cover.id,
+            role: PostAssetRole::Cover.as_str().to_string(),
+            sort_order: Some(0),
+        },
+    )
+    .await?;
+
+    for (sort_order, asset) in assets.attachments.iter().enumerate() {
+        link_post_asset(
+            db,
+            meta.id,
+            &LinkPostAssetInput {
+                asset_id: asset.id,
+                role: PostAssetRole::Attachment.as_str().to_string(),
+                sort_order: Some(sort_order as i64),
+            },
+        )
+        .await?;
+    }
+
+    println!(
+        "[种子] 预制相册文章已创建（post_id={}，封面 1 张、附件 {} 张）",
+        meta.id,
+        assets.attachments.len()
+    );
+    Ok(())
 }

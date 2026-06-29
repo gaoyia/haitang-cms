@@ -98,7 +98,35 @@ POST /api/admin/posts/:id/assets
 ```
 
 - `cover`：可多条，按 `sort_order` 排序；上限由字典 **`post_cover_max`** 控制（默认 `3`，全局值，非多语言）。
-- `attachment`：可多条，支持图片、视频、压缩包、Office 文档与纯文本；`asset.purpose` 须与 `role` 匹配。
+- `attachment`：可多条，按 `sort_order` 排序；支持图片、视频、压缩包、Office 文档与纯文本；`asset.purpose` 须与 `role` 匹配。
+
+### 全量更新封面排序
+
+```
+PUT /api/admin/posts/:id/assets/covers/order
+```
+
+```json
+{
+  "asset_ids": [2, 1]
+}
+```
+
+`asset_ids` 须包含当前全部已关联封面 ID，数组顺序即新的 `sort_order`（从 0 起）。
+
+### 全量更新附件排序
+
+```
+PUT /api/admin/posts/:id/assets/attachments/order
+```
+
+```json
+{
+  "asset_ids": [3, 1, 2]
+}
+```
+
+`asset_ids` 须包含当前全部已关联附件 ID，数组顺序即新的 `sort_order`（从 0 起）。
 
 ### 解除关联
 
@@ -172,6 +200,11 @@ DELETE /api/admin/banners/:id/assets/:asset_id?purge=false
 3. 为 `home_banner` 组下的默认轮播图条目建立 `banner_assets` 关联，并同步 `banners.image_url` 为 `/static/uploads/seed/1/banner-1.png` 等公开 URL。
 
 若轮播图已存在但未关联资源，启动时会自动补关联。
+
+相册种子（`gallery-1.jpg` … `gallery-6.jpg`，与 admin 用户 ID 同目录）：
+
+1. 首次安装且 `post_metas` 为空时，写入两篇预制文章：新闻「站点上线公告 / Site Launch Announcement」（分类 `news`）与画廊「春日花园 / Spring Garden」（分类 `gallery`）。
+2. 画廊文章：`gallery-1.jpg` 入库为 `purpose=cover` 并关联封面；`gallery-2` … `gallery-6` 入库为 `purpose=attachment` 并关联附件。
 
 ## 文件类型图标
 

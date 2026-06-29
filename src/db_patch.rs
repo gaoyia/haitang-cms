@@ -10,6 +10,7 @@ pub async fn apply_schema_patches(db: &mut toasty::Db) {
 
     ensure_assets_upload_name(db).await;
     ensure_post_meta_timestamps(db).await;
+    ensure_category_extensions(db).await;
 }
 
 async fn add_i64_column(db: &mut toasty::Db, table: &str, column: &str) {
@@ -91,4 +92,27 @@ async fn ensure_post_meta_timestamps(db: &mut toasty::Db) {
     if let Err(e) = publish_time_backfill {
         eprintln!("[警告] 回填 post_metas.publish_time 失败: {e}");
     }
+}
+
+async fn add_text_column(db: &mut toasty::Db, table: &str, column: &str, default: &str) {
+    let sql = format!(
+        "ALTER TABLE {table} ADD COLUMN {column} TEXT NOT NULL DEFAULT '{default}'"
+    );
+    let result = toasty::sql::statement(&sql).exec(db).await;
+
+    match result {
+        Ok(_) => println!("[数据库] 已补列 {table}.{column}"),
+        Err(e) => {
+            let msg = e.to_string();
+            if !msg.contains("duplicate column") {
+                eprintln!("[警告] 补列 {table}.{column} 失败: {e}");
+            }
+        }
+    }
+}
+
+async fn ensure_category_extensions(db: &mut toasty::Db) {
+    add_text_column(db, "category_metas", "list_template", "default").await;
+    add_text_column(db, "category_metas", "detail_template", "default").await;
+    add_text_column(db, "category_i18ns", "route_path", "").await;
 }

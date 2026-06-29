@@ -4,6 +4,7 @@
       :show-file-list="false"
       :disabled="disabled || uploading"
       :accept="accept"
+      :multiple="multiple"
       :http-request="handleUpload"
       :before-upload="beforeUpload"
     >
@@ -41,6 +42,8 @@ const props = withDefaults(
     maxSizeMb?: number;
     disabled?: boolean;
     label?: string;
+    /** 是否允许多选文件（依次上传） */
+    multiple?: boolean;
   }>(),
   {
     postId: null,
@@ -49,6 +52,7 @@ const props = withDefaults(
     maxSizeMb: 10,
     disabled: false,
     label: "",
+    multiple: false,
   },
 );
 
@@ -59,6 +63,7 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const uploading = ref(false);
 const progress = ref(0);
+const activeUploads = ref(0);
 
 const beforeUpload: UploadProps["beforeUpload"] = (file) => {
   const okSize = file.size / 1024 / 1024 <= props.maxSizeMb;
@@ -69,6 +74,7 @@ const beforeUpload: UploadProps["beforeUpload"] = (file) => {
 };
 
 async function handleUpload(options: UploadRequestOptions) {
+  activeUploads.value += 1;
   uploading.value = true;
   progress.value = 0;
   try {
@@ -91,8 +97,12 @@ async function handleUpload(options: UploadRequestOptions) {
     }
     emit("success", res.data);
   } finally {
-    uploading.value = false;
-    progress.value = 0;
+    activeUploads.value -= 1;
+    if (activeUploads.value <= 0) {
+      activeUploads.value = 0;
+      uploading.value = false;
+      progress.value = 0;
+    }
   }
 }
 </script>

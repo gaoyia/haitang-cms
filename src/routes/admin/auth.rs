@@ -8,8 +8,9 @@ use crate::config::AppConfig;
 use crate::guards::auth::JwtConfig;
 use crate::models::{
     ApiResponse, Banner, BannerGroup, Claims, LoginRequest, LoginResponse, LoginUserInfo,
-    MenuGroup, Role, User, UserRole, all_permission_codes, ensure_banner_seed_asset_link,
-    find_banner_group_by_code, seed_default_banner_asset, seed_menu_with_i18n,
+    MenuGroup, Role, User, UserRole, all_permission_codes, category_public_path_by_slug,
+    ensure_banner_seed_asset_link, find_banner_group_by_code, seed_default_banner_asset,
+    seed_default_sample_posts, seed_menu_with_i18n,
 };
 use crate::storage::StorageService;
 
@@ -58,14 +59,17 @@ pub async fn run_startup_seeds(db: &mut toasty::Db, storage: &StorageService, ap
 
     seed_admin(db).await;
     seed_default_banner_data(db, storage).await;
+    if let Err(e) = seed_default_sample_posts(db, storage).await {
+        eprintln!("[种子] 预制示例文章: {e}");
+    }
 }
 
 /// 种子数据：确保默认管理员和角色存在，并同步 admin 角色权限
 pub async fn seed_admin(db: &mut toasty::Db) {
     sync_admin_role_permissions(db).await;
-    seed_default_site_menus(db).await;
     crate::models::seed_default_dicts(db).await;
     crate::models::seed_default_categories(db).await;
+    seed_default_site_menus(db).await;
 
     // 检查是否已有用户
     let user_count = match User::all().exec(db).await {
@@ -177,64 +181,95 @@ async fn seed_default_site_menus(db: &mut toasty::Db) {
         .await
         .expect("创建页脚菜单组失败");
 
-    let header_items: &[(&str, &str, &str, &str, i64)] = &[
-        ("首页", "/zh-cn/", "Home", "/en-us/", 0),
-        ("最新文章", "/zh-cn/posts", "Posts", "/en-us/posts", 10),
-        (
-            "管理后台",
-            admin_path.as_str(),
-            "Admin",
-            admin_path.as_str(),
-            20,
-        ),
-    ];
-    for (zh_title, zh_path, en_title, en_path, sort) in header_items {
-        seed_menu_with_i18n(
-            db,
-            header.id,
-            0,
-            *sort,
-            "",
-            "",
-            &[
-                ("zh-cn", *zh_title, *zh_path),
-                ("en-us", *en_title, *en_path),
-            ],
-        )
+    seed_public_menu_paths(
+        db,
+        header.id,
+        0,
+        "首页",
+        "Home",
+        "/zh-cn/",
+        "/en-us/",
+    )
+    .await
+    .expect("创建页头菜单失败");
+    seed_public_menu_category(db, header.id, 10, "新闻", "News", "news")
         .await
         .expect("创建页头菜单失败");
-    }
+    seed_public_menu_category(db, header.id, 20, "画廊", "Gallery", "gallery")
+        .await
+        .expect("创建页头菜单失败");
+    seed_public_menu_category(db, header.id, 30, "加入我们", "Join Us", "join")
+        .await
+        .expect("创建页头菜单失败");
+    seed_public_menu_category(db, header.id, 40, "关于我们", "About Us", "about")
+        .await
+        .expect("创建页头菜单失败");
 
-    let footer_items: &[(&str, &str, &str, &str, i64)] = &[
-        ("首页", "/zh-cn/", "Home", "/en-us/", 0),
-        ("最新文章", "/zh-cn/posts", "Posts", "/en-us/posts", 5),
-        (
-            "管理后台",
-            admin_path.as_str(),
-            "Admin",
-            admin_path.as_str(),
-            10,
-        ),
-        ("关于我们", "/zh-cn/about", "About", "/en-us/about", 20),
-    ];
-    for (zh_title, zh_path, en_title, en_path, sort) in footer_items {
-        seed_menu_with_i18n(
-            db,
-            footer.id,
-            0,
-            *sort,
-            "",
-            "",
-            &[
-                ("zh-cn", *zh_title, *zh_path),
-                ("en-us", *en_title, *en_path),
-            ],
-        )
+    seed_public_menu_paths(db, footer.id, 0, "首页", "Home", "/zh-cn/", "/en-us/")
         .await
         .expect("创建页脚菜单失败");
-    }
+    seed_public_menu_category(db, footer.id, 10, "新闻", "News", "news")
+        .await
+        .expect("创建页脚菜单失败");
+    seed_public_menu_category(db, footer.id, 15, "画廊", "Gallery", "gallery")
+        .await
+        .expect("创建页脚菜单失败");
+    seed_public_menu_category(db, footer.id, 20, "加入我们", "Join Us", "join")
+        .await
+        .expect("创建页脚菜单失败");
+    seed_public_menu_category(db, footer.id, 25, "关于我们", "About Us", "about")
+        .await
+        .expect("创建页脚菜单失败");
+    seed_public_menu_paths(
+        db,
+        footer.id,
+        40,
+        "管理后台",
+        "Admin",
+        admin_path.as_str(),
+        admin_path.as_str(),
+    )
+    .await
+    .expect("创建页脚菜单失败");
 
     println!("[种子] 默认公开页菜单已创建");
+}
+
+async fn seed_public_menu_paths(
+    db: &mut toasty::Db,
+    group_id: i64,
+    sort: i64,
+    zh_title: &str,
+    en_title: &str,
+    zh_path: &str,
+    en_path: &str,
+) -> Result<(), String> {
+    seed_menu_with_i18n(
+        db,
+        group_id,
+        0,
+        sort,
+        "",
+        "",
+        &[
+            ("zh-cn", zh_title, zh_path),
+            ("en-us", en_title, en_path),
+        ],
+    )
+    .await
+}
+
+async fn seed_public_menu_category(
+    db: &mut toasty::Db,
+    group_id: i64,
+    sort: i64,
+    zh_title: &str,
+    en_title: &str,
+    slug: &str,
+) -> Result<(), String> {
+    let zh_path = category_public_path_by_slug("zh-cn", slug);
+    let en_path = category_public_path_by_slug("en-us", slug);
+    seed_public_menu_paths(db, group_id, sort, zh_title, en_title, &zh_path, &en_path).await
 }
 
 /// 种子数据：初始化默认首页轮播图组、示例条目及关联资源

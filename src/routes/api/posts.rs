@@ -2,15 +2,26 @@ use rocket::State;
 use rocket::serde::json::Json;
 
 use crate::models::{
-    ApiResponse, CategoryView, PostMeta, PostView, categories_to_views, is_post_publicly_visible,
-    post_to_view, posts_to_views,
+    ApiResponse, PostMeta, PostView, is_post_publicly_visible, post_to_view_with_storage,
 };
 use crate::models::asset::now_unix;
 use crate::routes::lang::LangQuery;
+use crate::storage::StorageService;
 
-/// 获取所有文章列表（公开）
-#[get("/api/posts?<lang..>")]
-pub async fn list(db: &State<toasty::Db>, lang: LangQuery) -> Json<ApiResponse<Vec<PostView>>> {
+/// 公开文章列表查询参数
+#[derive(Debug, FromForm)]
+pub struct PostListQuery {
+    pub lang: Option<String>,
+    pub category_id: Option<i64>,
+}
+
+/// 获取文章列表（公开）
+#[get("/api/posts?<query..>")]
+pub async fn list(
+    db: &State<toasty::Db>,
+    storage: &State<StorageService>,
+    query: PostListQuery,
+) -> Json<ApiResponse<Vec<PostView>>> {
     let mut db = db.inner().clone();
 
     match PostMeta::all().exec(&mut db).await {
@@ -19,11 +30,28 @@ pub async fn list(db: &State<toasty::Db>, lang: LangQuery) -> Json<ApiResponse<V
             let visible: Vec<PostMeta> = posts
                 .into_iter()
                 .filter(|meta| is_post_publicly_visible(meta, now))
+                .filter(|meta| {
+                    query
+                        .category_id
+                        .is_none_or(|cid| meta.category_id == cid)
+                })
                 .collect();
-            match posts_to_views(&mut db, visible, lang.lang.as_deref()).await {
-                Ok(views) => Json(ApiResponse::success(views)),
-                Err(e) => Json(ApiResponse::error(500, e)),
+            let mut views = Vec::new();
+            for meta in visible {
+                match post_to_view_with_storage(
+                    &mut db,
+                    &meta,
+                    query.lang.as_deref(),
+                    storage.inner(),
+                )
+                .await
+                {
+                    Ok(view) => views.push(view),
+                    Err(e) => return Json(ApiResponse::error(500, e)),
+                }
             }
+            views.sort_by_key(|v| std::cmp::Reverse(v.display_time));
+            Json(ApiResponse::success(views))
         }
         Err(e) => Json(ApiResponse::error(500, format!("查询失败: {e}"))),
     }
@@ -31,7 +59,12 @@ pub async fn list(db: &State<toasty::Db>, lang: LangQuery) -> Json<ApiResponse<V
 
 /// 根据 ID 获取单篇文章（公开）
 #[get("/api/posts/<id>?<lang..>")]
-pub async fn get(db: &State<toasty::Db>, id: i64, lang: LangQuery) -> Json<ApiResponse<PostView>> {
+pub async fn get(
+    db: &State<toasty::Db>,
+    storage: &State<StorageService>,
+    id: i64,
+    lang: LangQuery,
+) -> Json<ApiResponse<PostView>> {
     let mut db = db.inner().clone();
 
     match PostMeta::get_by_id(&mut db, &id).await {
@@ -39,25 +72,18 @@ pub async fn get(db: &State<toasty::Db>, id: i64, lang: LangQuery) -> Json<ApiRe
             if !is_post_publicly_visible(&meta, now_unix()) {
                 return Json(ApiResponse::error(404, "文章不存在或未发布"));
             }
-            match post_to_view(&mut db, &meta, lang.lang.as_deref()).await {
+            match post_to_view_with_storage(
+                &mut db,
+                &meta,
+                lang.lang.as_deref(),
+                storage.inner(),
+            )
+            .await
+            {
                 Ok(view) => Json(ApiResponse::success(view)),
                 Err(e) => Json(ApiResponse::error(500, e)),
             }
         }
         Err(_) => Json(ApiResponse::error(404, "文章不存在")),
-    }
-}
-
-/// 获取所有分类列表（公开）
-#[get("/api/categories?<lang..>")]
-pub async fn list_categories(
-    db: &State<toasty::Db>,
-    lang: LangQuery,
-) -> Json<ApiResponse<Vec<CategoryView>>> {
-    let mut db = db.inner().clone();
-
-    match categories_to_views(&mut db, lang.lang.as_deref()).await {
-        Ok(views) => Json(ApiResponse::success(views)),
-        Err(e) => Json(ApiResponse::error(500, e)),
     }
 }

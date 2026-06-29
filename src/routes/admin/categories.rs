@@ -3,10 +3,9 @@ use rocket::serde::json::Json;
 
 use crate::guards::AdminAuth;
 use crate::models::{
-    ApiResponse, CategoryDetailView, CategoryMeta, CategoryView, CreateCategory, PageResult,
-    UpdateCategory, categories_to_views, category_detail_view, category_to_view,
-    count_posts_by_category, create_category, delete_category, get_site_default_locale,
-    paginate_vec, upsert_category_i18n,
+    ApiResponse, CategoryDetailView, CategoryView, CreateCategory, PageResult,
+    UpdateCategory, categories_to_views, category_detail_view, category_to_view, create_category,
+    delete_category, get_site_default_locale, paginate_vec, update_category,
 };
 use crate::routes::page::LangPageQuery;
 
@@ -77,35 +76,15 @@ pub async fn update(
     let mut db = db.inner().clone();
     let default = get_site_default_locale(&mut db).await;
 
-    let mut meta = match CategoryMeta::get_by_id(&mut db, &id).await {
-        Ok(c) => c,
-        Err(_) => return Json(ApiResponse::error(404, "分类不存在")),
-    };
-
-    if let Some(sort) = input.sort {
-        meta.update()
-            .sort(sort)
-            .exec(&mut db)
-            .await
-            .map_err(|e| format!("{e}"))
-            .ok();
-    }
-
-    meta = CategoryMeta::get_by_id(&mut db, &id)
-        .await
-        .expect("分类应存在");
-
-    if input.name.is_some() || input.description.is_some() {
-        let lang = crate::models::locale::resolve_locale(input.lang.as_deref(), &default);
-        let name = input.name.as_deref().unwrap_or("");
-        let description = input.description.as_deref().unwrap_or("");
-        if let Err(e) = upsert_category_i18n(&mut db, id, &lang, name, description).await {
-            return Json(ApiResponse::error(500, e));
+    match update_category(&mut db, id, &input, &default).await {
+        Ok(meta) => {
+            let lang = crate::models::locale::resolve_locale(input.lang.as_deref(), &default);
+            match category_to_view(&mut db, &meta, &lang, &default).await {
+                Ok(view) => Json(ApiResponse::success(view)),
+                Err(e) => Json(ApiResponse::error(500, e)),
+            }
         }
-    }
-
-    match category_to_view(&mut db, &meta, &default, &default).await {
-        Ok(view) => Json(ApiResponse::success(view)),
+        Err(e) if e.contains("不存在") => Json(ApiResponse::error(404, e)),
         Err(e) => Json(ApiResponse::error(500, e)),
     }
 }
@@ -115,7 +94,7 @@ pub async fn update(
 pub async fn delete(_auth: AdminAuth, db: &State<toasty::Db>, id: i64) -> Json<ApiResponse<()>> {
     let mut db = db.inner().clone();
 
-    match count_posts_by_category(&mut db, id).await {
+    match crate::models::count_posts_by_category(&mut db, id).await {
         Ok(count) if count > 0 => {
             return Json(ApiResponse::error(400, "该分类下仍有文章，无法删除"));
         }

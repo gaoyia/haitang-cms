@@ -10,7 +10,7 @@
 | 全局字典 | `dict_value.lang = ""`（空串哨兵） |
 | 默认语言 | 字典项 `site_default_locale`，缺翻译时 fallback |
 | URL | `route_path` 存完整路径，如 `/zh-cn/posts/hello`；**同一 `(lang, route_path)` 非空时全局唯一**（管理端写入校验） |
-| 开发库重置 | 删除 `db/haitang.sqlite` 后 `cargo run` 自动建表；**development** 下每次启动会幂等写入种子（字典、菜单、轮播图、admin 等）；**production** 仅在库中尚无用户时写入一次初始数据。启动时 `db_patch` 在任何环境下都会为已有库补列（如 `assets.upload_name`、`post_metas` 时间字段），与种子无关。默认轮播图位于 `static/uploads/seed/1/banner-1.png`，入库 `storage_key = seed/1/banner-1.png` |
+| 开发库重置 | 删除 `db/haitang.sqlite` 后 `cargo run` 自动建表；**development** 下每次启动会幂等写入种子（字典、菜单、轮播图、admin 等）；**production** 仅在库中尚无用户时写入一次初始数据。启动时 `db_patch` 在任何环境下都会为已有库补列（如 `assets.upload_name`、`post_metas` 时间字段），与种子无关。默认轮播图位于 `static/uploads/seed/1/banner-1.png`，入库 `storage_key = seed/1/banner-1.png`；相册种子图位于同目录 `gallery-1.jpg` … `gallery-6.jpg`。首次安装且尚无文章时会写入两篇预制内容：新闻「站点上线公告 / Site Launch Announcement」与画廊「春日花园 / Spring Garden」 |
 
 ## 表结构
 
@@ -25,8 +25,16 @@
 
 | 表 | 主键 | 说明 |
 |----|------|------|
-| `category_meta` | `id` | `sort` |
-| `category_i18n` | `(category_id, lang)` | `name`、`description` |
+| `category_meta` | `id` | `sort`、`list_template`、`detail_template` |
+| `category_i18n` | `(category_id, lang)` | `name`、`description`、`route_path` |
+
+| 字段 | 说明 |
+|------|------|
+| `list_template` | 分类归档页模板：`default`（文字列表）或 `gallery`（相册卡片） |
+| `detail_template` | 该分类下文章详情模板：`default`（Markdown 正文）或 `gallery`（图片为主） |
+| `route_path` | 分类归档 SEO 完整路径，如 `/zh-cn/categories/gallery`；空串时公开 URL 使用数字 ID |
+
+公开归档页：`GET /<lang>/categories/<key>`，`<key>` 为分类 ID 或 slug，按 `list_template` 渲染 `category-list` 或 `gallery-list`。
 
 ### 文章
 
@@ -64,6 +72,8 @@
 | `menu_item_meta` | `id` | `group_id`、`parent_id`、`icon`、`permission`、`sort`、`status` |
 | `menu_item_i18n` | `(menu_item_id, lang)` | `title`、`route_path` |
 
+首次安装种子会创建 **4 个默认分类**：新闻（`news`）、画廊（`gallery`，gallery 模板）、加入我们（`join`）、关于我们（`about`）；后两者暂用 default 模板。`site_header` / `site_footer` 菜单组链到首页与上述分类 SEO 路径；页脚另含管理后台链接。
+
 > 后台侧栏（`admin_sidebar`）仍为内置 + 前端 i18n 键，不走上述 i18n 表。
 
 ## 公开页面 URL
@@ -74,6 +84,7 @@
 | `/<lang>/` | 首页 |
 | `/<lang>/posts` | 文章列表 |
 | `/<lang>/posts/<key>` | 文章详情（`<key>` 为 ID 或 SEO slug，Markdown 渲染） |
+| `/<lang>/categories/<key>` | 分类归档（default / gallery 模板） |
 | `/<lang>/about` | 关于页 |
 
 `lang` 须为字典项 `site_locales` 中的语言码（如 `zh-cn`、`en-us`）；无效语言会重定向到默认语言首页。

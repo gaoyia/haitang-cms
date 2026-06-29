@@ -5,7 +5,7 @@
 ## 获取文章列表
 
 ```
-GET /api/admin/posts?lang=zh-cn&page=1&page_size=10
+GET /api/admin/posts?lang=zh-cn&page=1&page_size=10&category_id=2
 ```
 
 | 参数 | 位置 | 类型 | 说明 |
@@ -13,6 +13,7 @@ GET /api/admin/posts?lang=zh-cn&page=1&page_size=10
 | `lang` | query | `string` | 可选，合并指定语言文案 |
 | `page` | query | `i64` | 可选，页码 |
 | `page_size` | query | `i64` | 可选，每页条数 |
+| `category_id` | query | `i64` | 可选，按分类 ID 筛选；缺省或 ≤0 表示不限 |
 
 返回 [分页响应](../overview.md#分页响应)，`list` 元素为 `PostView`。
 

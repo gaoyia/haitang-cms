@@ -53,6 +53,21 @@ pub fn locale_path(lang: &str, page_slug: &str) -> String {
     }
 }
 
+/// 从当前公开页路径提取语言切换后缀（去掉首段 locale）
+///
+/// 例如 `/en-us/posts/my-slug` → `posts/my-slug`，`/en-us/` → ``。
+pub fn locale_switch_suffix(current_path: &str) -> String {
+    let trimmed = current_path.trim();
+    if trimmed.is_empty() || trimmed == "/" {
+        return String::new();
+    }
+    let without_leading = trimmed.trim_start_matches('/');
+    match without_leading.find('/') {
+        Some(idx) => without_leading[idx + 1..].to_string(),
+        None => String::new(),
+    }
+}
+
 /// 将站内路径各段做百分号编码，供 Redirect Location 使用（含中文 slug）
 pub fn encode_uri_path(path: &str) -> String {
     path.split('/')
@@ -93,6 +108,8 @@ pub fn public_page_title(lang: &str, page_slug: &str) -> &'static str {
         "posts" => "最新文章",
         "post-detail" if en => "Article",
         "post-detail" => "文章详情",
+        "category-archive" if en => "Category",
+        "category-archive" => "分类归档",
         "about" if en => "About",
         "about" => "关于我们",
         _ if en => "Home",
@@ -127,6 +144,22 @@ mod tests {
         assert_eq!(
             encode_uri_path("/en-us/posts/测试测试"),
             "/en-us/posts/%E6%B5%8B%E8%AF%95%E6%B5%8B%E8%AF%95"
+        );
+    }
+
+    #[test]
+    fn locale_switch_suffix_strips_locale_prefix() {
+        assert_eq!(locale_switch_suffix("/en-us/posts/hello"), "posts/hello");
+        assert_eq!(locale_switch_suffix("/zh-cn/categories/12"), "categories/12");
+        assert_eq!(locale_switch_suffix("/en-us/"), "");
+        assert_eq!(locale_switch_suffix("/en-us"), "");
+    }
+
+    #[test]
+    fn locale_path_with_nested_slug() {
+        assert_eq!(
+            locale_path("zh-cn", "posts/my-slug"),
+            "/zh-cn/posts/my-slug"
         );
     }
 }

@@ -8,6 +8,10 @@ use rocket_dyn_templates::Template;
 use crate::models::dict::{get_site_default_locale, get_site_locales};
 use crate::models::load_public_banners_by_code;
 use crate::models::locale::{encode_uri_path, is_supported_locale, locale_path, normalize_lang};
+use crate::models::category::{
+    CategoryMeta, category_detail_tera_template, category_list_tera_template, category_to_view,
+    resolve_category_id_from_public_key,
+};
 use crate::models::post::{PostMeta, post_to_view, resolve_post_id_from_public_key};
 use crate::models::site_page_context;
 
@@ -17,6 +21,7 @@ pub fn routes() -> Vec<Route> {
         root_redirect,
         index_lang,
         index_lang_no_slash,
+        category_archive_lang,
         post_detail_lang,
         posts_lang,
         about_lang,
@@ -64,12 +69,15 @@ pub async fn post_detail_lang(
         Err(_) => return Err(PostDetailError::NotFound),
     };
 
+    let meta = PostMeta::get_by_id(&mut db, &post_id)
+        .await
+        .map_err(|_| PostDetailError::NotFound)?;
+    let view = post_to_view(&mut db, &meta, Some(&resolved))
+        .await
+        .map_err(|_| PostDetailError::NotFound)?;
+
     // 数字 ID 访问且已配置 SEO 路径时，301 到 canonical URL
-    if key.parse::<i64>().is_ok()
-        && let Ok(meta) = PostMeta::get_by_id(&mut db, &post_id).await
-        && let Ok(view) = post_to_view(&mut db, &meta, Some(&resolved)).await
-        && !view.route_path.is_empty()
-    {
+    if key.parse::<i64>().is_ok() && !view.route_path.is_empty() {
         let current = format!("/{resolved}/posts/{key}");
         if view.route_path != current {
             return Err(PostDetailError::CanonicalRedirect(Redirect::to(
@@ -79,11 +87,25 @@ pub async fn post_detail_lang(
     }
 
     let current_path = format!("/{resolved}/posts/{key}");
+    let tera_name = CategoryMeta::get_by_id(&mut db, &meta.category_id)
+        .await
+        .map(|cat| category_detail_tera_template(&cat.detail_template))
+        .unwrap_or("post-detail");
+
     let mut ctx = site_page_context(&mut db, "post-detail", &current_path, Some(&resolved)).await;
     if let Some(obj) = ctx.as_object_mut() {
         obj.insert("post_id".to_string(), serde_json::json!(post_id));
+        obj.insert("title".to_string(), serde_json::json!(view.title));
+        if !view.description.is_empty() {
+            obj.insert("post_description".to_string(), serde_json::json!(view.description));
+        }
+        obj.insert("category_name".to_string(), serde_json::json!(view.category_name));
+        obj.insert(
+            "category_route_path".to_string(),
+            serde_json::json!(view.category_route_path),
+        );
     }
-    Ok(Template::render("post-detail", ctx))
+    Ok(Template::render(tera_name, ctx))
 }
 
 /// 文章详情页错误响应（语言重定向 / SEO 重定向 / 404）
@@ -96,6 +118,77 @@ pub(crate) enum PostDetailError {
 
 #[rocket::async_trait]
 impl<'r> Responder<'r, 'static> for PostDetailError {
+    fn respond_to(self, req: &'r Request<'_>) -> response::Result<'static> {
+        match self {
+            Self::LangRedirect(r) | Self::CanonicalRedirect(r) => r.respond_to(req),
+            Self::NotFound => Status::NotFound.respond_to(req),
+            Self::Conflict => Status::Conflict.respond_to(req),
+        }
+    }
+}
+
+/// 多语言分类归档页（支持数字 ID 或 SEO slug）
+#[get("/<lang>/categories/<key>")]
+pub async fn category_archive_lang(
+    lang: &str,
+    key: &str,
+    db: &State<toasty::Db>,
+) -> Result<Template, CategoryArchiveError> {
+    let mut db = db.inner().clone();
+    let resolved = resolve_public_lang(&mut db, lang)
+        .await
+        .map_err(CategoryArchiveError::LangRedirect)?;
+
+    let category_id = match resolve_category_id_from_public_key(&mut db, &resolved, key).await {
+        Ok(Some(id)) => id,
+        Ok(None) => return Err(CategoryArchiveError::NotFound),
+        Err(e) if e.contains("对应多个分类") => return Err(CategoryArchiveError::Conflict),
+        Err(_) => return Err(CategoryArchiveError::NotFound),
+    };
+
+    let default = get_site_default_locale(&mut db).await;
+    if key.parse::<i64>().is_ok()
+        && let Ok(meta) = CategoryMeta::get_by_id(&mut db, &category_id).await
+        && let Ok(view) = category_to_view(&mut db, &meta, &resolved, &default).await
+        && !view.route_path.is_empty()
+    {
+        let current = format!("/{resolved}/categories/{key}");
+        if view.route_path != current {
+            return Err(CategoryArchiveError::CanonicalRedirect(Redirect::to(
+                encode_uri_path(&view.route_path),
+            )));
+        }
+    }
+
+    let tera_name = CategoryMeta::get_by_id(&mut db, &category_id)
+        .await
+        .map(|meta| category_list_tera_template(&meta.list_template))
+        .unwrap_or("category-list");
+
+    let current_path = format!("/{resolved}/categories/{key}");
+    let mut ctx = site_page_context(
+        &mut db,
+        "category-archive",
+        &current_path,
+        Some(&resolved),
+    )
+    .await;
+    if let Some(obj) = ctx.as_object_mut() {
+        obj.insert("category_id".to_string(), serde_json::json!(category_id));
+    }
+    Ok(Template::render(tera_name, ctx))
+}
+
+/// 分类归档页错误响应
+pub(crate) enum CategoryArchiveError {
+    LangRedirect(Redirect),
+    CanonicalRedirect(Redirect),
+    NotFound,
+    Conflict,
+}
+
+#[rocket::async_trait]
+impl<'r> Responder<'r, 'static> for CategoryArchiveError {
     fn respond_to(self, req: &'r Request<'_>) -> response::Result<'static> {
         match self {
             Self::LangRedirect(r) | Self::CanonicalRedirect(r) => r.respond_to(req),

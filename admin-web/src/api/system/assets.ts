@@ -110,6 +110,24 @@ export function linkPostAssetApi(
   return axios.post(`/api/admin/posts/${postId}/assets`, input);
 }
 
+export interface ReorderPostAttachmentsInput {
+  asset_ids: number[];
+}
+
+export function reorderPostAttachmentsApi(
+  postId: number,
+  input: ReorderPostAttachmentsInput,
+): Promise<Result<null>> {
+  return axios.put(`/api/admin/posts/${postId}/assets/attachments/order`, input);
+}
+
+export function reorderPostCoversApi(
+  postId: number,
+  input: ReorderPostAttachmentsInput,
+): Promise<Result<null>> {
+  return axios.put(`/api/admin/posts/${postId}/assets/covers/order`, input);
+}
+
 export function unlinkPostAssetApi(
   postId: number,
   assetId: number,

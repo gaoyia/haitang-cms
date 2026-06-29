@@ -36,6 +36,7 @@
                 :value="cat.id"
               />
             </el-select>
+            <p v-if="selectedCategoryTemplateHint" class="post-field-hint">{{ selectedCategoryTemplateHint }}</p>
           </el-form-item>
         </el-col>
 
@@ -251,6 +252,16 @@ const canOpenPublicUrl = computed(
 const drawerTitle = computed(() =>
   isEdit.value ? t("menu.content.post.manage.edit") : t("menu.content.post.manage.create"),
 );
+
+const selectedCategoryTemplateHint = computed(() => {
+  if (!form.category_id) return "";
+  const cat = props.categories.find((c) => c.id === form.category_id);
+  if (!cat) return "";
+  const label = cat.detail_template === "gallery"
+    ? t("menu.content.post.manage.categoryTemplateGallery")
+    : t("menu.content.post.manage.categoryTemplateDefault");
+  return t("menu.content.post.manage.categoryTemplateHint", { template: label });
+});
 
 /** 当前语言下访客实际使用的公开路径 */
 function publicUrlPreview(loc: string): string {

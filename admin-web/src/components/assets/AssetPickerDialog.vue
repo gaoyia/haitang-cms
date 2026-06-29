@@ -27,7 +27,11 @@
             @clear="loadAssets"
           />
           <el-button @click="loadAssets">{{ t("button.search") }}</el-button>
+          <span v-if="multiple && selectedCount > 0" class="asset-picker-dialog__selected-count">
+            {{ t("menu.assets.pickerSelectedCount", { count: selectedCount }) }}
+          </span>
         </div>
+        <p v-if="multiple" class="asset-picker-dialog__select-hint">{{ t("menu.assets.pickerSelectMultiHint") }}</p>
 
         <div v-loading="loading" class="asset-picker-dialog__grid-wrap">
           <el-empty v-if="!loading && assets.length === 0" :description="t('menu.assets.empty')" />
@@ -37,8 +41,13 @@
               :key="item.id"
               type="button"
               class="asset-picker-dialog__item"
-              :class="{ 'is-selected': selectedId === item.id }"
-              @click="selectedId = item.id"
+              :class="{
+                'is-selected': isItemSelected(item.id),
+                'is-disabled': isItemDisabled(item.id),
+              }"
+              :disabled="isItemDisabled(item.id)"
+              :title="isItemDisabled(item.id) ? t('menu.assets.pickerAlreadyLinked') : undefined"
+              @click="toggleItem(item)"
             >
               <div class="asset-picker-dialog__thumb">
                 <el-image
@@ -58,6 +67,9 @@
                 </div>
               </div>
               <div class="asset-picker-dialog__name" :title="assetDisplayName(item)">{{ assetDisplayName(item) }}</div>
+              <span v-if="isItemDisabled(item.id)" class="asset-picker-dialog__linked-badge">
+                {{ t("menu.assets.pickerAlreadyLinked") }}
+              </span>
             </button>
           </div>
         </div>
@@ -75,19 +87,28 @@
 
       <el-tab-pane :label="t('menu.assets.pickerUploadTab')" name="upload">
         <p class="asset-picker-dialog__upload-hint">{{ t("menu.assets.pickerUploadHint") }}</p>
-        <AssetUploader
-          :purpose="purpose"
-          :accept="accept"
-          :label="t('menu.assets.upload')"
-          @success="onUploaded"
-        />
+        <div class="asset-picker-dialog__upload-actions">
+          <AssetUploader
+            :purpose="purpose"
+            :accept="accept"
+            :label="t('menu.assets.uploadPick')"
+            @success="onUploaded"
+          />
+          <AssetUploader
+            :purpose="purpose"
+            :accept="accept"
+            multiple
+            :label="t('menu.assets.uploadMultiPick')"
+            @success="onUploaded"
+          />
+        </div>
       </el-tab-pane>
     </el-tabs>
 
     <template #footer>
       <el-button @click="visible = false">{{ t("button.cancel") }}</el-button>
-      <el-button type="primary" :disabled="selectedId === null" @click="confirmSelect">
-        {{ t("menu.assets.pickerConfirm") }}
+      <el-button type="primary" :disabled="!hasSelection" @click="confirmSelect">
+        {{ confirmLabel }}
       </el-button>
     </template>
   </el-dialog>
@@ -103,11 +124,21 @@ import { assetPurposeAccept, assetPurposeIsImage } from "@/utils/assetPurpose.ts
 import { resolveAssetUrl } from "@/utils/siteAsset.ts";
 import { koiMsgError } from "@/utils/koi.ts";
 
-const props = defineProps<{
-  modelValue: boolean;
-  purpose: AssetPurpose;
-  title?: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    modelValue: boolean;
+    purpose: AssetPurpose;
+    title?: string;
+    /** 资源库是否允许多选（确认时批量触发 select） */
+    multiple?: boolean;
+    /** 已关联、不可再选的资源 ID */
+    excludedIds?: number[];
+  }>(),
+  {
+    multiple: false,
+    excludedIds: () => [],
+  },
+);
 
 const emit = defineEmits<{
   "update:modelValue": [value: boolean];
@@ -119,6 +150,7 @@ const activeTab = ref<"select" | "upload">("select");
 const loading = ref(false);
 const assets = ref<AssetView[]>([]);
 const selectedId = ref<number | null>(null);
+const selectedMap = ref<Map<number, AssetView>>(new Map());
 const keyword = ref("");
 const page = ref(1);
 const pageSize = ref(12);
@@ -141,15 +173,70 @@ const purposeLabel = computed(() => {
   return map[props.purpose];
 });
 
+const selectedCount = computed(() => selectedMap.value.size);
+
+const hasSelection = computed(() =>
+  props.multiple ? selectedMap.value.size > 0 : selectedId.value !== null,
+);
+
+const confirmLabel = computed(() => {
+  if (props.multiple && selectedCount.value > 0) {
+    return t("menu.assets.pickerConfirmCount", { count: selectedCount.value });
+  }
+  return t("menu.assets.pickerConfirm");
+});
+
+const excludedIdSet = computed(() => new Set(props.excludedIds ?? []));
+
+function isItemDisabled(id: number): boolean {
+  return excludedIdSet.value.has(id);
+}
+
+function isItemSelected(id: number): boolean {
+  return props.multiple ? selectedMap.value.has(id) : selectedId.value === id;
+}
+
+function toggleItem(item: AssetView) {
+  if (isItemDisabled(item.id)) return;
+  if (props.multiple) {
+    const next = new Map(selectedMap.value);
+    if (next.has(item.id)) {
+      next.delete(item.id);
+    } else {
+      next.set(item.id, item);
+    }
+    selectedMap.value = next;
+    return;
+  }
+  selectedId.value = item.id;
+}
+
 function isImageAsset(item: AssetView): boolean {
   return assetPurposeIsImage(item.purpose) || item.mime_type.startsWith("image/");
+}
+
+function pruneExcludedSelection() {
+  const excluded = excludedIdSet.value;
+  if (props.multiple) {
+    const next = new Map(selectedMap.value);
+    for (const id of excluded) {
+      next.delete(id);
+    }
+    selectedMap.value = next;
+    return;
+  }
+  if (selectedId.value !== null && excluded.has(selectedId.value)) {
+    selectedId.value = null;
+  }
 }
 
 function onOpen() {
   activeTab.value = "select";
   selectedId.value = null;
+  selectedMap.value = new Map();
   keyword.value = "";
   page.value = 1;
+  pruneExcludedSelection();
   loadAssets();
 }
 
@@ -177,10 +264,28 @@ async function loadAssets() {
 
 function onUploaded(asset: AssetView) {
   emit("select", asset);
-  visible.value = false;
+  if (props.multiple) {
+    const next = new Map(selectedMap.value);
+    next.set(asset.id, asset);
+    selectedMap.value = next;
+  } else {
+    selectedId.value = asset.id;
+  }
+  activeTab.value = "select";
+  page.value = 1;
+  loadAssets();
 }
 
 function confirmSelect() {
+  if (props.multiple) {
+    for (const asset of selectedMap.value.values()) {
+      if (isItemDisabled(asset.id)) continue;
+      emit("select", asset);
+    }
+    selectedMap.value = new Map();
+    visible.value = false;
+    return;
+  }
   const picked = assets.value.find((a) => a.id === selectedId.value);
   if (!picked) return;
   emit("select", picked);
@@ -210,8 +315,21 @@ function confirmSelect() {
 .asset-picker-dialog__toolbar {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
   margin-bottom: 12px;
+}
+
+.asset-picker-dialog__selected-count {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--el-color-primary);
+}
+
+.asset-picker-dialog__select-hint {
+  margin: -4px 0 12px;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
 }
 
 .asset-picker-dialog__grid-wrap {
@@ -239,7 +357,25 @@ function confirmSelect() {
 
   &.is-selected {
     border-color: var(--el-color-primary);
+    box-shadow: 0 0 0 1px var(--el-color-primary-light-7);
   }
+
+  &.is-disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+
+    &:hover {
+      border-color: var(--el-border-color-lighter);
+    }
+  }
+}
+
+.asset-picker-dialog__linked-badge {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--el-text-color-placeholder);
 }
 
 .asset-picker-dialog__thumb {
@@ -283,5 +419,12 @@ function confirmSelect() {
   margin: 0 0 12px;
   font-size: 13px;
   color: var(--el-text-color-secondary);
+}
+
+.asset-picker-dialog__upload-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
 }
 </style>

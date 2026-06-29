@@ -1,21 +1,29 @@
 import axios, { type Result } from "@/utils/axios.ts";
 import type { PageParams, PageResult } from "@/types/page.ts";
 
+export type CategoryTemplate = "default" | "gallery";
+
 export interface CategoryView {
   id: number;
   name: string;
   description: string;
   sort: number;
+  route_path: string;
+  list_template: CategoryTemplate;
+  detail_template: CategoryTemplate;
 }
 
 export interface CategoryI18nPayload {
   name: string;
   description: string;
+  route_path: string;
 }
 
 export interface CategoryDetailView {
   id: number;
   sort: number;
+  list_template: CategoryTemplate;
+  detail_template: CategoryTemplate;
   translations: Record<string, CategoryI18nPayload>;
 }
 
@@ -24,6 +32,9 @@ export interface CreateCategoryInput {
   description?: string;
   sort?: number;
   lang?: string;
+  list_template?: CategoryTemplate;
+  detail_template?: CategoryTemplate;
+  route_path?: string;
 }
 
 export interface UpdateCategoryInput {
@@ -31,6 +42,9 @@ export interface UpdateCategoryInput {
   description?: string;
   sort?: number;
   lang?: string;
+  list_template?: CategoryTemplate;
+  detail_template?: CategoryTemplate;
+  route_path?: string;
 }
 
 export function listCategoriesApi(lang?: string, page?: PageParams): Promise<Result<PageResult<CategoryView>>> {

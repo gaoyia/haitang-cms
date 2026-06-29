@@ -73,6 +73,8 @@ pub fn routes() -> Vec<Route> {
         assets::delete,
         assets::list_post_assets,
         assets::link_post,
+        assets::reorder_post_attachment_order,
+        assets::reorder_post_cover_order,
         assets::unlink_post,
         assets::list_banner_assets,
         assets::link_banner,

@@ -1,4 +1,5 @@
 pub mod banners;
+pub mod categories;
 pub mod dicts;
 pub mod posts;
 
@@ -9,7 +10,9 @@ pub fn routes() -> Vec<Route> {
     routes![
         posts::list,
         posts::get,
-        posts::list_categories,
+        categories::list,
+        categories::get,
+        categories::get_by_path,
         banners::list_by_code,
         dicts::list,
         dicts::map,

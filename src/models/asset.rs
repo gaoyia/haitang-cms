@@ -94,6 +94,12 @@ pub struct LinkPostAssetInput {
     pub sort_order: Option<i64>,
 }
 
+/// 批量更新文章附件排序（须包含当前全部已关联附件 ID，顺序即 sort_order）
+#[derive(Debug, Deserialize)]
+pub struct ReorderPostAttachmentsInput {
+    pub asset_ids: Vec<i64>,
+}
+
 #[derive(Debug, Deserialize)]
 pub struct LinkBannerAssetInput {
     pub asset_id: i64,
@@ -319,6 +325,17 @@ async fn next_cover_sort_order(db: &mut toasty::Db, post_id: i64) -> Result<i64,
     Ok(max + 1)
 }
 
+async fn next_attachment_sort_order(db: &mut toasty::Db, post_id: i64) -> Result<i64, String> {
+    let rows = post_asset_rows(db).await?;
+    let max = rows
+        .iter()
+        .filter(|r| r.post_id == post_id && r.role == PostAssetRole::Attachment.as_str())
+        .map(|r| r.sort_order)
+        .max()
+        .unwrap_or(-1);
+    Ok(max + 1)
+}
+
 pub async fn link_post_asset(
     db: &mut toasty::Db,
     post_id: i64,
@@ -360,6 +377,12 @@ pub async fn link_post_asset(
         } else {
             next_cover_sort_order(db, post_id).await?
         }
+    } else if role == PostAssetRole::Attachment {
+        if let Some(order) = input.sort_order {
+            order
+        } else {
+            next_attachment_sort_order(db, post_id).await?
+        }
     } else {
         input.sort_order.unwrap_or(0)
     };
@@ -382,6 +405,90 @@ pub async fn link_post_asset(
                 .await
                 .map_err(|e| format!("创建文章资源关联失败: {e}"))?;
         }
+    }
+
+    Ok(())
+}
+
+/// 按给定顺序全量更新文章附件的 `sort_order`
+pub async fn reorder_post_attachments(
+    db: &mut toasty::Db,
+    post_id: i64,
+    asset_ids: &[i64],
+) -> Result<(), String> {
+    let rows = post_asset_rows(db).await?;
+    let linked: Vec<i64> = rows
+        .iter()
+        .filter(|r| r.post_id == post_id && r.role == PostAssetRole::Attachment.as_str())
+        .map(|r| r.asset_id)
+        .collect();
+
+    if asset_ids.len() != linked.len() {
+        return Err("附件列表须包含当前全部已关联附件".to_string());
+    }
+
+    let linked_set: std::collections::HashSet<i64> = linked.iter().copied().collect();
+    let mut seen = std::collections::HashSet::new();
+    for id in asset_ids {
+        if !linked_set.contains(id) {
+            return Err(format!("资源 #{id} 不是本文附件"));
+        }
+        if !seen.insert(*id) {
+            return Err("附件 ID 重复".to_string());
+        }
+    }
+
+    for (sort_order, asset_id) in asset_ids.iter().enumerate() {
+        let mut row = PostAsset::get_by_post_id_and_asset_id(db, &post_id, asset_id)
+            .await
+            .map_err(|_| format!("资源 #{asset_id} 与本文关联不存在"))?;
+        row.update()
+            .sort_order(sort_order as i64)
+            .exec(db)
+            .await
+            .map_err(|e| format!("更新附件排序失败: {e}"))?;
+    }
+
+    Ok(())
+}
+
+/// 按给定顺序全量更新文章封面的 `sort_order`
+pub async fn reorder_post_covers(
+    db: &mut toasty::Db,
+    post_id: i64,
+    asset_ids: &[i64],
+) -> Result<(), String> {
+    let rows = post_asset_rows(db).await?;
+    let linked: Vec<i64> = rows
+        .iter()
+        .filter(|r| r.post_id == post_id && r.role == PostAssetRole::Cover.as_str())
+        .map(|r| r.asset_id)
+        .collect();
+
+    if asset_ids.len() != linked.len() {
+        return Err("封面列表须包含当前全部已关联封面".to_string());
+    }
+
+    let linked_set: std::collections::HashSet<i64> = linked.iter().copied().collect();
+    let mut seen = std::collections::HashSet::new();
+    for id in asset_ids {
+        if !linked_set.contains(id) {
+            return Err(format!("资源 #{id} 不是本文封面"));
+        }
+        if !seen.insert(*id) {
+            return Err("封面 ID 重复".to_string());
+        }
+    }
+
+    for (sort_order, asset_id) in asset_ids.iter().enumerate() {
+        let mut row = PostAsset::get_by_post_id_and_asset_id(db, &post_id, asset_id)
+            .await
+            .map_err(|_| format!("资源 #{asset_id} 与本文关联不存在"))?;
+        row.update()
+            .sort_order(sort_order as i64)
+            .exec(db)
+            .await
+            .map_err(|e| format!("更新封面排序失败: {e}"))?;
     }
 
     Ok(())
@@ -673,4 +780,89 @@ pub async fn ensure_banner_seed_asset_link(
 
     println!("[种子] 默认轮播图已关联资源（banner_id={banner_id}）");
     Ok(())
+}
+
+const SEED_GALLERY_COUNT: usize = 6;
+const SEED_GALLERY_MIME: &str = "image/jpeg";
+
+/// 预制相册文章所需的种子图片资源
+pub struct GallerySeedAssets {
+    /// 封面图（gallery-1.jpg，purpose=cover）
+    pub cover: Asset,
+    /// 附件图（gallery-2.jpg … gallery-6.jpg，purpose=attachment）
+    pub attachments: Vec<Asset>,
+}
+
+fn seed_gallery_storage_key(admin_user_id: i64, index: usize) -> String {
+    format!("seed/{admin_user_id}/gallery-{index}.jpg")
+}
+
+async fn ensure_seed_gallery_asset(
+    db: &mut toasty::Db,
+    storage: &StorageService,
+    admin_user_id: i64,
+    index: usize,
+    purpose: AssetPurpose,
+) -> Result<Asset, String> {
+    let filename = format!("gallery-{index}.jpg");
+    let storage_key = seed_gallery_storage_key(admin_user_id, index);
+
+    if let Some(asset) = find_asset_by_storage_key(db, &storage_key).await? {
+        return Ok(asset);
+    }
+
+    let file_path = storage.config.local_dir.join(&storage_key);
+    let size = std::fs::metadata(&file_path)
+        .map_err(|e| format!("相册种子文件不存在（{}）: {e}", file_path.display()))?
+        .len() as i64;
+
+    let asset = create_asset_record(
+        db,
+        &storage_key,
+        &filename,
+        &filename,
+        SEED_GALLERY_MIME,
+        size,
+        purpose,
+    )
+    .await?;
+
+    println!(
+        "[种子] 相册资源已入库（{}）",
+        storage.public_url(&storage_key)
+    );
+    Ok(asset)
+}
+
+/// 确保 6 张相册种子图片已入库（文件须位于 `uploads/seed/{admin_user_id}/gallery-*.jpg`）
+pub async fn seed_default_gallery_assets(
+    db: &mut toasty::Db,
+    storage: &StorageService,
+) -> Result<GallerySeedAssets, String> {
+    let admin_user_id = find_default_admin_user_id(db).await?;
+
+    let cover = ensure_seed_gallery_asset(
+        db,
+        storage,
+        admin_user_id,
+        1,
+        AssetPurpose::Cover,
+    )
+    .await?;
+
+    let mut attachments = Vec::with_capacity(SEED_GALLERY_COUNT - 1);
+    for index in 2..=SEED_GALLERY_COUNT {
+        attachments.push(
+            ensure_seed_gallery_asset(
+                db,
+                storage,
+                admin_user_id,
+                index,
+                AssetPurpose::Attachment,
+            )
+            .await?,
+        );
+    }
+
+    Ok(GallerySeedAssets { cover, attachments })
 }

@@ -1,0 +1,93 @@
+{% extends "base" %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="/static/resources/css/gallery.css">
+{% endblock extra_head %}
+
+{% block content %}
+<section class="page-section gallery-archive">
+    <div class="container">
+        <header class="gallery-archive__header">
+            <h1 class="page-title" id="category-title">{{ title }}</h1>
+            <p class="gallery-archive__desc" id="category-desc" hidden></p>
+        </header>
+        <div class="gallery-grid" id="gallery-grid">
+            <p class="empty">{% if lang == "en-us" %}Loading…{% else %}加载中…{% endif %}</p>
+        </div>
+    </div>
+</section>
+{% endblock content %}
+
+{% block scripts %}
+<script>
+    $(function () {
+        var categoryId = {{ category_id }};
+        var localePrefix = "{{ locale_prefix | safe }}";
+        var emptyText = "{{ lang }}" === "en-us" ? "No albums yet." : "暂无相册";
+        var failText = "{{ lang }}" === "en-us" ? "Failed to load." : "加载失败";
+
+        function postDetailUrl(post) {
+            if (post.route_path) return post.route_path;
+            return localePrefix + "/posts/" + post.id;
+        }
+
+        function coverUrl(post) {
+            if (post.covers && post.covers.length > 0) return post.covers[0].url;
+            if (post.attachments && post.attachments.length > 0) {
+                var img = post.attachments.find(function (a) {
+                    return a.mime_type && a.mime_type.indexOf("image/") === 0;
+                });
+                if (img) return img.url;
+            }
+            return "/static/resources/logo.svg";
+        }
+
+        $.getJSON("/api/categories/" + categoryId + "?lang={{ lang }}", function (catRes) {
+            if (catRes.code === 0 && catRes.data) {
+                if (catRes.data.name) {
+                    $("#category-title").text(catRes.data.name);
+                    document.title = catRes.data.name + " - {{ site_name }}";
+                }
+                if (catRes.data.description) {
+                    $("#category-desc").text(catRes.data.description).prop("hidden", false);
+                }
+            }
+        });
+
+        $.getJSON("/api/posts?lang={{ lang }}&category_id=" + categoryId, function (res) {
+            var $grid = $("#gallery-grid");
+            $grid.empty();
+            if (res.code !== 0 || !res.data || res.data.length === 0) {
+                $grid.append('<p class="empty">' + emptyText + '</p>');
+                return;
+            }
+
+            var posts = res.data.slice().sort(function (a, b) {
+                return (b.display_time || 0) - (a.display_time || 0);
+            });
+
+            $.each(posts, function (i, post) {
+                var href = postDetailUrl(post);
+                var thumb = coverUrl(post);
+                var count = (post.attachments || []).filter(function (a) {
+                    return a.mime_type && a.mime_type.indexOf("image/") === 0;
+                }).length;
+                var countLabel = count > 0
+                    ? ("{{ lang }}" === "en-us" ? count + " photos" : count + " 张")
+                    : "";
+                $grid.append(
+                    '<a class="gallery-card" href="' + href + '">' +
+                    '<div class="gallery-card__media">' +
+                    '<img class="gallery-card__img" src="' + thumb + '" alt="" loading="lazy">' +
+                    '<div class="gallery-card__overlay">' +
+                    '<h2 class="gallery-card__title">' + $("<span>").text(post.title).html() + '</h2>' +
+                    (countLabel ? '<div class="gallery-card__meta"><span class="gallery-card__count">' + countLabel + '</span></div>' : '') +
+                    '</div></div></a>'
+                );
+            });
+        }).fail(function () {
+            $("#gallery-grid").html('<p class="empty">' + failText + '</p>');
+        });
+    });
+</script>
+{% endblock scripts %}

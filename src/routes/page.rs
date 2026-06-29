@@ -33,3 +33,23 @@ impl LangPageQuery {
         .resolve()
     }
 }
+
+/// 管理端文章列表查询参数
+#[derive(Debug, FromForm)]
+pub struct AdminPostListQuery {
+    pub lang: Option<String>,
+    pub page: Option<i64>,
+    pub page_size: Option<i64>,
+    /// 按分类 ID 筛选；缺省或 ≤0 表示不限
+    pub category_id: Option<i64>,
+}
+
+impl AdminPostListQuery {
+    pub fn resolve_page(&self) -> (i64, i64) {
+        PageQuery {
+            page: self.page,
+            page_size: self.page_size,
+        }
+        .resolve()
+    }
+}

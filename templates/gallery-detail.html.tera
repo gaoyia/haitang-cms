@@ -1,0 +1,223 @@
+{% extends "base" %}
+
+{% block title %}{{ title }}{% endblock title %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="/static/resources/css/jquery.fancybox.min.css">
+<link rel="stylesheet" href="/static/resources/css/github-markdown.min.css">
+<link rel="stylesheet" href="/static/resources/css/gallery.css">
+{% if post_description %}
+<meta name="description" content="{{ post_description }}">
+{% endif %}
+{% endblock extra_head %}
+
+{% block content %}
+<section class="page-section gallery-detail">
+    <div class="container">
+        <nav class="gallery-detail__nav">
+            <a class="post-detail-back" id="gallery-back" href="{% if category_route_path %}{{ category_route_path | safe }}{% else %}{{ locale_prefix | safe }}/posts{% endif %}">
+                {% if lang == "en-us" %}
+                    {% if category_name %}← Back to {{ category_name }}{% else %}← Back{% endif %}
+                {% else %}
+                    {% if category_name %}← 返回{{ category_name }}{% else %}← 返回{% endif %}
+                {% endif %}
+            </a>
+        </nav>
+        <article class="gallery-detail__article">
+            <div class="gallery-detail__layout">
+                <div class="gallery-detail__grid" id="gallery-photos"></div>
+                <aside class="gallery-detail__sidebar">
+                    <div class="gallery-detail__panel">
+                        <header class="gallery-detail__header">
+                            <h1 class="gallery-detail__title" id="post-title">{{ title }}</h1>
+                            <p class="gallery-detail__desc" id="post-description"{% if not post_description %} hidden{% endif %}>{% if post_description %}{{ post_description }}{% endif %}</p>
+                            <p class="gallery-detail__meta" id="post-meta" hidden></p>
+                        </header>
+                        <div id="post-content" class="gallery-detail__content markdown-body" hidden></div>
+                    </div>
+                </aside>
+            </div>
+            <p class="empty" id="post-error" hidden></p>
+        </article>
+    </div>
+</section>
+{% endblock content %}
+
+{% block scripts %}
+<script src="/static/resources/js/marked.min.js"></script>
+<script src="/static/resources/js/purify.min.js"></script>
+<script src="/static/resources/js/markdown-render.js"></script>
+<script src="/static/resources/js/jquery-migrate-4.0.1.min.js"></script>
+<script src="/static/resources/js/jquery.fancybox.min.js"></script>
+<script>
+    $(function () {
+        var postId = {{ post_id }};
+        var lang = "{{ lang }}";
+        var postsFallback = "{{ locale_prefix | safe }}/posts";
+        var loadFailed = "{{ lang }}" === "en-us" ? "Failed to load." : "加载失败";
+        var notFound = "{{ lang }}" === "en-us" ? "Not found or unpublished." : "不存在或未发布";
+        var noPhotos = "{{ lang }}" === "en-us" ? "No photos in this album." : "本相册暂无图片";
+        var photoUnit = "{{ lang }}" === "en-us" ? "photos" : "张图片";
+        var previewLabel = "{{ lang }}" === "en-us" ? "Preview" : "预览";
+
+        function bindBackLink(post) {
+            var $back = $("#gallery-back");
+            var categoryHref = post.category_route_path || "";
+            var href = categoryHref || postsFallback;
+
+            if (post.category_name && categoryHref) {
+                $back.text(
+                    lang === "en-us"
+                        ? ("← Back to " + post.category_name)
+                        : ("← 返回" + post.category_name)
+                );
+            }
+
+            $back.attr("href", href).off("click.galleryBack").on("click.galleryBack", function (e) {
+                var ref = document.referrer;
+                if (!ref) return;
+                try {
+                    var refUrl = new URL(ref, window.location.origin);
+                    if (refUrl.origin !== window.location.origin) return;
+                    if (refUrl.pathname.indexOf("/categories/") !== -1
+                        || refUrl.pathname.indexOf("/posts") !== -1) {
+                        e.preventDefault();
+                        history.back();
+                    }
+                } catch (ignore) {}
+            });
+        }
+
+        function imageAttachments(post) {
+            return (post.attachments || []).filter(function (a) {
+                return a.mime_type && a.mime_type.indexOf("image/") === 0;
+            });
+        }
+
+        function buildPhotoUrls(post) {
+            var urls = [];
+            var seen = {};
+            function push(url) {
+                if (!url || seen[url]) return;
+                seen[url] = true;
+                urls.push(url);
+            }
+            (post.covers || []).forEach(function (c) { push(c.url); });
+            imageAttachments(post).forEach(function (a) { push(a.url); });
+            return urls;
+        }
+
+        function formatDisplayTime(ts) {
+            if (!ts) return "";
+            var d = new Date(ts * 1000);
+            return d.toLocaleString(lang === "en-us" ? "en-US" : "zh-CN", {
+                year: "numeric", month: "2-digit", day: "2-digit"
+            });
+        }
+
+        function initGalleryFancybox() {
+            $("[data-fancybox='gallery-album']").fancybox({
+                loop: true,
+                infobar: true,
+                animationEffect: "zoom",
+                transitionEffect: "slide",
+                buttons: ["zoom", "slideShow", "fullScreen", "close"],
+                i18n: {
+                    en: {
+                        CLOSE: "Close",
+                        NEXT: "Next",
+                        PREV: "Previous",
+                        ERROR: "The requested content cannot be loaded.",
+                        PLAY_START: "Start slideshow",
+                        PLAY_STOP: "Pause slideshow",
+                        FULL_SCREEN: "Full screen",
+                        THUMBS: "Thumbnails",
+                        DOWNLOAD: "Download",
+                        SHARE: "Share",
+                        ZOOM: "Zoom"
+                    },
+                    zh: {
+                        CLOSE: "关闭",
+                        NEXT: "下一张",
+                        PREV: "上一张",
+                        ERROR: "无法加载图片。",
+                        PLAY_START: "开始幻灯片",
+                        PLAY_STOP: "暂停幻灯片",
+                        FULL_SCREEN: "全屏",
+                        THUMBS: "缩略图",
+                        DOWNLOAD: "下载",
+                        SHARE: "分享",
+                        ZOOM: "缩放"
+                    }
+                },
+                lang: lang === "en-us" ? "en" : "zh"
+            });
+        }
+
+        function renderPhotos(urls) {
+            var $grid = $("#gallery-photos");
+            $grid.empty();
+            if (urls.length === 0) {
+                $grid.append('<p class="empty">' + noPhotos + '</p>');
+                return;
+            }
+            urls.forEach(function (url, index) {
+                $grid.append(
+                    '<a class="gallery-photo" href="' + url + '" data-fancybox="gallery-album" ' +
+                    'data-caption="' + previewLabel + ' ' + (index + 1) + '" aria-label="' + previewLabel + ' ' + (index + 1) + '">' +
+                    '<div class="gallery-photo__inner">' +
+                    '<img src="' + url + '" alt="" loading="lazy">' +
+                    '<span class="gallery-photo__zoom">' + previewLabel + '</span>' +
+                    '</div></a>'
+                );
+            });
+            initGalleryFancybox();
+        }
+
+        $.getJSON("/api/posts/" + postId + "?lang=" + encodeURIComponent(lang), function (res) {
+            if (res.code !== 0 || !res.data) {
+                $("#post-error").text(res.message || loadFailed).prop("hidden", false);
+                return;
+            }
+            var post = res.data;
+            var nowSec = Math.floor(Date.now() / 1000);
+            if (post.status !== 1 || !post.publish_time || post.publish_time > nowSec) {
+                $("#post-error").text(notFound).prop("hidden", false);
+                return;
+            }
+
+            document.title = post.title + " - {{ site_name }}";
+            $("#post-title").text(post.title);
+
+            if (post.description) {
+                $("#post-description").text(post.description).prop("hidden", false);
+            }
+
+            bindBackLink(post);
+
+            var photoUrls = buildPhotoUrls(post);
+            var metaParts = [];
+            if (photoUrls.length > 0) {
+                metaParts.push(photoUrls.length + " " + photoUnit);
+            }
+            if (post.display_time) {
+                metaParts.push(formatDisplayTime(post.display_time));
+            }
+            if (metaParts.length > 0) {
+                $("#post-meta").text(metaParts.join(" · ")).prop("hidden", false);
+            }
+
+            renderPhotos(photoUrls);
+
+            if (post.content && post.content.trim()) {
+                var contentEl = document.getElementById("post-content");
+                if (renderMarkdown(post.content, contentEl)) {
+                    $(contentEl).prop("hidden", false);
+                }
+            }
+        }).fail(function () {
+            $("#post-error").text(loadFailed).prop("hidden", false);
+        });
+    });
+</script>
+{% endblock scripts %}

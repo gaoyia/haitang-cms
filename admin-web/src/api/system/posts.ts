@@ -18,6 +18,10 @@ export interface PostView {
   published_at: number;
   publish_time: number;
   display_time: number;
+  covers?: AssetView[];
+  attachments?: AssetView[];
+  list_template?: string;
+  detail_template?: string;
 }
 
 export interface PostI18nPayload {
@@ -68,9 +72,22 @@ export interface UpdatePostInput {
   publish_time?: number;
 }
 
-export function listPostsApi(lang?: string, page?: PageParams): Promise<Result<PageResult<PostView>>> {
+export interface PostListParams extends PageParams {
+  category_id?: number;
+}
+
+export function listPostsApi(
+  lang?: string,
+  page?: PostListParams,
+): Promise<Result<PageResult<PostView>>> {
+  const categoryId = page?.category_id;
   return axios.get("/api/admin/posts", {
-    params: { lang, page: page?.page, page_size: page?.page_size },
+    params: {
+      lang,
+      page: page?.page,
+      page_size: page?.page_size,
+      ...(categoryId && categoryId > 0 ? { category_id: categoryId } : {}),
+    },
   });
 }
 

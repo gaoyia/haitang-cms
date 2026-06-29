@@ -12,9 +12,17 @@
       </template>
 
       <div class="post-toolbar">
-        <div class="post-toolbar__left">
-          <span class="post-toolbar__label">{{ t("menu.content.post.manage.previewLang") }}</span>
-          <el-segmented v-model="previewLang" :options="localeSegmentOptions" size="small" />
+        <div class="post-toolbar__filters">
+          <div class="post-toolbar__row">
+            <span class="post-toolbar__label">{{ t("menu.content.post.manage.filterCategory") }}</span>
+            <div class="post-category-segmented">
+              <el-segmented v-model="filterCategoryId" :options="categorySegmentOptions" size="small" />
+            </div>
+          </div>
+          <div class="post-toolbar__row">
+            <span class="post-toolbar__label">{{ t("menu.content.post.manage.previewLang") }}</span>
+            <el-segmented v-model="previewLang" :options="localeSegmentOptions" size="small" />
+          </div>
         </div>
         <div class="post-toolbar__right">
           <el-button type="primary" @click="openDrawer(null)">
@@ -34,7 +42,21 @@
         class="post-table"
         @change="loadPosts"
       >
-        <el-table-column prop="title" :label="t('menu.content.post.manage.titleCol')" min-width="180" show-overflow-tooltip />
+        <el-table-column :label="t('menu.content.post.manage.titleCol')" min-width="200" show-overflow-tooltip>
+          <template #default="{ row }">
+            <div class="title-with-public-url">
+              <PublicUrlPopover :id-url="postIdUrl(row.id)" :seo-url="postSeoUrl(row)" />
+              <a
+                :href="primaryPublicUrl(postIdUrl(row.id), postSeoUrl(row))"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="title-with-public-url__link"
+              >
+                {{ row.title }}
+              </a>
+            </div>
+          </template>
+        </el-table-column>
         <el-table-column :label="t('menu.content.post.manage.displayTime')" width="168" align="center">
           <template #default="{ row }">
             {{ formatUnixTime(row.display_time) }}
@@ -57,20 +79,6 @@
             <el-tag v-else type="info" size="small" effect="plain">
               {{ t("menu.content.post.manage.draft") }}
             </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column :label="t('menu.content.post.manage.publicUrl')" min-width="200" show-overflow-tooltip>
-          <template #default="{ row }">
-            <el-link
-              v-if="row.status === 1 && !isScheduledPost(row)"
-              :href="publicPostUrl(row.id)"
-              target="_blank"
-              type="primary"
-              :underline="false"
-            >
-              {{ publicPostUrl(row.id) }}
-            </el-link>
-            <span v-else class="post-public-url">{{ publicPostUrl(row.id) }}</span>
           </template>
         </el-table-column>
         <el-table-column :label="t('table.operate')" width="140" align="center" fixed="right">
@@ -109,7 +117,9 @@ import { useSiteLocales } from "@/composables/useSiteLocales.ts";
 import { useTablePage } from "@/composables/useTablePage.ts";
 import { koiMsgError, koiMsgSuccess } from "@/utils/koi.ts";
 import { formatUnixTime, nowUnix } from "@/utils/formatTime.ts";
+import { primaryPublicUrl } from "@/utils/publicUrl.ts";
 import PostFormDrawer from "./components/PostFormDrawer.vue";
+import PublicUrlPopover from "@/components/PublicUrlPopover.vue";
 
 const { t } = useI18n();
 const { siteLocales, defaultLocale, previewLang, loadSiteLocales, localeLabel } = useSiteLocales();
@@ -120,6 +130,8 @@ const categories = ref<CategoryView[]>([]);
 const loading = ref(false);
 const drawerVisible = ref(false);
 const editingId = ref<number | null>(null);
+/** 0 表示全部分类 */
+const filterCategoryId = ref(0);
 
 const localeSegmentOptions = computed(() =>
   siteLocales.value.map((loc) => ({
@@ -128,8 +140,26 @@ const localeSegmentOptions = computed(() =>
   })),
 );
 
-function publicPostUrl(id: number): string {
+const categorySegmentOptions = computed(() => [
+  { label: t("menu.content.post.manage.filterCategoryAll"), value: 0 },
+  ...categories.value.map((cat) => ({
+    label: cat.name,
+    value: cat.id,
+  })),
+]);
+
+const listQueryParams = computed(() => ({
+  ...pageParams.value,
+  category_id: filterCategoryId.value > 0 ? filterCategoryId.value : undefined,
+}));
+
+function postIdUrl(id: number): string {
   return `/${previewLang.value}/posts/${id}`;
+}
+
+function postSeoUrl(row: PostView): string | null {
+  const path = row.route_path?.trim();
+  return path || null;
 }
 
 function isScheduledPost(row: PostView): boolean {
@@ -144,7 +174,7 @@ async function loadCategories() {
 async function loadPosts() {
   loading.value = true;
   try {
-    const res = await listPostsApi(previewLang.value, pageParams.value);
+    const res = await listPostsApi(previewLang.value, listQueryParams.value);
     posts.value = applyPageResult(res.code === 0 ? res.data : null);
   } finally {
     loading.value = false;
@@ -181,6 +211,11 @@ watch(previewLang, () => {
   loadCategories();
 });
 
+watch(filterCategoryId, () => {
+  resetPage();
+  loadPosts();
+});
+
 onMounted(async () => {
   await loadSiteLocales();
   await Promise.all([loadPosts(), loadCategories()]);
@@ -209,22 +244,43 @@ onMounted(async () => {
 
 .post-toolbar {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 12px;
   margin-bottom: 14px;
   flex-shrink: 0;
 
-  &__left {
+  &__filters {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  &__row {
     display: flex;
     align-items: center;
     gap: 10px;
+    min-width: 0;
   }
 
   &__label {
     font-size: 13px;
     color: var(--el-text-color-secondary);
+    flex-shrink: 0;
+  }
+}
+
+.post-category-segmented {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 2px;
+
+  :deep(.el-segmented) {
+    width: max-content;
+    max-width: none;
   }
 }
 
@@ -232,8 +288,25 @@ onMounted(async () => {
   width: 100%;
 }
 
-.post-public-url {
-  font-size: 13px;
-  color: var(--el-text-color-secondary);
+.title-with-public-url {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+
+  &__link {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--el-text-color-primary);
+    text-decoration: none;
+
+    &:hover {
+      color: var(--el-color-primary);
+      text-decoration: underline;
+    }
+  }
 }
 </style>

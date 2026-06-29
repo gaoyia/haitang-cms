@@ -7,9 +7,10 @@ use tokio::io::AsyncReadExt;
 use crate::guards::AdminAuth;
 use crate::models::{
     ApiResponse, Banner, BannerAssetsView, LinkBannerAssetInput, LinkPostAssetInput, PageResult,
-    PostAssetsView, PostMeta, SetBannerImageEnabledInput, asset_to_view_by_id, banner_assets_view,
-    create_asset_record, delete_asset_record, link_banner_asset, link_post_asset, list_asset_views,
-    post_assets_view, set_banner_image_enabled, unlink_banner_asset, unlink_post_asset,
+    PostAssetsView, PostMeta, ReorderPostAttachmentsInput, SetBannerImageEnabledInput,
+    asset_to_view_by_id, banner_assets_view, create_asset_record, delete_asset_record,
+    link_banner_asset, link_post_asset, list_asset_views, post_assets_view, reorder_post_attachments,
+    reorder_post_covers, set_banner_image_enabled, unlink_banner_asset, unlink_post_asset,
 };
 use crate::storage::{AssetPurpose, StorageService};
 
@@ -283,6 +284,54 @@ pub async fn link_post(
         Ok(_) => Json(ApiResponse {
             code: 0,
             message: "关联成功".to_string(),
+            data: None,
+        }),
+        Err(e) => Json(ApiResponse::error(400, e)),
+    }
+}
+
+/// 全量更新文章附件排序
+#[put("/api/admin/posts/<id>/assets/attachments/order", data = "<input>")]
+pub async fn reorder_post_attachment_order(
+    _auth: AdminAuth,
+    db: &State<toasty::Db>,
+    id: i64,
+    input: Json<ReorderPostAttachmentsInput>,
+) -> Json<ApiResponse<()>> {
+    let mut db = db.inner().clone();
+
+    if PostMeta::get_by_id(&mut db, &id).await.is_err() {
+        return Json(ApiResponse::error(404, "文章不存在"));
+    }
+
+    match reorder_post_attachments(&mut db, id, &input.asset_ids).await {
+        Ok(_) => Json(ApiResponse {
+            code: 0,
+            message: "排序已更新".to_string(),
+            data: None,
+        }),
+        Err(e) => Json(ApiResponse::error(400, e)),
+    }
+}
+
+/// 全量更新文章封面排序
+#[put("/api/admin/posts/<id>/assets/covers/order", data = "<input>")]
+pub async fn reorder_post_cover_order(
+    _auth: AdminAuth,
+    db: &State<toasty::Db>,
+    id: i64,
+    input: Json<ReorderPostAttachmentsInput>,
+) -> Json<ApiResponse<()>> {
+    let mut db = db.inner().clone();
+
+    if PostMeta::get_by_id(&mut db, &id).await.is_err() {
+        return Json(ApiResponse::error(404, "文章不存在"));
+    }
+
+    match reorder_post_covers(&mut db, id, &input.asset_ids).await {
+        Ok(_) => Json(ApiResponse {
+            code: 0,
+            message: "排序已更新".to_string(),
             data: None,
         }),
         Err(e) => Json(ApiResponse::error(400, e)),

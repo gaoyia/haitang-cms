@@ -24,11 +24,12 @@ pub use admin_sidebar::{
 };
 pub use asset::{
     Asset, AssetView, BannerAsset, BannerAssetsView, LinkBannerAssetInput, LinkPostAssetInput,
-    PostAsset, PostAssetsView, SetBannerImageEnabledInput, asset_to_view_by_id, banner_assets_view,
+    PostAsset, PostAssetsView, ReorderPostAttachmentsInput, SetBannerImageEnabledInput,
+    asset_to_view_by_id, banner_assets_view,
     create_asset_record, delete_asset_record, delete_banner_asset_links,
     ensure_banner_seed_asset_link, link_banner_asset, link_post_asset, list_asset_views,
-    post_assets_view, seed_default_banner_asset, set_banner_image_enabled, unlink_banner_asset,
-    unlink_post_asset,
+    post_assets_view, reorder_post_attachments, reorder_post_covers, seed_default_banner_asset,
+    set_banner_image_enabled, unlink_banner_asset, unlink_post_asset,
 };
 pub use auth::{Claims, LoginRequest, LoginResponse, LoginUserInfo};
 pub use banner::{
@@ -42,7 +43,8 @@ pub use banner_group::{
 pub use category::{
     CategoryDetailView, CategoryMeta, CategoryView, CreateCategory, UpdateCategory,
     categories_to_views, category_detail_view, category_to_view, create_category, delete_category,
-    seed_default_categories, upsert_category_i18n,
+    resolve_category_id_from_public_key, seed_default_categories, update_category,
+    category_public_path_by_slug,
 };
 pub use dict::{
     CreateDictMeta, DictDetailView, DictMetaListView, DictPublicView, UpdateDictMeta,
@@ -66,7 +68,7 @@ pub use permission::{ALL_PERMISSIONS, all_permission_codes};
 pub use post::{
     CreatePost, PostDetailView, PostMeta, PostView, UpdatePost,
     count_posts_by_category, create_post, delete_post, is_post_publicly_visible, post_detail_view,
-    post_to_view, posts_to_views, update_post,
+    post_to_view, post_to_view_with_storage, posts_to_views, seed_default_sample_posts, update_post,
 };
 pub use response::{ApiResponse, PageResult, paginate_vec};
 pub use role::{CreateRole, Role, RoleView, UpdateRole};

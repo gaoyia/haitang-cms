@@ -7,7 +7,7 @@ use crate::models::{
     create_post, delete_post, get_site_default_locale, paginate_vec, post_assets_view,
     post_detail_view, post_to_view, posts_to_views, update_post,
 };
-use crate::routes::page::LangPageQuery;
+use crate::routes::page::AdminPostListQuery;
 use crate::storage::StorageService;
 
 fn is_post_route_path_client_error(message: &str) -> bool {
@@ -98,18 +98,29 @@ pub async fn delete(_auth: AdminAuth, db: &State<toasty::Db>, id: i64) -> Json<A
 pub async fn list(
     _auth: AdminAuth,
     db: &State<toasty::Db>,
-    query: LangPageQuery,
+    query: AdminPostListQuery,
 ) -> Json<ApiResponse<PageResult<PostView>>> {
     let mut db = db.inner().clone();
 
     match PostMeta::all().exec(&mut db).await {
-        Ok(posts) => match posts_to_views(&mut db, posts, query.lang.as_deref()).await {
-            Ok(views) => {
-                let (p, ps) = query.resolve_page();
-                Json(ApiResponse::success(paginate_vec(views, p, ps)))
+        Ok(posts) => {
+            let posts: Vec<PostMeta> = posts
+                .into_iter()
+                .filter(|meta| {
+                    query
+                        .category_id
+                        .filter(|&id| id > 0)
+                        .is_none_or(|cid| meta.category_id == cid)
+                })
+                .collect();
+            match posts_to_views(&mut db, posts, query.lang.as_deref()).await {
+                Ok(views) => {
+                    let (p, ps) = query.resolve_page();
+                    Json(ApiResponse::success(paginate_vec(views, p, ps)))
+                }
+                Err(e) => Json(ApiResponse::error(500, e)),
             }
-            Err(e) => Json(ApiResponse::error(500, e)),
-        },
+        }
         Err(e) => Json(ApiResponse::error(500, format!("查询失败: {e}"))),
     }
 }

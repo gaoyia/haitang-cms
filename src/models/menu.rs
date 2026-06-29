@@ -2,7 +2,7 @@ use serde::Serialize;
 
 use super::admin_sidebar::get_admin_sidebar_tree;
 use super::dict::{get_site_default_locale, get_site_locales, load_dict_map};
-use super::locale::{html_lang_attr, locale_path, public_page_title};
+use super::locale::{html_lang_attr, locale_path, locale_switch_suffix, public_page_title};
 use super::menu_group::{MenuGroup, MenuGroupView, admin_sidebar_group_view};
 use super::menu_item::{MenuView, build_menu_tree, load_merged_menu_items};
 
@@ -78,13 +78,14 @@ pub async fn site_page_context(
         .cloned()
         .unwrap_or_else(|| "© 2026 海棠 CMS".to_string());
     let title = public_page_title(&resolved_lang, page_slug);
+    let path_suffix = locale_switch_suffix(current_path);
     let locale_links: Vec<_> = supported
         .iter()
         .map(|loc| {
             serde_json::json!({
                 "lang": loc,
                 "label": if loc == "en-us" { "English" } else { "中文" },
-                "url": locale_path(loc, page_slug),
+                "url": locale_path(loc, &path_suffix),
                 "active": loc == &resolved_lang,
             })
         })

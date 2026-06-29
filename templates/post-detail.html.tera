@@ -4,20 +4,27 @@
 
 {% block extra_head %}
 <link rel="stylesheet" href="/static/resources/css/github-markdown.min.css">
+{% if post_description %}
+<meta name="description" content="{{ post_description }}">
+{% endif %}
 {% endblock extra_head %}
 
 {% block content %}
 <section class="page-section post-detail-section">
     <div class="container container-narrow">
         <nav class="post-detail-nav">
-            <a class="post-detail-back" href="{{ locale_prefix }}/posts">
-                {% if lang == "en-us" %}← Back to posts{% else %}← 返回文章列表{% endif %}
+            <a class="post-detail-back" id="post-detail-back" href="{% if category_route_path %}{{ category_route_path | safe }}{% else %}{{ locale_prefix | safe }}/posts{% endif %}">
+                {% if lang == "en-us" %}
+                    {% if category_name %}← Back to {{ category_name }}{% else %}← Back to posts{% endif %}
+                {% else %}
+                    {% if category_name %}← 返回{{ category_name }}{% else %}← 返回文章列表{% endif %}
+                {% endif %}
             </a>
         </nav>
         <article class="post-detail">
             <header class="post-detail-header">
                 <h1 class="post-detail-title" id="post-title">{{ title }}</h1>
-                <p class="post-detail-description" id="post-description" hidden></p>
+                <p class="post-detail-description" id="post-description"{% if not post_description %} hidden{% endif %}>{% if post_description %}{{ post_description }}{% endif %}</p>
                 <div class="post-detail-meta" id="post-meta"></div>
             </header>
             <div id="post-content" class="post-detail-body content-card markdown-body"></div>
@@ -35,6 +42,7 @@
     $(function () {
         var postId = {{ post_id }};
         var lang = "{{ lang }}";
+        var postsFallback = "{{ locale_prefix | safe }}/posts";
         var loadFailed = "{{ lang }}" === "en-us" ? "Failed to load article." : "文章加载失败，请稍后重试。";
         var notFound = "{{ lang }}" === "en-us" ? "Article not found or unpublished." : "文章不存在或未发布。";
 
@@ -50,6 +58,34 @@
             });
         }
 
+        function bindBackLink(post) {
+            var $back = $("#post-detail-back");
+            var categoryHref = post.category_route_path || "";
+            var href = categoryHref || postsFallback;
+
+            if (post.category_name && categoryHref) {
+                $back.text(
+                    lang === "en-us"
+                        ? ("← Back to " + post.category_name)
+                        : ("← 返回" + post.category_name)
+                );
+            }
+
+            $back.attr("href", href).off("click.postBack").on("click.postBack", function (e) {
+                var ref = document.referrer;
+                if (!ref) return;
+                try {
+                    var refUrl = new URL(ref, window.location.origin);
+                    if (refUrl.origin !== window.location.origin) return;
+                    if (refUrl.pathname.indexOf("/categories/") !== -1
+                        || refUrl.pathname.indexOf("/posts") !== -1) {
+                        e.preventDefault();
+                        history.back();
+                    }
+                } catch (ignore) {}
+            });
+        }
+
         $.getJSON("/api/posts/" + postId + "?lang=" + encodeURIComponent(lang), function (res) {
             if (res.code !== 0 || !res.data) {
                 $("#post-error").text(res.message || loadFailed).prop("hidden", false);
@@ -62,6 +98,7 @@
                 return;
             }
 
+            bindBackLink(post);
             document.title = post.title + " - {{ site_name }}";
             $("#post-title").text(post.title);
 

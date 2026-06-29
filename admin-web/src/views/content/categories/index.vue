@@ -34,11 +34,28 @@
         @change="loadCategories"
       >
         <el-table-column type="index" :label="t('table.number')" width="60" />
-        <el-table-column prop="name" :label="t('menu.content.category.name')" min-width="160" />
+        <el-table-column :label="t('menu.content.category.name')" min-width="160" show-overflow-tooltip>
+          <template #default="{ row }">
+            <div class="title-with-public-url">
+              <PublicUrlPopover :id-url="categoryIdUrl(row.id)" :seo-url="categorySeoUrl(row)" />
+              <a
+                :href="primaryPublicUrl(categoryIdUrl(row.id), categorySeoUrl(row))"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="title-with-public-url__link"
+              >
+                {{ row.name }}
+              </a>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column :label="t('menu.content.category.listTemplate')" width="120" align="center">
+          <template #default="{ row }">{{ templateLabel(row.list_template) }}</template>
+        </el-table-column>
         <el-table-column
           prop="description"
           :label="t('menu.content.category.description')"
-          min-width="220"
+          min-width="180"
           show-overflow-tooltip
         />
         <el-table-column prop="sort" :label="t('menu.content.category.sort')" width="80" align="center" />
@@ -54,15 +71,27 @@
     <el-dialog
       v-model="dialogVisible"
       :title="editingId === null ? t('menu.content.category.create') : t('menu.content.category.edit')"
-      width="520px"
+      width="640px"
       :close-on-click-modal="false"
       append-to-body
       destroy-on-close
       @closed="onDialogClosed"
     >
-      <el-form ref="formRef" :model="form" label-width="88px" v-loading="detailLoading">
+      <el-form ref="formRef" :model="form" label-width="100px" v-loading="detailLoading">
         <el-form-item :label="t('menu.content.category.sort')">
           <el-input-number v-model="form.sort" :min="0" :max="9999" />
+        </el-form-item>
+        <el-form-item :label="t('menu.content.category.listTemplate')">
+          <el-select v-model="form.list_template" style="width: 100%">
+            <el-option value="default" :label="t('menu.content.category.templateDefault')" />
+            <el-option value="gallery" :label="t('menu.content.category.templateGallery')" />
+          </el-select>
+        </el-form-item>
+        <el-form-item :label="t('menu.content.category.detailTemplate')">
+          <el-select v-model="form.detail_template" style="width: 100%">
+            <el-option value="default" :label="t('menu.content.category.templateDefault')" />
+            <el-option value="gallery" :label="t('menu.content.category.templateGallery')" />
+          </el-select>
         </el-form-item>
 
         <el-tabs v-model="activeLocale" type="border-card" class="locale-tabs">
@@ -85,6 +114,22 @@
                 :rows="3"
                 :placeholder="t('menu.content.category.descPh')"
               />
+            </el-form-item>
+            <el-form-item
+              :label="t('menu.content.category.seoPath')"
+              :error="seoSlugError(loc)"
+            >
+              <el-input
+                v-model="form.i18n[loc].seoSlug"
+                :placeholder="t('menu.content.category.seoPathPh')"
+                clearable
+              >
+                <template #prepend>{{ seoPathPrefix(loc) }}</template>
+              </el-input>
+              <p class="field-hint">{{ t("menu.content.category.seoPathHint") }}</p>
+            </el-form-item>
+            <el-form-item v-if="editingId !== null" :label="t('menu.content.category.publicUrl')">
+              <code class="public-url-preview">{{ publicCategoryUrlForForm(loc) }}</code>
             </el-form-item>
           </el-tab-pane>
         </el-tabs>
@@ -109,13 +154,17 @@ import {
   getCategoryApi,
   listCategoriesApi,
   updateCategoryApi,
+  type CategoryTemplate,
   type CategoryView,
 } from "@/api/system/categories.ts";
 import { useSiteLocales } from "@/composables/useSiteLocales.ts";
 import { useTablePage } from "@/composables/useTablePage.ts";
 import { koiMsgError, koiMsgSuccess } from "@/utils/koi.ts";
+import { primaryPublicUrl } from "@/utils/publicUrl.ts";
+import PublicUrlPopover from "@/components/PublicUrlPopover.vue";
 
-type LocaleForm = Record<string, { name: string; description: string }>;
+type LocaleFormRow = { name: string; description: string; seoSlug: string };
+type LocaleForm = Record<string, LocaleFormRow>;
 
 const { t } = useI18n();
 const { siteLocales, defaultLocale, previewLang, loadSiteLocales, localeLabel, emptyLocaleRecord } =
@@ -134,6 +183,8 @@ const activeLocale = ref("zh-cn");
 
 const form = reactive({
   sort: 0,
+  list_template: "default" as CategoryTemplate,
+  detail_template: "default" as CategoryTemplate,
   i18n: {} as LocaleForm,
 });
 
@@ -144,9 +195,77 @@ const localeSegmentOptions = computed(() =>
   })),
 );
 
+function templateLabel(tpl: CategoryTemplate): string {
+  return tpl === "gallery"
+    ? t("menu.content.category.templateGallery")
+    : t("menu.content.category.templateDefault");
+}
+
+function seoPathPrefix(loc: string): string {
+  return `/${loc}/categories/`;
+}
+
+function parseSeoSlug(loc: string, routePath: string): string {
+  const trimmed = routePath.trim();
+  if (!trimmed) return "";
+  const prefix = seoPathPrefix(loc);
+  if (trimmed.startsWith(prefix)) return trimmed.slice(prefix.length);
+  if (!trimmed.includes("/")) return trimmed;
+  return "";
+}
+
+function buildRoutePath(loc: string, slug: string): string {
+  const s = slug.trim();
+  if (!s) return "";
+  return `${seoPathPrefix(loc)}${s}`;
+}
+
+function validateSeoSlug(slug: string): string {
+  const trimmed = slug.trim();
+  if (!trimmed) return "";
+  if (/[\s#?/]/.test(trimmed)) {
+    return t("menu.content.category.seoPathSlugError");
+  }
+  return "";
+}
+
+function seoSlugError(loc: string): string {
+  return validateSeoSlug(form.i18n[loc]?.seoSlug ?? "");
+}
+
+function validateAllSeoSlugs(): boolean {
+  for (const loc of siteLocales.value) {
+    const err = validateSeoSlug(form.i18n[loc]?.seoSlug ?? "");
+    if (err) {
+      activeLocale.value = loc;
+      koiMsgError(err);
+      return false;
+    }
+  }
+  return true;
+}
+
+function categoryIdUrl(id: number): string {
+  return `/${previewLang.value}/categories/${id}`;
+}
+
+function categorySeoUrl(row: CategoryView): string | null {
+  const path = row.route_path?.trim();
+  return path || null;
+}
+
+function publicCategoryUrlForForm(loc: string): string {
+  if (editingId.value === null) return "—";
+  const slug = form.i18n[loc]?.seoSlug?.trim();
+  const key = slug || String(editingId.value);
+  return `/${loc}/categories/${key}`;
+}
+
 function resetForm() {
   form.sort = 0;
-  form.i18n = emptyLocaleRecord(() => ({ name: "", description: "" }));
+  form.list_template = "default";
+  form.detail_template = "default";
+  form.i18n = emptyLocaleRecord(() => ({ name: "", description: "", seoSlug: "" }));
   activeLocale.value = defaultLocale.value;
 }
 
@@ -165,6 +284,8 @@ function openDialog(row: CategoryView | null) {
   resetForm();
   if (row) {
     form.sort = row.sort;
+    form.list_template = row.list_template;
+    form.detail_template = row.detail_template;
   }
   dialogVisible.value = true;
   if (row) {
@@ -174,7 +295,7 @@ function openDialog(row: CategoryView | null) {
 
 async function loadDetail(id: number) {
   detailLoading.value = true;
-  form.i18n = emptyLocaleRecord(() => ({ name: "", description: "" }));
+  form.i18n = emptyLocaleRecord(() => ({ name: "", description: "", seoSlug: "" }));
   try {
     const res = await getCategoryApi(id);
     if (res.code !== 0 || !res.data) {
@@ -182,10 +303,16 @@ async function loadDetail(id: number) {
       return;
     }
     form.sort = res.data.sort;
+    form.list_template = res.data.list_template;
+    form.detail_template = res.data.detail_template;
     for (const loc of siteLocales.value) {
       const row = res.data.translations[loc];
       if (row) {
-        form.i18n[loc] = { name: row.name, description: row.description };
+        form.i18n[loc] = {
+          name: row.name,
+          description: row.description,
+          seoSlug: parseSeoSlug(loc, row.route_path),
+        };
       }
     }
   } finally {
@@ -200,6 +327,7 @@ async function handleSave() {
     koiMsgError(t("menu.content.category.nameRequired"));
     return;
   }
+  if (!validateAllSeoSlugs()) return;
 
   saving.value = true;
   try {
@@ -210,6 +338,9 @@ async function handleSave() {
         description: primary.description.trim(),
         sort: form.sort,
         lang: defaultLocale.value,
+        list_template: form.list_template,
+        detail_template: form.detail_template,
+        route_path: buildRoutePath(defaultLocale.value, primary.seoSlug) || undefined,
       });
       if (createRes.code !== 0 || !createRes.data) {
         koiMsgError(createRes.message || t("msg.fail"));
@@ -219,10 +350,11 @@ async function handleSave() {
       for (const loc of siteLocales.value) {
         if (loc === defaultLocale.value) continue;
         const row = form.i18n[loc];
-        if (!row.name.trim() && !row.description.trim()) continue;
+        if (!row.name.trim() && !row.description.trim() && !row.seoSlug.trim()) continue;
         const res = await updateCategoryApi(newId, {
           name: row.name.trim(),
           description: row.description.trim(),
+          route_path: buildRoutePath(loc, row.seoSlug) || undefined,
           lang: loc,
         });
         if (res.code !== 0) {
@@ -231,17 +363,23 @@ async function handleSave() {
         }
       }
     } else {
-      const sortRes = await updateCategoryApi(editingId.value, { sort: form.sort });
-      if (sortRes.code !== 0) {
-        koiMsgError(sortRes.message || t("msg.fail"));
+      const id = editingId.value;
+      const metaRes = await updateCategoryApi(id, {
+        sort: form.sort,
+        list_template: form.list_template,
+        detail_template: form.detail_template,
+      });
+      if (metaRes.code !== 0) {
+        koiMsgError(metaRes.message || t("msg.fail"));
         return;
       }
       for (const loc of siteLocales.value) {
         const row = form.i18n[loc];
-        if (!row.name.trim() && !row.description.trim()) continue;
-        const res = await updateCategoryApi(editingId.value, {
+        if (!row.name.trim() && !row.description.trim() && !row.seoSlug.trim()) continue;
+        const res = await updateCategoryApi(id, {
           name: row.name.trim(),
           description: row.description.trim(),
+          route_path: buildRoutePath(loc, row.seoSlug),
           lang: loc,
         });
         if (res.code !== 0) {
@@ -342,7 +480,44 @@ onMounted(async () => {
   width: 100%;
 }
 
+.title-with-public-url {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+
+  &__link {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--el-text-color-primary);
+    text-decoration: none;
+
+    &:hover {
+      color: var(--el-color-primary);
+      text-decoration: underline;
+    }
+  }
+}
+
 .locale-tabs {
   margin-top: 4px;
+}
+
+.field-hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--el-text-color-secondary);
+}
+
+.public-url-preview {
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--el-fill-color-light);
+  font-size: 13px;
+  word-break: break-all;
 }
 </style>
