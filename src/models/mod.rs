@@ -28,9 +28,9 @@ pub use asset::{
     PostAsset, PostAssetsView, ReorderPostAttachmentsInput, SetBannerImageEnabledInput,
     asset_to_view_by_id, banner_assets_view,
     create_asset_record, delete_asset_record, delete_banner_asset_links,
-    ensure_banner_seed_asset_link, ensure_post_cover_link, link_banner_asset, link_post_asset,
+    ensure_banner_seed_asset_link, link_banner_asset, link_post_asset,
     list_asset_views, post_assets_view, reorder_post_attachments, reorder_post_covers,
-    seed_default_banner_asset, seed_default_gallery_assets, set_banner_image_enabled, unlink_banner_asset, unlink_post_asset,
+    seed_default_banner_asset, set_banner_image_enabled, unlink_banner_asset, unlink_post_asset,
 };
 pub use auth::{Claims, LoginRequest, LoginResponse, LoginUserInfo};
 pub use banner::{
@@ -43,7 +43,7 @@ pub use banner_group::{
 };
 pub use category::{
     CategoryDetailView, CategoryMeta, CategoryView, CreateCategory, UpdateCategory,
-    categories_to_views, category_detail_view, category_list_archive_enabled, category_to_view,
+    categories_to_views, category_detail_view, category_to_view,
     create_category, delete_category, resolve_category_id_from_public_key, seed_default_categories,
     update_category, category_public_path_by_slug,
 };
@@ -63,8 +63,7 @@ pub use menu_group::{
 pub use menu_item::{
     CreateMenuItem, MenuItemMeta, MenuView, UpdateMenuItem, create_menu_item, delete_menu_item,
     group_has_menus, menu_has_children, merged_menu_item, ensure_about_menu_post_links,
-    seed_menu_with_i18n, upsert_menu_i18n,
-    validate_parent_id,
+    seed_menu_with_i18n, upsert_menu_i18n, validate_parent_id,
 };
 pub use permission::{ALL_PERMISSIONS, all_permission_codes};
 pub use post::{

@@ -113,11 +113,6 @@ pub fn normalize_category_list_template(raw: &str) -> Result<String, String> {
     normalize_category_detail_template(raw)
 }
 
-/// 校验并规范化分类模板名（同详情模板，兼容旧调用）
-pub fn normalize_category_template(raw: &str) -> Result<String, String> {
-    normalize_category_detail_template(raw)
-}
-
 /// 是否开放分类归档列表页
 pub fn category_list_archive_enabled(list_template: &str) -> bool {
     list_template != CATEGORY_TEMPLATE_NONE
@@ -748,15 +743,15 @@ mod tests {
     #[test]
     fn normalize_category_template_whitelist() {
         assert_eq!(
-            normalize_category_template("default").unwrap(),
+            normalize_category_detail_template("default").unwrap(),
             "default"
         );
-        assert_eq!(normalize_category_template("gallery").unwrap(), "gallery");
+        assert_eq!(normalize_category_detail_template("gallery").unwrap(), "gallery");
         assert_eq!(
-            normalize_category_template("recruitment").unwrap(),
+            normalize_category_detail_template("recruitment").unwrap(),
             "recruitment"
         );
-        assert_eq!(normalize_category_template("about").unwrap(), "about");
+        assert_eq!(normalize_category_detail_template("about").unwrap(), "about");
         assert_eq!(
             normalize_category_list_template("none").unwrap(),
             "none"
@@ -764,7 +759,7 @@ mod tests {
         assert!(normalize_category_detail_template("none").is_err());
         assert!(!category_list_archive_enabled("none"));
         assert!(category_list_archive_enabled("default"));
-        assert!(normalize_category_template("evil").is_err());
+        assert!(normalize_category_detail_template("evil").is_err());
     }
 
     fn test_row(category_id: i64, lang: &str, route_path: &str) -> CategoryI18n {

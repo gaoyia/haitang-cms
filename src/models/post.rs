@@ -141,12 +141,7 @@ pub struct PostView {
     pub attachments: Vec<super::asset::AssetView>,
     pub list_template: String,
     pub detail_template: String,
-    #[serde(default = "default_post_meta_json")]
     pub meta_json: String,
-}
-
-fn default_post_meta_json() -> String {
-    "{}".to_string()
 }
 
 /// 管理端文章详情
@@ -160,7 +155,6 @@ pub struct PostDetailView {
     pub published_at: i64,
     pub publish_time: i64,
     pub display_time: i64,
-    #[serde(default = "default_post_meta_json")]
     pub meta_json: String,
     pub translations: HashMap<String, PostI18nPayload>,
     #[serde(default)]

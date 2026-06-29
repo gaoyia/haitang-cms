@@ -13,23 +13,27 @@
 </head>
 <body>
     <header class="site-header">
-        <a class="site-brand" href="{{ locale_prefix }}/">
-            <img src="/static/resources/logo.svg" alt="{{ site_name }}">
-            <span class="site-brand-name">{{ site_name }}</span>
-        </a>
-        <nav class="site-nav">
-            {% for item in header_menus %}
-            <a href="{{ item.path }}"{% if current_path == item.path %} class="active"{% endif %}>{{ item.title }}</a>
-            {% endfor %}
-        </nav>
-        <div class="site-header-actions">
-            <nav class="site-lang-switch" aria-label="语言切换">
-                {% for link in locale_links %}
-                <a href="{{ link.url }}"{% if link.active %} class="active"{% endif %}>{{ link.label }}</a>
-                {% endfor %}
-            </nav>
-            <a class="btn btn-ghost" href="{{ locale_prefix }}/rss">{% if lang == "en-us" %}RSS{% else %}RSS 订阅{% endif %}</a>
-            <a class="btn btn-primary" href="/admin">{% if lang == "en-us" %}Admin{% else %}管理后台{% endif %}</a>
+        <div class="site-header-inner">
+            <div class="site-header-start">
+                <a class="site-brand" href="{{ locale_prefix }}/">
+                    <img class="site-brand-mark" src="/static/resources/logo.svg" alt="">
+                    <span class="site-brand-name">{{ site_name }}</span>
+                </a>
+                <nav class="site-nav" aria-label="{% if lang == 'en-us' %}Main navigation{% else %}主导航{% endif %}">
+                    {% for item in header_menus %}
+                    <a href="{{ item.path }}"{% if current_path == item.path %} class="active"{% endif %}>{{ item.title }}</a>
+                    {% endfor %}
+                </nav>
+            </div>
+            <div class="site-header-aside">
+                <div class="site-lang-switch" aria-label="{% if lang == 'en-us' %}Language{% else %}语言切换{% endif %}">
+                    {% for link in locale_links %}
+                    {% if not loop.first %}<span class="site-lang-sep" aria-hidden="true">/</span>{% endif %}
+                    <a href="{{ link.url }}"{% if link.active %} class="active"{% endif %}>{{ link.label }}</a>
+                    {% endfor %}
+                </div>
+                <a class="site-header-link" href="{{ locale_prefix }}/rss">RSS</a>
+            </div>
         </div>
     </header>
 
@@ -39,23 +43,35 @@
 
     <footer class="site-footer">
         <div class="site-footer-inner">
-            <div class="site-footer-brand">
-                <div class="site-footer-logo">
-                    <img src="/static/resources/logo.svg" alt="">
-                    <span>{{ site_name }}</span>
-                </div>
-                <p class="footer-copy">
-                    {{ site_copyright }}
-                    {% if site_icp %}
-                    &nbsp;|&nbsp;<a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">{{ site_icp }}</a>
+            <div class="site-footer-start">
+                <a class="site-footer-brand" href="{{ locale_prefix }}/">
+                    <img class="site-footer-mark" src="/static/resources/logo.svg" alt="">
+                    <span class="site-footer-name">{{ site_name }}</span>
+                </a>
+                <p class="site-footer-tagline">
+                    {% if lang == "en-us" %}
+                    Structured content, elegant delivery.
+                    {% else %}
+                    结构化内容，优雅呈现。
                     {% endif %}
                 </p>
             </div>
-            <nav class="site-footer-nav">
+            {% if footer_menus %}
+            <nav class="site-footer-nav" aria-label="{% if lang == 'en-us' %}Footer navigation{% else %}页脚导航{% endif %}">
                 {% for item in footer_menus %}
                 <a href="{{ item.path }}"{% if current_path == item.path %} class="active"{% endif %}>{{ item.title }}</a>
                 {% endfor %}
             </nav>
+            {% endif %}
+        </div>
+        <div class="site-footer-bottom">
+            <p class="footer-copy">
+                {{ site_copyright }}
+                {% if site_icp %}
+                <span class="footer-copy-sep" aria-hidden="true">·</span>
+                <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener">{{ site_icp }}</a>
+                {% endif %}
+            </p>
         </div>
     </footer>
 

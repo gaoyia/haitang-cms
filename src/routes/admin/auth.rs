@@ -3,7 +3,6 @@ use jsonwebtoken::{EncodingKey, Header, encode};
 use rocket::State;
 use rocket::serde::json::Json;
 
-use crate::config::AdminWebConfig;
 use crate::config::AppConfig;
 use crate::guards::auth::JwtConfig;
 use crate::models::{
@@ -157,7 +156,6 @@ async fn sync_admin_role_permissions(db: &mut toasty::Db) {
 
 /// 种子数据：初始化公开页默认菜单组与菜单项
 async fn seed_default_site_menus(db: &mut toasty::Db) {
-    let admin_path = AdminWebConfig::from_env().mount_path;
     let groups = match MenuGroup::all().exec(db).await {
         Ok(g) => g,
         Err(_) => return,
@@ -241,17 +239,6 @@ async fn seed_default_site_menus(db: &mut toasty::Db) {
         "About Us",
         "/zh-cn/posts/about-haitang-cms",
         "/en-us/posts/about-haitang-cms",
-    )
-    .await
-    .expect("创建页脚菜单失败");
-    seed_public_menu_paths(
-        db,
-        footer.id,
-        40,
-        "管理后台",
-        "Admin",
-        admin_path.as_str(),
-        admin_path.as_str(),
     )
     .await
     .expect("创建页脚菜单失败");
