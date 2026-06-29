@@ -1,17 +1,18 @@
 {% extends "base" %}
 
 {% block extra_head %}
+<link rel="stylesheet" href="/static/resources/css/archive-list.css">
 <link rel="stylesheet" href="/static/resources/css/recruitment.css">
 {% endblock extra_head %}
 
 {% block content %}
-<section class="page-section recruitment-archive">
+<section class="page-section archive-page recruitment-archive">
     <div class="container container-narrow">
-        <header class="recruitment-archive__header">
+        <header class="archive-header">
             <h1 class="page-title" id="category-title">{{ title }}</h1>
-            <p class="recruitment-archive__desc" id="category-desc" hidden></p>
+            <p class="page-subtitle archive-desc" id="category-desc" hidden></p>
         </header>
-        <ul class="recruitment-list" id="recruitment-list">
+        <ul class="archive-list" id="recruitment-list">
             <li class="empty">{% if lang == "en-us" %}Loading…{% else %}加载中…{% endif %}</li>
         </ul>
     </div>
@@ -19,11 +20,13 @@
 {% endblock content %}
 
 {% block scripts %}
+<script src="/static/resources/js/archive-list.js"></script>
 <script>
     $(function () {
         var categoryId = {{ category_id }};
         var localePrefix = "{{ locale_prefix | safe }}";
-        var isEn = "{{ lang }}" === "en-us";
+        var lang = "{{ lang }}";
+        var isEn = lang === "en-us";
         var emptyText = isEn ? "No openings yet." : "暂无招聘岗位";
         var failText = isEn ? "Failed to load." : "加载失败，请稍后重试";
         var labels = {
@@ -32,11 +35,6 @@
             employment_type: isEn ? "Type" : "用工",
             department: isEn ? "Department" : "部门"
         };
-
-        function postDetailUrl(post) {
-            if (post.route_path) return post.route_path;
-            return localePrefix + "/posts/" + post.id;
-        }
 
         function parseMeta(raw) {
             if (!raw) return {};
@@ -54,13 +52,14 @@
             keys.forEach(function (key) {
                 var val = meta[key];
                 if (!val) return;
-                html += '<span class="recruitment-chip"><span class="recruitment-chip__label">' +
-                    labels[key] + '：</span>' + $("<span>").text(val).html() + "</span>";
+                html += '<span class="archive-chip archive-chip--tertiary">' +
+                    '<span class="archive-chip__label">' + labels[key] + '：</span>' +
+                    ArchiveList.escapeHtml(val) + "</span>";
             });
             return html;
         }
 
-        $.getJSON("/api/categories/" + categoryId + "?lang={{ lang }}", function (catRes) {
+        $.getJSON("/api/categories/" + categoryId + "?lang=" + lang, function (catRes) {
             if (catRes.code === 0 && catRes.data) {
                 if (catRes.data.name) {
                     $("#category-title").text(catRes.data.name);
@@ -72,7 +71,7 @@
             }
         });
 
-        $.getJSON("/api/posts?lang={{ lang }}&category_id=" + categoryId, function (res) {
+        $.getJSON("/api/posts?lang=" + lang + "&category_id=" + categoryId, function (res) {
             var $list = $("#recruitment-list");
             $list.empty();
             if (res.code !== 0 || !res.data || res.data.length === 0) {
@@ -88,15 +87,19 @@
                 var meta = parseMeta(post.meta_json);
                 var summary = post.description || "";
                 var chips = metaChips(meta);
-                var href = postDetailUrl(post);
-                $list.append(
-                    '<li class="recruitment-item">' +
-                    '<a class="recruitment-item__link" href="' + href + '">' +
-                    '<h2 class="recruitment-item__title">' + $("<span>").text(post.title).html() + '</h2>' +
-                    (summary ? '<p class="recruitment-item__summary">' + $("<span>").text(summary).html() + '</p>' : '') +
-                    (chips ? '<div class="recruitment-item__meta">' + chips + '</div>' : '') +
-                    '</a></li>'
-                );
+                var href = ArchiveList.postDetailUrl(post, localePrefix);
+                var html = '<li class="archive-card">' +
+                    '<a class="archive-card__link" href="' + href + '">' +
+                    '<div class="archive-card__body">' +
+                    '<h2 class="archive-card__title">' + ArchiveList.escapeHtml(post.title) + '</h2>';
+                if (summary) {
+                    html += '<p class="archive-card__summary">' + ArchiveList.escapeHtml(summary) + '</p>';
+                }
+                if (chips) {
+                    html += '<div class="archive-card__foot">' + chips + '</div>';
+                }
+                html += '</div><span class="archive-card__arrow" aria-hidden="true">→</span></a></li>';
+                $list.append(html);
             });
         }).fail(function () {
             $("#recruitment-list").html('<li class="empty">' + failText + '</li>');

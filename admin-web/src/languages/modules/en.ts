@@ -182,6 +182,8 @@ export default {
         templateGallery: "Gallery",
         templateRecruitment: "Recruitment",
         templateAbout: "About Us",
+        templateNone: "None",
+        listTemplateNoneHint: "With no list template, the category archive URL returns 404. Link to post detail pages or set a direct menu URL instead.",
         seoPath: "SEO path (optional)",
         seoPathPh: "albums",
         seoPathHint: "Slug only; prefix is /{lang}/categories/; empty uses numeric ID",

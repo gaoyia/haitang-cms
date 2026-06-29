@@ -1,4 +1,4 @@
-import type { CategoryTemplate } from "@/api/system/categories.ts";
+import type { CategoryDetailTemplate, CategoryListTemplate } from "@/api/system/categories.ts";
 
 /** Element Plus Tag 外观配置 */
 export interface CategoryTemplateTagStyle {
@@ -6,15 +6,13 @@ export interface CategoryTemplateTagStyle {
   effect: "light" | "dark" | "plain";
 }
 
+type CategoryTemplateTagKey = CategoryListTemplate;
+
 /**
  * 分类模板与标签颜色映射（新增模板时在此扩展）
- *
- * - default：信息蓝，常规文字列表 / Markdown 详情
- * - gallery：警告橙，相册卡片列表 / 图片为主详情
- * - recruitment：成功绿，招聘列表 / 岗位详情
- * - about：主色深，关于我们卡片列表 / 介绍详情
  */
-export const CATEGORY_TEMPLATE_TAG: Record<CategoryTemplate, CategoryTemplateTagStyle> = {
+export const CATEGORY_TEMPLATE_TAG: Record<CategoryTemplateTagKey, CategoryTemplateTagStyle> = {
+  none: { type: "info", effect: "plain" },
   default: { type: "info", effect: "plain" },
   gallery: { type: "warning", effect: "plain" },
   recruitment: { type: "success", effect: "plain" },
@@ -24,14 +22,26 @@ export const CATEGORY_TEMPLATE_TAG: Record<CategoryTemplate, CategoryTemplateTag
 const FALLBACK_TAG: CategoryTemplateTagStyle = { type: "info", effect: "plain" };
 
 /** 获取模板对应的 Tag 样式 */
-export function getCategoryTemplateTagStyle(tpl: CategoryTemplate): CategoryTemplateTagStyle {
+export function getCategoryTemplateTagStyle(tpl: CategoryListTemplate): CategoryTemplateTagStyle {
   return CATEGORY_TEMPLATE_TAG[tpl] ?? FALLBACK_TAG;
 }
 
-/** 当前系统支持的分类模板值（与后端 normalize 保持一致） */
-export const CATEGORY_TEMPLATE_VALUES: readonly CategoryTemplate[] = [
+/** 列表模板可选值（含 none） */
+export const CATEGORY_LIST_TEMPLATE_VALUES: readonly CategoryListTemplate[] = [
+  "none",
   "default",
   "gallery",
   "recruitment",
   "about",
 ];
+
+/** 详情模板可选值（不含 none） */
+export const CATEGORY_DETAIL_TEMPLATE_VALUES: readonly CategoryDetailTemplate[] = [
+  "default",
+  "gallery",
+  "recruitment",
+  "about",
+];
+
+/** @deprecated 使用 CATEGORY_LIST_TEMPLATE_VALUES / CATEGORY_DETAIL_TEMPLATE_VALUES */
+export const CATEGORY_TEMPLATE_VALUES = CATEGORY_DETAIL_TEMPLATE_VALUES;

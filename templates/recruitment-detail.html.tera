@@ -94,7 +94,9 @@
             }
             renderFacts(parseMeta(post.meta_json));
             if (post.content) {
-                $("#post-content").html(renderMarkdown(post.content));
+                if (!renderMarkdown(post.content, document.getElementById("post-content"))) {
+                    $("#post-error").text(loadFailed).prop("hidden", false);
+                }
             }
             var categoryHref = post.category_route_path || "";
             if (categoryHref) {

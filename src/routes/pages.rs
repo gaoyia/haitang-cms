@@ -9,7 +9,8 @@ use crate::models::dict::{get_site_default_locale, get_site_locales};
 use crate::models::load_public_banners_by_code;
 use crate::models::locale::{encode_uri_path, is_supported_locale, locale_path, normalize_lang};
 use crate::models::category::{
-    CategoryMeta, category_detail_tera_template, category_list_tera_template, category_to_view,
+    CategoryMeta, category_detail_tera_template, category_list_archive_enabled,
+    category_list_tera_template, category_to_view,
     resolve_category_id_from_public_key,
 };
 use crate::models::post::{PostMeta, post_to_view, resolve_post_id_from_public_key};
@@ -146,9 +147,15 @@ pub async fn category_archive_lang(
         Err(_) => return Err(CategoryArchiveError::NotFound),
     };
 
+    let meta = CategoryMeta::get_by_id(&mut db, &category_id)
+        .await
+        .map_err(|_| CategoryArchiveError::NotFound)?;
+    if !category_list_archive_enabled(&meta.list_template) {
+        return Err(CategoryArchiveError::NotFound);
+    }
+
     let default = get_site_default_locale(&mut db).await;
     if key.parse::<i64>().is_ok()
-        && let Ok(meta) = CategoryMeta::get_by_id(&mut db, &category_id).await
         && let Ok(view) = category_to_view(&mut db, &meta, &resolved, &default).await
         && !view.route_path.is_empty()
     {
@@ -160,10 +167,7 @@ pub async fn category_archive_lang(
         }
     }
 
-    let tera_name = CategoryMeta::get_by_id(&mut db, &category_id)
-        .await
-        .map(|meta| category_list_tera_template(&meta.list_template))
-        .unwrap_or("category-list");
+    let tera_name = category_list_tera_template(&meta.list_template);
 
     let current_path = format!("/{resolved}/categories/{key}");
     let mut ctx = site_page_context(

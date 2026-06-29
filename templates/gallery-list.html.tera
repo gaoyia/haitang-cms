@@ -1,15 +1,16 @@
 {% extends "base" %}
 
 {% block extra_head %}
+<link rel="stylesheet" href="/static/resources/css/archive-list.css">
 <link rel="stylesheet" href="/static/resources/css/gallery.css">
 {% endblock extra_head %}
 
 {% block content %}
-<section class="page-section gallery-archive">
+<section class="page-section archive-page gallery-archive">
     <div class="container">
-        <header class="gallery-archive__header">
+        <header class="archive-header gallery-archive__header">
             <h1 class="page-title" id="category-title">{{ title }}</h1>
-            <p class="gallery-archive__desc" id="category-desc" hidden></p>
+            <p class="page-subtitle archive-desc gallery-archive__desc" id="category-desc" hidden></p>
         </header>
         <div class="gallery-grid" id="gallery-grid">
             <p class="empty">{% if lang == "en-us" %}Loading…{% else %}加载中…{% endif %}</p>

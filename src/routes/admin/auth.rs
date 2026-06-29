@@ -11,6 +11,7 @@ use crate::models::{
     MenuGroup, Role, User, UserRole, all_permission_codes, category_public_path_by_slug,
     ensure_banner_seed_asset_link, find_banner_group_by_code, seed_default_banner_asset,
     seed_default_sample_posts, ensure_seed_sample_covers, seed_menu_with_i18n,
+    ensure_about_menu_post_links,
 };
 use crate::storage::StorageService;
 
@@ -46,6 +47,10 @@ async fn should_run_startup_seed(db: &mut toasty::Db, app: &AppConfig) -> bool {
 
 /// 按环境执行启动种子（development 幂等补全；production 仅首次安装）
 pub async fn run_startup_seeds(db: &mut toasty::Db, storage: &StorageService, app: &AppConfig) {
+    if let Err(e) = ensure_about_menu_post_links(db).await {
+        eprintln!("[种子] 更新关于我们菜单链接: {e}");
+    }
+
     if !should_run_startup_seed(db, app).await {
         println!("[种子] 生产环境已完成安装，跳过启动种子数据");
         return;
@@ -204,9 +209,17 @@ async fn seed_default_site_menus(db: &mut toasty::Db) {
     seed_public_menu_category(db, header.id, 30, "加入我们", "Join Us", "join")
         .await
         .expect("创建页头菜单失败");
-    seed_public_menu_category(db, header.id, 40, "关于我们", "About Us", "about")
-        .await
-        .expect("创建页头菜单失败");
+    seed_public_menu_paths(
+        db,
+        header.id,
+        40,
+        "关于我们",
+        "About Us",
+        "/zh-cn/posts/about-haitang-cms",
+        "/en-us/posts/about-haitang-cms",
+    )
+    .await
+    .expect("创建页头菜单失败");
 
     seed_public_menu_paths(db, footer.id, 0, "首页", "Home", "/zh-cn/", "/en-us/")
         .await
@@ -220,9 +233,17 @@ async fn seed_default_site_menus(db: &mut toasty::Db) {
     seed_public_menu_category(db, footer.id, 20, "加入我们", "Join Us", "join")
         .await
         .expect("创建页脚菜单失败");
-    seed_public_menu_category(db, footer.id, 25, "关于我们", "About Us", "about")
-        .await
-        .expect("创建页脚菜单失败");
+    seed_public_menu_paths(
+        db,
+        footer.id,
+        25,
+        "关于我们",
+        "About Us",
+        "/zh-cn/posts/about-haitang-cms",
+        "/en-us/posts/about-haitang-cms",
+    )
+    .await
+    .expect("创建页脚菜单失败");
     seed_public_menu_paths(
         db,
         footer.id,

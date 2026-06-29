@@ -6,6 +6,7 @@ pub const CATEGORY_TEMPLATE_DEFAULT: &str = "default";
 pub const CATEGORY_TEMPLATE_GALLERY: &str = "gallery";
 pub const CATEGORY_TEMPLATE_RECRUITMENT: &str = "recruitment";
 pub const CATEGORY_TEMPLATE_ABOUT: &str = "about";
+pub const CATEGORY_TEMPLATE_NONE: &str = "none";
 
 /// 分类结构（不分语言）
 #[derive(Debug, Clone, toasty::Model)]
@@ -16,7 +17,7 @@ pub struct CategoryMeta {
 
     pub sort: i64,
 
-    /// 列表页模板：default | gallery | recruitment | about
+    /// 列表页模板：none | default | gallery | recruitment | about
     pub list_template: String,
 
     /// 详情页模板：default | gallery | recruitment | about
@@ -92,18 +93,37 @@ pub struct CategoryI18nPayload {
     pub route_path: String,
 }
 
-/// 校验并规范化分类模板名
-pub fn normalize_category_template(raw: &str) -> Result<String, String> {
+/// 校验并规范化分类详情模板名
+pub fn normalize_category_detail_template(raw: &str) -> Result<String, String> {
     match raw.trim() {
         "" | CATEGORY_TEMPLATE_DEFAULT => Ok(CATEGORY_TEMPLATE_DEFAULT.to_string()),
         CATEGORY_TEMPLATE_GALLERY => Ok(CATEGORY_TEMPLATE_GALLERY.to_string()),
         CATEGORY_TEMPLATE_RECRUITMENT => Ok(CATEGORY_TEMPLATE_RECRUITMENT.to_string()),
         CATEGORY_TEMPLATE_ABOUT => Ok(CATEGORY_TEMPLATE_ABOUT.to_string()),
+        CATEGORY_TEMPLATE_NONE => Err("详情模板不能为「无」".to_string()),
         other => Err(format!("不支持的模板类型: {other}")),
     }
 }
 
-/// 列表模板名 → Tera 文件名（白名单）
+/// 校验并规范化分类列表模板名（含 none）
+pub fn normalize_category_list_template(raw: &str) -> Result<String, String> {
+    if raw.trim() == CATEGORY_TEMPLATE_NONE {
+        return Ok(CATEGORY_TEMPLATE_NONE.to_string());
+    }
+    normalize_category_detail_template(raw)
+}
+
+/// 校验并规范化分类模板名（同详情模板，兼容旧调用）
+pub fn normalize_category_template(raw: &str) -> Result<String, String> {
+    normalize_category_detail_template(raw)
+}
+
+/// 是否开放分类归档列表页
+pub fn category_list_archive_enabled(list_template: &str) -> bool {
+    list_template != CATEGORY_TEMPLATE_NONE
+}
+
+/// 列表模板名 → Tera 文件名（白名单；none 不应调用）
 pub fn category_list_tera_template(list_template: &str) -> &'static str {
     match list_template {
         CATEGORY_TEMPLATE_GALLERY => "gallery-list",
@@ -285,13 +305,13 @@ pub async fn create_category(
 ) -> Result<CategoryMeta, String> {
     let lang = resolve_locale(input.lang.as_deref(), default_lang);
     let description = input.description.as_deref().unwrap_or("");
-    let list_template = normalize_category_template(
+    let list_template = normalize_category_list_template(
         input
             .list_template
             .as_deref()
             .unwrap_or(CATEGORY_TEMPLATE_DEFAULT),
     )?;
-    let detail_template = normalize_category_template(
+    let detail_template = normalize_category_detail_template(
         input
             .detail_template
             .as_deref()
@@ -529,14 +549,14 @@ pub async fn update_category(
         meta_changed = true;
     }
     if let Some(ref tpl) = input.list_template {
-        let list_template = normalize_category_template(tpl)?;
+        let list_template = normalize_category_list_template(tpl)?;
         if old_list_template != list_template {
             builder = builder.list_template(&list_template);
             meta_changed = true;
         }
     }
     if let Some(ref tpl) = input.detail_template {
-        let detail_template = normalize_category_template(tpl)?;
+        let detail_template = normalize_category_detail_template(tpl)?;
         if old_detail_template != detail_template {
             builder = builder.detail_template(&detail_template);
             meta_changed = true;
@@ -638,7 +658,7 @@ fn default_category_seed() -> &'static [CategorySeedEntry] {
             zh_desc: "站点与团队介绍",
             en_name: "About Us",
             en_desc: "About the site and team",
-            list_template: CATEGORY_TEMPLATE_ABOUT,
+            list_template: CATEGORY_TEMPLATE_NONE,
             detail_template: CATEGORY_TEMPLATE_ABOUT,
         },
     ]
@@ -737,6 +757,13 @@ mod tests {
             "recruitment"
         );
         assert_eq!(normalize_category_template("about").unwrap(), "about");
+        assert_eq!(
+            normalize_category_list_template("none").unwrap(),
+            "none"
+        );
+        assert!(normalize_category_detail_template("none").is_err());
+        assert!(!category_list_archive_enabled("none"));
+        assert!(category_list_archive_enabled("default"));
         assert!(normalize_category_template("evil").is_err());
     }
 

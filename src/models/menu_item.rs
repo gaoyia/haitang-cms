@@ -372,6 +372,94 @@ pub async fn seed_menu_with_i18n(
     Ok(())
 }
 
+/// 将「关于我们」菜单链接从分类归档页改为关于页文章详情（幂等）
+pub async fn ensure_about_menu_post_links(db: &mut toasty::Db) -> Result<(), String> {
+    use std::collections::HashMap;
+
+    use super::asset::now_unix;
+    use super::category::{category_public_path_by_slug, resolve_category_id_from_public_key};
+    use super::post::{PostI18n, PostMeta, is_post_publicly_visible};
+
+    let Some(about_cat_id) = resolve_category_id_from_public_key(db, "zh-cn", "about").await? else {
+        return Ok(());
+    };
+
+    let now = now_unix();
+    let posts = PostMeta::all()
+        .exec(db)
+        .await
+        .map_err(|e| format!("查询文章失败: {e}"))?;
+    let about_posts: Vec<PostMeta> = posts
+        .into_iter()
+        .filter(|m| m.category_id == about_cat_id && is_post_publicly_visible(m, now))
+        .collect();
+    if about_posts.is_empty() {
+        return Ok(());
+    }
+
+    let all_i18n = PostI18n::all()
+        .exec(db)
+        .await
+        .map_err(|e| format!("查询文章翻译失败: {e}"))?;
+
+    let post_id = about_posts
+        .iter()
+        .find(|meta| {
+            all_i18n.iter().any(|row| {
+                row.post_id == meta.id
+                    && (row.route_path.contains("about-haitang-cms")
+                        || row.route_path.ends_with("/about-haitang-cms"))
+            })
+        })
+        .map(|m| m.id)
+        .unwrap_or(about_posts[0].id);
+
+    let mut target_paths: HashMap<String, String> = HashMap::new();
+    for lang in ["zh-cn", "en-us"] {
+        let path = all_i18n
+            .iter()
+            .find(|r| r.post_id == post_id && r.lang == lang)
+            .map(|r| r.route_path.trim())
+            .filter(|p| !p.is_empty())
+            .map(|p| p.to_string())
+            .unwrap_or_else(|| format!("/{lang}/posts/{post_id}"));
+        target_paths.insert(lang.to_string(), path);
+    }
+
+    let old_paths = [
+        category_public_path_by_slug("zh-cn", "about"),
+        category_public_path_by_slug("en-us", "about"),
+    ];
+
+    let menu_rows = MenuItemI18n::all()
+        .exec(db)
+        .await
+        .map_err(|e| format!("查询菜单翻译失败: {e}"))?;
+
+    let mut updated = 0u32;
+    for row in menu_rows {
+        let points_to_about_archive = old_paths.iter().any(|p| row.route_path == *p)
+            || row.route_path.ends_with("/categories/about");
+        let is_about_title = row.title == "关于我们" || row.title == "About Us";
+        if !points_to_about_archive && !(is_about_title && row.route_path.contains("/categories/")) {
+            continue;
+        }
+        let Some(new_path) = target_paths.get(&row.lang) else {
+            continue;
+        };
+        if row.route_path == *new_path {
+            continue;
+        }
+        upsert_menu_i18n(db, row.menu_item_id, &row.lang, &row.title, new_path).await?;
+        updated += 1;
+    }
+
+    if updated > 0 {
+        println!("[种子] 已更新 {updated} 条「关于我们」菜单为文章详情链接");
+    }
+    Ok(())
+}
+
 /// 预分配菜单 ID（扩展用）
 #[allow(dead_code)]
 pub async fn next_menu_item_id(db: &mut toasty::Db) -> Result<i64, String> {

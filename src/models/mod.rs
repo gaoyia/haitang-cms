@@ -43,9 +43,9 @@ pub use banner_group::{
 };
 pub use category::{
     CategoryDetailView, CategoryMeta, CategoryView, CreateCategory, UpdateCategory,
-    categories_to_views, category_detail_view, category_to_view, create_category, delete_category,
-    resolve_category_id_from_public_key, seed_default_categories, update_category,
-    category_public_path_by_slug,
+    categories_to_views, category_detail_view, category_list_archive_enabled, category_to_view,
+    create_category, delete_category, resolve_category_id_from_public_key, seed_default_categories,
+    update_category, category_public_path_by_slug,
 };
 pub use dict::{
     CreateDictMeta, DictDetailView, DictMetaListView, DictPublicView, UpdateDictMeta,
@@ -62,7 +62,8 @@ pub use menu_group::{
 };
 pub use menu_item::{
     CreateMenuItem, MenuItemMeta, MenuView, UpdateMenuItem, create_menu_item, delete_menu_item,
-    group_has_menus, menu_has_children, merged_menu_item, seed_menu_with_i18n, upsert_menu_i18n,
+    group_has_menus, menu_has_children, merged_menu_item, ensure_about_menu_post_links,
+    seed_menu_with_i18n, upsert_menu_i18n,
     validate_parent_id,
 };
 pub use permission::{ALL_PERMISSIONS, all_permission_codes};

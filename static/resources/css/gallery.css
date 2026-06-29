@@ -1,23 +1,15 @@
 /* 相册型分类列表与详情 — 与 site.css token 对齐 */
 
-.gallery-archive {
-  padding-top: var(--space-lg);
-}
-
 .gallery-archive__header {
-  margin-bottom: var(--space-xl);
   max-width: 720px;
 }
 
 .gallery-archive__header .page-title {
-  margin-bottom: var(--space-sm);
+  margin-bottom: 0;
 }
 
 .gallery-archive__desc {
-  margin: 0;
-  color: var(--color-secondary);
-  font-size: 17px;
-  line-height: 1.65;
+  margin-top: var(--space-sm);
 }
 
 /* 相册列表网格 */
@@ -334,11 +326,4 @@
 .gallery-archive .empty,
 .gallery-detail .empty {
   grid-column: 1 / -1;
-}
-
-.page-subtitle {
-  margin: -8px 0 20px;
-  color: var(--color-secondary);
-  font-size: 15px;
-  line-height: 1.6;
 }

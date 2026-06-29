@@ -1,7 +1,11 @@
 import axios, { type Result } from "@/utils/axios.ts";
 import type { PageParams, PageResult } from "@/types/page.ts";
 
-export type CategoryTemplate = "default" | "gallery" | "recruitment" | "about";
+/** 详情页模板 */
+export type CategoryDetailTemplate = "default" | "gallery" | "recruitment" | "about";
+
+/** 列表页模板（none 表示无列表，仅详情可访问） */
+export type CategoryListTemplate = CategoryDetailTemplate | "none";
 
 export interface CategoryView {
   id: number;
@@ -9,8 +13,8 @@ export interface CategoryView {
   description: string;
   sort: number;
   route_path: string;
-  list_template: CategoryTemplate;
-  detail_template: CategoryTemplate;
+  list_template: CategoryListTemplate;
+  detail_template: CategoryDetailTemplate;
 }
 
 export interface CategoryI18nPayload {
@@ -22,8 +26,8 @@ export interface CategoryI18nPayload {
 export interface CategoryDetailView {
   id: number;
   sort: number;
-  list_template: CategoryTemplate;
-  detail_template: CategoryTemplate;
+  list_template: CategoryListTemplate;
+  detail_template: CategoryDetailTemplate;
   translations: Record<string, CategoryI18nPayload>;
 }
 
@@ -32,8 +36,8 @@ export interface CreateCategoryInput {
   description?: string;
   sort?: number;
   lang?: string;
-  list_template?: CategoryTemplate;
-  detail_template?: CategoryTemplate;
+  list_template?: CategoryListTemplate;
+  detail_template?: CategoryDetailTemplate;
   route_path?: string;
 }
 
@@ -42,8 +46,8 @@ export interface UpdateCategoryInput {
   description?: string;
   sort?: number;
   lang?: string;
-  list_template?: CategoryTemplate;
-  detail_template?: CategoryTemplate;
+  list_template?: CategoryListTemplate;
+  detail_template?: CategoryDetailTemplate;
   route_path?: string;
 }
 

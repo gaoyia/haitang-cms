@@ -37,15 +37,18 @@
         <el-table-column :label="t('menu.content.category.name')" min-width="160" show-overflow-tooltip>
           <template #default="{ row }">
             <div class="title-with-public-url">
-              <PublicUrlPopover :id-url="categoryIdUrl(row.id)" :seo-url="categorySeoUrl(row)" />
-              <a
-                :href="primaryPublicUrl(categoryIdUrl(row.id), categorySeoUrl(row))"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="title-with-public-url__link"
-              >
-                {{ row.name }}
-              </a>
+              <template v-if="row.list_template !== 'none'">
+                <PublicUrlPopover :id-url="categoryIdUrl(row.id)" :seo-url="categorySeoUrl(row)" />
+                <a
+                  :href="primaryPublicUrl(categoryIdUrl(row.id), categorySeoUrl(row))"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="title-with-public-url__link"
+                >
+                  {{ row.name }}
+                </a>
+              </template>
+              <span v-else class="title-with-public-url__link">{{ row.name }}</span>
             </div>
           </template>
         </el-table-column>
@@ -91,7 +94,7 @@
         <el-form-item :label="t('menu.content.category.listTemplate')">
           <el-select v-model="form.list_template" style="width: 100%">
             <el-option
-              v-for="tpl in CATEGORY_TEMPLATE_VALUES"
+              v-for="tpl in CATEGORY_LIST_TEMPLATE_VALUES"
               :key="tpl"
               :value="tpl"
               :label="templateLabel(tpl)"
@@ -99,11 +102,14 @@
               <CategoryTemplateTag :template="tpl" :label="templateLabel(tpl)" />
             </el-option>
           </el-select>
+          <p v-if="form.list_template === 'none'" class="category-form-hint">
+            {{ t("menu.content.category.listTemplateNoneHint") }}
+          </p>
         </el-form-item>
         <el-form-item :label="t('menu.content.category.detailTemplate')">
           <el-select v-model="form.detail_template" style="width: 100%">
             <el-option
-              v-for="tpl in CATEGORY_TEMPLATE_VALUES"
+              v-for="tpl in CATEGORY_DETAIL_TEMPLATE_VALUES"
               :key="tpl"
               :value="tpl"
               :label="templateLabel(tpl)"
@@ -173,14 +179,18 @@ import {
   getCategoryApi,
   listCategoriesApi,
   updateCategoryApi,
-  type CategoryTemplate,
+  type CategoryDetailTemplate,
+  type CategoryListTemplate,
   type CategoryView,
 } from "@/api/system/categories.ts";
 import { useSiteLocales } from "@/composables/useSiteLocales.ts";
 import { useTablePage } from "@/composables/useTablePage.ts";
 import { koiMsgError, koiMsgSuccess } from "@/utils/koi.ts";
 import { primaryPublicUrl } from "@/utils/publicUrl.ts";
-import { CATEGORY_TEMPLATE_VALUES } from "@/utils/categoryTemplate.ts";
+import {
+  CATEGORY_DETAIL_TEMPLATE_VALUES,
+  CATEGORY_LIST_TEMPLATE_VALUES,
+} from "@/utils/categoryTemplate.ts";
 import PublicUrlPopover from "@/components/PublicUrlPopover.vue";
 import CategoryTemplateTag from "@/components/CategoryTemplateTag.vue";
 
@@ -204,8 +214,8 @@ const activeLocale = ref("zh-cn");
 
 const form = reactive({
   sort: 0,
-  list_template: "default" as CategoryTemplate,
-  detail_template: "default" as CategoryTemplate,
+  list_template: "default" as CategoryListTemplate,
+  detail_template: "default" as CategoryDetailTemplate,
   i18n: {} as LocaleForm,
 });
 
@@ -216,7 +226,8 @@ const localeSegmentOptions = computed(() =>
   })),
 );
 
-function templateLabel(tpl: CategoryTemplate): string {
+function templateLabel(tpl: CategoryListTemplate | CategoryDetailTemplate): string {
+  if (tpl === "none") return t("menu.content.category.templateNone");
   if (tpl === "gallery") return t("menu.content.category.templateGallery");
   if (tpl === "recruitment") return t("menu.content.category.templateRecruitment");
   if (tpl === "about") return t("menu.content.category.templateAbout");
@@ -500,6 +511,13 @@ onMounted(async () => {
 
 .category-table {
   width: 100%;
+}
+
+.category-form-hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--el-text-color-secondary);
 }
 
 .title-with-public-url {

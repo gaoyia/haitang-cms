@@ -1,10 +1,16 @@
 {% extends "base" %}
 
+{% block extra_head %}
+<link rel="stylesheet" href="/static/resources/css/archive-list.css">
+{% endblock extra_head %}
+
 {% block content %}
-<section class="page-section">
+<section class="page-section archive-page">
     <div class="container container-narrow">
-        <h1 class="page-title">{{ title }}</h1>
-        <ul class="post-list" id="post-list">
+        <header class="archive-header">
+            <h1 class="page-title">{{ title }}</h1>
+        </header>
+        <ul class="archive-list" id="post-list">
             <li class="empty">{% if lang == "en-us" %}Loading…{% else %}加载中…{% endif %}</li>
         </ul>
     </div>
@@ -13,82 +19,14 @@
 
 {% block scripts %}
 <script src="/static/resources/js/markdown-render.js"></script>
+<script src="/static/resources/js/archive-list.js"></script>
 <script>
     $(function () {
-        var localePrefix = "{{ locale_prefix | safe }}";
-        var emptyText = "{{ lang }}" === "en-us" ? "No posts yet." : "暂无文章";
-        var failText = "{{ lang }}" === "en-us" ? "Failed to load. Please retry." : "加载失败，请稍后重试";
-        var maxSummary = 200;
+        var lang = "{{ lang }}";
+        var emptyText = lang === "en-us" ? "No posts yet." : "暂无文章";
+        var failText = lang === "en-us" ? "Failed to load. Please retry." : "加载失败，请稍后重试";
 
-        function formatDisplayTime(ts) {
-            if (!ts) return "";
-            var d = new Date(ts * 1000);
-            return d.toLocaleString("{{ lang }}" === "en-us" ? "en-US" : "zh-CN", {
-                year: "numeric",
-                month: "2-digit",
-                day: "2-digit",
-                hour: "2-digit",
-                minute: "2-digit"
-            });
-        }
-
-        function coverUrl(post) {
-            if (post.covers && post.covers.length > 0) return post.covers[0].url;
-            if (post.attachments && post.attachments.length > 0) {
-                var img = post.attachments.find(function (a) {
-                    return a.mime_type && a.mime_type.indexOf("image/") === 0;
-                });
-                if (img) return img.url;
-            }
-            return null;
-        }
-
-        function postDetailUrl(post) {
-            if (post.route_path) return post.route_path;
-            return localePrefix + "/posts/" + post.id;
-        }
-
-        function renderPostItem(post) {
-            var summary = post.description;
-            if (!summary && post.content) {
-                summary = stripMarkdown(post.content);
-            }
-            if (summary && summary.length > maxSummary) {
-                summary = summary.substring(0, maxSummary) + "…";
-            }
-            var meta = [];
-            if (post.display_time) {
-                meta.push(formatDisplayTime(post.display_time));
-            }
-            if (post.category_name) {
-                meta.push(("{{ lang }}" === "en-us" ? "Category: " : "分类: ") + post.category_name);
-            }
-            if (post.tags) {
-                meta.push(("{{ lang }}" === "en-us" ? "Tags: " : "标签: ") + post.tags);
-            }
-            var detailUrl = postDetailUrl(post);
-            var thumb = coverUrl(post);
-            var itemClass = "post-item" + (thumb ? " post-item--with-thumb" : "");
-            var titleHtml = $("<span>").text(post.title).html();
-            var html = '<li class="' + itemClass + '">';
-            if (thumb) {
-                html += '<a class="post-item__link" href="' + detailUrl + '">';
-                html += '<div class="post-item__thumb"><img src="' + thumb + '" alt="" loading="lazy"></div>';
-                html += '<div class="post-item__body">';
-                html += '<h2>' + titleHtml + '</h2>';
-            } else {
-                html += '<h2><a href="' + detailUrl + '">' + titleHtml + '</a></h2>';
-            }
-            if (summary) html += '<p>' + $("<span>").text(summary).html() + '</p>';
-            if (meta.length) html += '<div class="meta">' + meta.join(' · ') + '</div>';
-            if (thumb) {
-                html += '</div></a>';
-            }
-            html += '</li>';
-            return html;
-        }
-
-        $.getJSON("/api/posts?lang={{ lang }}", function (res) {
+        $.getJSON("/api/posts?lang=" + lang, function (res) {
             var $list = $("#post-list");
             $list.empty();
             if (res.code !== 0 || !res.data || res.data.length === 0) {
@@ -107,7 +45,12 @@
             }
 
             $.each(published, function (i, post) {
-                $list.append(renderPostItem(post));
+                $list.append(ArchiveList.renderArchiveCard(post, {
+                    localePrefix: "{{ locale_prefix | safe }}",
+                    lang: lang,
+                    maxSummary: 200,
+                    showCategory: true
+                }));
             });
         }).fail(function () {
             $("#post-list").html('<li class="empty">' + failText + '</li>');

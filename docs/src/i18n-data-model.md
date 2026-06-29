@@ -30,7 +30,7 @@
 
 | 字段 | 说明 |
 |------|------|
-| `list_template` | 分类归档页模板：`default`、`gallery`、`recruitment` 或 `about` |
+| `list_template` | 分类归档页模板：`none`（无列表，归档 URL 返回 404）、`default`、`gallery`、`recruitment` 或 `about` |
 | `detail_template` | 该分类下文章详情模板：`default`、`gallery`、`recruitment` 或 `about` |
 | `route_path` | 分类归档 SEO 完整路径，如 `/zh-cn/categories/gallery`；空串时公开 URL 使用数字 ID |
 
@@ -52,7 +52,7 @@
 | `published_at` | 首次实际公开时间；未到计划发布时间或未发布过为 0 |
 | `publish_time` | 计划发布时间；`status = 1` 且留空时等于保存时刻；到达该时间后访客可见 |
 | `display_time` | 前台展示时间，可手动编辑；留空保存时使用服务端当前时间；列表按此字段降序 |
-| `meta_json` | JSON 对象字符串，默认 `{}`；招聘模板可存 `salary`、`location`、`employment_type`、`department`；关于我们模板可存 `highlight`、`founded`、`location`、`contact` |
+| `meta_json` | JSON 对象字符串，默认 `{}`；招聘模板可存 `salary`、`location`、`employment_type`、`department`；关于我们模板可存 `highlight`、`founded`、`location`、`contact`（详情页「联系我们」区块展示地址，并预留地图空位） |
 
 正文 Markdown 的编辑与公开渲染选型见 [Markdown 内容选型](./markdown.md)。
 

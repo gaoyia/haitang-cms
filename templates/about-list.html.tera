@@ -1,17 +1,18 @@
 {% extends "base" %}
 
 {% block extra_head %}
+<link rel="stylesheet" href="/static/resources/css/archive-list.css">
 <link rel="stylesheet" href="/static/resources/css/about.css">
 {% endblock extra_head %}
 
 {% block content %}
-<section class="page-section about-archive">
+<section class="page-section archive-page about-archive">
     <div class="container container-narrow">
-        <header class="about-archive__header">
+        <header class="archive-header archive-header--center">
             <h1 class="page-title" id="category-title">{{ title }}</h1>
-            <p class="about-archive__desc" id="category-desc" hidden></p>
+            <p class="page-subtitle archive-desc" id="category-desc" hidden></p>
         </header>
-        <ul class="about-list" id="about-list">
+        <ul class="archive-list archive-list--grid" id="about-list">
             <li class="empty">{% if lang == "en-us" %}Loading…{% else %}加载中…{% endif %}</li>
         </ul>
     </div>
@@ -19,11 +20,13 @@
 {% endblock content %}
 
 {% block scripts %}
+<script src="/static/resources/js/archive-list.js"></script>
 <script>
     $(function () {
         var categoryId = {{ category_id }};
         var localePrefix = "{{ locale_prefix | safe }}";
-        var isEn = "{{ lang }}" === "en-us";
+        var lang = "{{ lang }}";
+        var isEn = lang === "en-us";
         var emptyText = isEn ? "No content yet." : "暂无介绍内容";
         var failText = isEn ? "Failed to load." : "加载失败，请稍后重试";
         var labels = {
@@ -32,11 +35,6 @@
             location: isEn ? "Location" : "地点",
             contact: isEn ? "Contact" : "联系"
         };
-
-        function postDetailUrl(post) {
-            if (post.route_path) return post.route_path;
-            return localePrefix + "/posts/" + post.id;
-        }
 
         function parseMeta(raw) {
             if (!raw) return {};
@@ -48,18 +46,20 @@
             }
         }
 
-        function metaLine(meta) {
+        function metaChips(meta) {
             var keys = ["highlight", "founded", "location", "contact"];
-            var parts = [];
+            var html = "";
             keys.forEach(function (key) {
                 var val = meta[key];
                 if (!val) return;
-                parts.push(labels[key] + "：" + val);
+                html += '<span class="archive-chip archive-chip--secondary">' +
+                    '<span class="archive-chip__label">' + labels[key] + '：</span>' +
+                    ArchiveList.escapeHtml(val) + "</span>";
             });
-            return parts.join(" · ");
+            return html;
         }
 
-        $.getJSON("/api/categories/" + categoryId + "?lang={{ lang }}", function (catRes) {
+        $.getJSON("/api/categories/" + categoryId + "?lang=" + lang, function (catRes) {
             if (catRes.code === 0 && catRes.data) {
                 if (catRes.data.name) {
                     $("#category-title").text(catRes.data.name);
@@ -71,7 +71,7 @@
             }
         });
 
-        $.getJSON("/api/posts?lang={{ lang }}&category_id=" + categoryId, function (res) {
+        $.getJSON("/api/posts?lang=" + lang + "&category_id=" + categoryId, function (res) {
             var $list = $("#about-list");
             $list.empty();
             if (res.code !== 0 || !res.data || res.data.length === 0) {
@@ -86,17 +86,28 @@
             $.each(posts, function (i, post) {
                 var meta = parseMeta(post.meta_json);
                 var summary = post.description || "";
-                var metaText = metaLine(meta);
-                var href = postDetailUrl(post);
-                $list.append(
-                    '<li class="about-item">' +
-                    '<a class="about-item__link" href="' + href + '">' +
-                    '<h2 class="about-item__title">' + $("<span>").text(post.title).html() + '</h2>' +
-                    (summary ? '<p class="about-item__summary">' + $("<span>").text(summary).html() + '</p>' : '') +
-                    (metaText ? '<p class="about-item__meta">' + $("<span>").text(metaText).html() + '</p>' : '') +
-                    '<span class="about-item__more">' + (isEn ? "Read more →" : "了解更多 →") + '</span>' +
-                    '</a></li>'
-                );
+                var chips = metaChips(meta);
+                var thumb = ArchiveList.coverUrl(post);
+                var href = ArchiveList.postDetailUrl(post, localePrefix);
+                var cardClass = "archive-card archive-card--stack";
+                if (thumb) cardClass += " archive-card--media";
+
+                var html = '<li class="' + cardClass + '">' +
+                    '<a class="archive-card__link" href="' + href + '">';
+                if (thumb) {
+                    html += '<div class="archive-card__media"><img src="' + thumb + '" alt="" loading="lazy"></div>';
+                }
+                html += '<div class="archive-card__body">' +
+                    '<h2 class="archive-card__title">' + ArchiveList.escapeHtml(post.title) + '</h2>';
+                if (summary) {
+                    html += '<p class="archive-card__summary">' + ArchiveList.escapeHtml(summary) + '</p>';
+                }
+                if (chips) {
+                    html += '<div class="archive-card__foot">' + chips + '</div>';
+                }
+                html += '<span class="archive-card__more">' + (isEn ? "Read more →" : "了解更多 →") + '</span>';
+                html += '</div><span class="archive-card__arrow" aria-hidden="true">→</span></a></li>';
+                $list.append(html);
             });
         }).fail(function () {
             $("#about-list").html('<li class="empty">' + failText + '</li>');

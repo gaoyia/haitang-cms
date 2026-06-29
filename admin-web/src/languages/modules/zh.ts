@@ -182,6 +182,8 @@ export default {
         templateGallery: "相册",
         templateRecruitment: "招聘",
         templateAbout: "关于我们",
+        templateNone: "无",
+        listTemplateNoneHint: "无列表页时分类归档 URL 不可访问，请通过该分类下文章详情页或菜单直链访问",
         seoPath: "SEO 路径（可选）",
         seoPathPh: "albums",
         seoPathHint: "仅填写 slug，前缀固定为 /{lang}/categories/；留空则使用数字 ID 访问",

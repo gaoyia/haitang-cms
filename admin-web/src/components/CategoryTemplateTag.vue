@@ -6,11 +6,11 @@
 
 <script setup lang="ts">
 import { computed } from "vue";
-import type { CategoryTemplate } from "@/api/system/categories.ts";
+import type { CategoryListTemplate } from "@/api/system/categories.ts";
 import { getCategoryTemplateTagStyle } from "@/utils/categoryTemplate.ts";
 
 const props = defineProps<{
-  template: CategoryTemplate;
+  template: CategoryListTemplate;
   label: string;
 }>();
 
