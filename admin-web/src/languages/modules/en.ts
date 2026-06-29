@@ -130,7 +130,7 @@ export default {
           aboutLocation: "Location",
           aboutLocationPh: "e.g. Beijing",
           aboutContact: "Contact",
-          aboutContactPh: "e.g. hello@example.com",
+          aboutContactPh: "{'e.g. hello@example.com'}",
           sectionI18n: "Translations",
           create: "New post",
           edit: "Edit post",

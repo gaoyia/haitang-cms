@@ -130,7 +130,7 @@ export default {
           aboutLocation: "所在地",
           aboutLocationPh: "如 北京",
           aboutContact: "联系方式",
-          aboutContactPh: "如 hello@example.com",
+          aboutContactPh: "{'如 hello@example.com'}",
           sectionI18n: "多语言文案",
           create: "新建文章",
           edit: "编辑文章",

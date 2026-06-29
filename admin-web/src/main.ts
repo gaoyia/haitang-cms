@@ -30,6 +30,8 @@ import KoiComponents from "@/components/index.ts";
 import KoiDirectives from "@/directives/index";
 // uncoss防止覆盖ElementPlus 的 el-button的css，所有放置最下方
 import "uno.css";
+// md-editor-v3：本地 screenfull，避免 unpkg CDN 被跟踪防护拦截
+import "@/plugins/mdEditorConfig.ts";
 
 // 创建app
 const app = createApp(App);
