@@ -18,9 +18,6 @@
       <el-form-item :label="t('menu.menu.manage.groupDesc')">
         <el-input v-model="form.description" type="textarea" :rows="2" />
       </el-form-item>
-      <el-form-item :label="t('menu.menu.manage.sort')">
-        <el-input-number v-model="form.sort" :min="0" :max="9999" />
-      </el-form-item>
       <el-form-item :label="t('menu.menu.manage.status')">
         <el-radio-group v-model="form.status">
           <el-radio :value="1">{{ t("menu.menu.manage.enabled") }}</el-radio>
@@ -49,6 +46,7 @@ import { koiMsgError, koiMsgSuccess } from "@/utils/koi.ts";
 const props = defineProps<{
   modelValue: boolean;
   editGroup: BannerGroup | null;
+  defaultSort?: number;
 }>();
 
 const emit = defineEmits<{
@@ -71,7 +69,6 @@ const form = reactive({
   name: "",
   code: "",
   description: "",
-  sort: 0,
   status: 1,
 });
 
@@ -95,13 +92,11 @@ watch(
       form.name = props.editGroup.name;
       form.code = props.editGroup.code;
       form.description = props.editGroup.description;
-      form.sort = props.editGroup.sort;
       form.status = props.editGroup.status;
     } else {
       form.name = "";
       form.code = "";
       form.description = "";
-      form.sort = 0;
       form.status = 1;
     }
   },
@@ -121,8 +116,8 @@ async function handleSave() {
         name: form.name.trim(),
         code: form.code.trim(),
         description: form.description.trim(),
-        sort: form.sort,
         status: form.status,
+        ...(isEdit.value ? {} : { sort: props.defaultSort ?? 0 }),
       };
       const res = isEdit.value
         ? await updateBannerGroupApi(props.editGroup!.id, payload)

@@ -30,9 +30,6 @@
       <el-form-item :label="t('menu.menu.manage.groupDesc')">
         <el-input v-model="form.description" type="textarea" :rows="2" />
       </el-form-item>
-      <el-form-item :label="t('menu.menu.manage.sort')">
-        <el-input-number v-model="form.sort" :min="0" :max="9999" />
-      </el-form-item>
       <el-form-item :label="t('menu.menu.manage.status')">
         <el-radio-group v-model="form.status">
           <el-radio :value="1">{{ t("menu.menu.manage.enabled") }}</el-radio>
@@ -65,6 +62,7 @@ const props = defineProps<{
   editId: number | null;
   groupId: number;
   groupLabel: string;
+  defaultSort?: number;
 }>();
 
 const emit = defineEmits<{
@@ -122,7 +120,7 @@ function resetForm() {
   form.title = "";
   form.link_url = "";
   form.description = "";
-  form.sort = 0;
+  form.sort = props.defaultSort ?? 0;
   form.status = 1;
   form.imageReady = false;
   savedBannerId.value = null;

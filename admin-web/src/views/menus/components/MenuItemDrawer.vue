@@ -70,10 +70,6 @@
         </el-select>
       </el-form-item>
 
-      <el-form-item :label="t('menu.menu.manage.sort')">
-        <el-input-number v-model="form.sort" :min="0" :max="9999" />
-      </el-form-item>
-
       <el-form-item :label="t('menu.menu.manage.status')">
         <el-radio-group v-model="form.status">
           <el-radio :value="1">{{ t("menu.menu.manage.enabled") }}</el-radio>
@@ -82,6 +78,14 @@
       </el-form-item>
 
       <el-divider content-position="left">{{ t("menu.menu.manage.sectionI18n") }}</el-divider>
+
+      <div v-if="!showPermission" class="locale-prefix-switch">
+        <div class="locale-prefix-switch__row">
+          <span class="locale-prefix-switch__label">{{ t("menu.menu.manage.autoLocalePrefix") }}</span>
+          <el-switch v-model="autoLocalePrefix" @change="onAutoLocalePrefixChange" />
+        </div>
+        <p class="field-hint">{{ t("menu.menu.manage.autoLocalePrefixHint") }}</p>
+      </div>
 
       <el-tabs v-model="activeLocale" type="border-card" class="menu-locale-tabs">
         <el-tab-pane
@@ -100,6 +104,14 @@
           </el-form-item>
           <el-form-item :label="t('menu.menu.manage.itemPath')">
             <el-input
+              v-if="autoLocalePrefix"
+              v-model="form.i18n[loc].path"
+              :placeholder="t('menu.menu.manage.itemPathPhAuto')"
+            >
+              <template #prepend>{{ localePathPrefix(loc) }}</template>
+            </el-input>
+            <el-input
+              v-else
               v-model="form.i18n[loc].path"
               :placeholder="pathPlaceholder(loc)"
             />
@@ -131,6 +143,16 @@ import {
   type PermissionGroup,
 } from "@/api/system/menus.ts";
 import { koiMsgError, koiMsgSuccess } from "@/utils/koi.ts";
+import { nextSortValue } from "@/utils/sortOrder.ts";
+import { getMenuSiblings } from "@/utils/menuTree.ts";
+import {
+  buildLocalePath,
+  hasLocalePrefix,
+  isBlankLocalePath,
+  localePathPrefix,
+  parseLocalePath,
+  shouldAutoLocalePrefix,
+} from "@/utils/localePath.ts";
 import KoiSelectIcon from "@/components/KoiSelectIcon/Index.vue";
 
 export type LocaleForm = Record<string, { title: string; path: string }>;
@@ -159,6 +181,7 @@ const formRef = ref<FormInstance>();
 const loading = ref(false);
 const saving = ref(false);
 const activeLocale = ref("zh-cn");
+const autoLocalePrefix = ref(true);
 
 const visible = computed({
   get: () => props.modelValue,
@@ -199,6 +222,31 @@ function localeLabel(loc: string): string {
 
 function pathPlaceholder(loc: string): string {
   return loc === "en-us" ? "/en-us/about" : "/zh-cn/about";
+}
+
+function onAutoLocalePrefixChange(enabled: boolean) {
+  for (const loc of props.siteLocales) {
+    const raw = form.i18n[loc]?.path ?? "";
+    if (isBlankLocalePath(raw)) continue;
+    if (enabled) {
+      form.i18n[loc].path = parseLocalePath(loc, raw);
+    } else if (!hasLocalePrefix(loc, raw)) {
+      form.i18n[loc].path = buildLocalePath(loc, raw, true);
+    }
+  }
+}
+
+function resolveStoredPaths() {
+  const pathsByLocale: Record<string, string> = {};
+  for (const loc of props.siteLocales) {
+    pathsByLocale[loc] = form.i18n[loc]?.path ?? "";
+  }
+  autoLocalePrefix.value = shouldAutoLocalePrefix(pathsByLocale, props.siteLocales);
+  if (autoLocalePrefix.value) {
+    for (const loc of props.siteLocales) {
+      form.i18n[loc].path = parseLocalePath(loc, form.i18n[loc]?.path ?? "");
+    }
+  }
 }
 
 function emptyI18n(): LocaleForm {
@@ -244,12 +292,14 @@ const parentTreeData = computed(() => {
 });
 
 function resetForm() {
-  form.parent_id = props.presetParentId ?? 0;
+  const parentId = props.presetParentId ?? 0;
+  form.parent_id = parentId;
   form.icon = "";
   form.permission = "";
-  form.sort = 0;
+  form.sort = nextSortValue(getMenuSiblings(props.menus, parentId));
   form.status = 1;
   form.i18n = emptyI18n();
+  autoLocalePrefix.value = true;
   activeLocale.value = props.defaultLocale || props.siteLocales[0] || "zh-cn";
 }
 
@@ -284,6 +334,7 @@ async function loadDetail() {
           }
         }),
     );
+    resolveStoredPaths();
   } finally {
     loading.value = false;
   }
@@ -307,10 +358,21 @@ function onClosed() {
 
 async function handleSave() {
   if (!formRef.value || props.readonly) return;
-  const defaultTitle = form.i18n[props.defaultLocale]?.title?.trim();
+  const primary = form.i18n[props.defaultLocale];
+  const defaultTitle = primary?.title?.trim();
   if (!defaultTitle) {
     activeLocale.value = props.defaultLocale;
     koiMsgError(t("menu.menu.manage.itemTitleRequired"));
+    return;
+  }
+  const defaultPath = buildLocalePath(
+    props.defaultLocale,
+    primary?.path ?? "",
+    autoLocalePrefix.value,
+  );
+  if (!defaultPath) {
+    activeLocale.value = props.defaultLocale;
+    koiMsgError(t("menu.menu.manage.itemPathRequired"));
     return;
   }
 
@@ -326,11 +388,10 @@ async function handleSave() {
     };
 
     if (!isEdit.value) {
-      const primary = form.i18n[props.defaultLocale];
       const createRes = await createMenuApi({
         ...metaPayload,
-        title: primary.title.trim(),
-        path: primary.path.trim() || undefined,
+        title: defaultTitle,
+        path: defaultPath,
         lang: props.defaultLocale,
       });
       if (createRes.code !== 0 || !createRes.data) {
@@ -341,10 +402,12 @@ async function handleSave() {
       for (const loc of props.siteLocales) {
         if (loc === props.defaultLocale) continue;
         const row = form.i18n[loc];
-        if (!row.title.trim() && !row.path.trim()) continue;
+        const title = row.title.trim();
+        const path = buildLocalePath(loc, row.path, autoLocalePrefix.value);
+        if (!title && !path) continue;
         const res = await updateMenuApi(newId, {
-          title: row.title.trim(),
-          path: row.path.trim(),
+          title,
+          ...(path ? { path } : {}),
           lang: loc,
         });
         if (res.code !== 0) {
@@ -360,10 +423,12 @@ async function handleSave() {
       }
       for (const loc of props.siteLocales) {
         const row = form.i18n[loc];
-        if (!row.title.trim() && !row.path.trim()) continue;
+        const title = row.title.trim();
+        const path = buildLocalePath(loc, row.path, autoLocalePrefix.value);
+        if (!title && !path) continue;
         const res = await updateMenuApi(props.editId!, {
-          title: row.title.trim(),
-          path: row.path.trim(),
+          title,
+          ...(path ? { path } : {}),
           lang: loc,
         });
         if (res.code !== 0) {
@@ -389,6 +454,30 @@ async function handleSave() {
 
 .menu-locale-tabs {
   margin-top: 4px;
+}
+
+.locale-prefix-switch {
+  margin-bottom: 12px;
+}
+
+.locale-prefix-switch__row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.locale-prefix-switch__label {
+  font-size: 14px;
+  color: var(--el-text-color-regular);
+  line-height: 1.5;
+}
+
+.field-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+  line-height: 1.5;
 }
 
 .menu-drawer-footer {

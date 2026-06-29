@@ -11,9 +11,23 @@
         </div>
       </template>
 
-      <div class="koi-split-layout">
-        <!-- 左侧：菜单组 -->
-        <aside class="koi-split-layout__aside menu-group-panel">
+      <SplitGroupMobileBar
+        v-if="isMobile"
+        :model-value="selectedGroupId"
+        :groups="groups"
+        :placeholder="t('menu.menu.manage.selectGroup')"
+        :format-label="menuGroupLabel"
+        :show-edit="!!currentGroup && !currentGroup.readonly"
+        :show-delete="!!currentGroup && !currentGroup.readonly"
+        @update:model-value="selectGroup"
+        @add="openGroupDialog(null)"
+        @edit="openGroupDialog(currentGroup!)"
+        @delete="handleDeleteGroup(currentGroup!)"
+      />
+
+      <div class="koi-split-layout" :class="{ 'koi-split-layout--mobile': isMobile }">
+        <!-- 左侧：菜单组（桌面端） -->
+        <aside v-if="!isMobile" class="koi-split-layout__aside menu-group-panel">
           <div class="menu-group-panel__head">
             <span>{{ t("menu.menu.manage.groups") }}</span>
             <el-button type="primary" link @click="openGroupDialog(null)">
@@ -23,14 +37,25 @@
           </div>
           <el-scrollbar class="menu-group-panel__list">
             <el-empty v-if="groups.length === 0" :description="t('menu.menu.manage.groupsEmpty')" />
-            <div
-              v-for="group in groups"
-              :key="group.id"
-              class="menu-group-item"
-              :class="{ active: selectedGroupId === group.id }"
-              @click="selectGroup(group.id)"
-            >
-              <div class="menu-group-item__main">
+            <div v-else ref="groupListRef" class="menu-group-panel__sortable">
+              <div
+                v-for="group in groups"
+                :key="group.id"
+                class="menu-group-item"
+                :class="{ active: selectedGroupId === group.id, 'menu-group-item--readonly': group.readonly }"
+                @click="selectGroup(group.id)"
+              >
+                <el-icon
+                  v-if="!group.readonly"
+                  class="menu-group-item__drag"
+                  :size="16"
+                  :title="t('menu.menu.manage.dragSort')"
+                  @click.stop
+                >
+                  <Rank />
+                </el-icon>
+                <div class="menu-group-item__body">
+                <div class="menu-group-item__main">
                 <div class="menu-group-item__name">
                   {{ group.name }}
                   <el-tag v-if="group.readonly" size="small" type="info" effect="plain">
@@ -47,6 +72,8 @@
                   {{ t("button.delete") }}
                 </el-button>
               </div>
+              </div>
+            </div>
             </div>
           </el-scrollbar>
         </aside>
@@ -60,7 +87,7 @@
             </div>
             <div class="menu-tree-toolbar__right">
               <el-button
-                v-if="!currentGroup?.readonly"
+                v-if="!isMobile && !currentGroup?.readonly"
                 type="primary"
                 :disabled="selectedGroupId === null"
                 @click="openItemDrawer(null, 0)"
@@ -68,6 +95,14 @@
                 <el-icon><Plus /></el-icon>
                 {{ t("menu.menu.manage.addRoot") }}
               </el-button>
+              <ActionsDropdown
+                v-else-if="isMobile && treeToolbarActions.length"
+                :items="treeToolbarActions"
+                :label="t('table.operate')"
+                :link="false"
+                size="default"
+                @action="handleTreeToolbarAction"
+              />
             </div>
           </div>
 
@@ -95,15 +130,34 @@
           </el-empty>
 
           <div v-else-if="menuTree.length > 0" class="menu-tree-panel__body">
+          <p
+            v-if="!currentGroup?.readonly"
+            class="menu-tree-drag-hint"
+          >
+            {{ t("menu.menu.manage.treeDragHint") }}
+          </p>
           <el-tree
             :data="menuTree"
             node-key="id"
             default-expand-all
             :expand-on-click-node="false"
+            :draggable="!currentGroup?.readonly"
+            :allow-drag="allowMenuDrag"
+            :allow-drop="allowMenuDrop"
             class="menu-el-tree"
+            @node-drag-start="handleMenuDragStart"
+            @node-drop="handleMenuNodeDrop"
           >
             <template #default="{ data }">
               <div class="menu-tree-node">
+                <el-icon
+                  v-if="!currentGroup?.readonly"
+                  class="menu-tree-node__drag"
+                  :size="16"
+                  :title="t('menu.menu.manage.dragSort')"
+                >
+                  <Rank />
+                </el-icon>
                 <span class="menu-tree-node__icon">
                   <KoiGlobalIcon v-if="isKoiIcon(data.icon)" :name="data.icon" size="16" />
                   <img v-else-if="isImgIcon(data.icon)" :src="data.icon" alt="" class="menu-tree-node__img" />
@@ -111,16 +165,19 @@
                   <el-icon v-else><Document /></el-icon>
                 </span>
                 <span class="menu-tree-node__title">{{ menuItemTitle(data.title) }}</span>
-                <el-tag v-if="!data.path" size="small" type="info" effect="plain">
-                  {{ t("button.catalog") }}
-                </el-tag>
                 <el-tag v-if="data.status === 0" size="small" type="danger" effect="plain">
                   {{ t("menu.menu.manage.disabled") }}
                 </el-tag>
                 <span v-if="data.path" class="menu-tree-node__path">{{ data.path }}</span>
                 <span v-if="data.permission" class="menu-tree-node__perm">{{ data.permission }}</span>
-                <span class="menu-tree-node__actions">
-                  <template v-if="!currentGroup?.readonly">
+                <span class="menu-tree-node__actions" @mousedown.stop>
+                  <template v-if="isMobile">
+                    <ActionsDropdown
+                      :items="menuItemActions(data)"
+                      @action="(cmd) => handleMenuItemAction(cmd, data)"
+                    />
+                  </template>
+                  <template v-else-if="!currentGroup?.readonly">
                     <el-button type="primary" link size="small" @click.stop="openItemDrawer(null, data.id)">
                       {{ t("menu.menu.manage.addChild") }}
                     </el-button>
@@ -143,7 +200,12 @@
       </div>
     </KoiCard>
 
-    <MenuGroupDialog v-model="groupDialogVisible" :edit-group="editingGroup" @saved="onGroupSaved" />
+    <MenuGroupDialog
+      v-model="groupDialogVisible"
+      :edit-group="editingGroup"
+      :default-sort="nextGroupSort"
+      @saved="onGroupSaved"
+    />
 
     <MenuItemDrawer
       v-model="itemDrawerVisible"
@@ -163,10 +225,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useI18n } from "vue-i18n";
-import { Document, Plus } from "@element-plus/icons-vue";
+import { Document, Plus, Rank } from "@element-plus/icons-vue";
+import type { AllowDropType, NodeDropType } from "element-plus/es/components/tree/src/tree.type";
+import type Node from "element-plus/es/components/tree/src/model/node";
 import { ElMessageBox } from "element-plus";
 import {
   deleteMenuApi,
@@ -174,6 +238,8 @@ import {
   listMenuGroupsApi,
   listMenusApi,
   listPermissionsApi,
+  updateMenuApi,
+  updateMenuGroupApi,
   type MenuGroup,
   type MenuItem,
   type PermissionGroup,
@@ -182,15 +248,23 @@ import { getDictMapApi } from "@/api/system/dict.ts";
 import { uiLangToApiLocale } from "@/utils/apiLocale.ts";
 import { getMenuLanguage } from "@/utils/index.ts";
 import { koiMsgError, koiMsgSuccess } from "@/utils/koi.ts";
+import { buildSortUpdates, diffSortUpdates, moveArrayItem, nextSortValue } from "@/utils/sortOrder.ts";
+import { buildMenuTreeSortState, diffMenuTreeSortState, isMenuDescendant, snapshotMenuTreeState } from "@/utils/menuTree.ts";
+import { useSortableList } from "@/composables/useSortableList.ts";
 import useGlobalStore from "@/stores/modules/global.ts";
 import MenuGroupDialog from "./components/MenuGroupDialog.vue";
 import MenuItemDrawer from "./components/MenuItemDrawer.vue";
 import KoiGlobalIcon from "@/components/KoiGlobalIcon/Index.vue";
+import SplitGroupMobileBar from "@/components/SplitGroupMobileBar.vue";
+import type { SplitGroupOption } from "@/components/SplitGroupMobileBar.vue";
+import ActionsDropdown, { type ActionDropdownItem } from "@/components/ActionsDropdown.vue";
+import { useScreenStore } from "@/hooks/screen/index.ts";
 
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const globalStore = useGlobalStore();
+const { isMobile } = useScreenStore();
 
 const groups = ref<MenuGroup[]>([]);
 const menuTree = ref<MenuItem[]>([]);
@@ -210,6 +284,31 @@ const presetParentId = ref(0);
 
 const currentGroup = computed(() => groups.value.find((g) => g.id === selectedGroupId.value));
 
+const groupListRef = ref<HTMLElement | null>(null);
+const sortSaving = ref(false);
+const menuTreeSnapshot = ref<Map<number, { sort: number; parent_id: number }>>(new Map());
+
+const nextGroupSort = computed(() =>
+  nextSortValue(groups.value.filter((group) => !group.readonly)),
+);
+
+const groupSortDisabled = computed(() => isMobile.value || groups.value.length < 2);
+
+useSortableList({
+  getContainer: () => groupListRef.value,
+  draggable: ".menu-group-item",
+  handle: ".menu-group-item__drag",
+  filter: ".menu-group-item--readonly",
+  disabled: groupSortDisabled,
+  getLength: () => groups.value.length,
+  onReorder: onGroupReorder,
+});
+
+const treeToolbarActions = computed<ActionDropdownItem[]>(() => {
+  if (currentGroup.value?.readonly || selectedGroupId.value === null) return [];
+  return [{ key: "addRoot", label: t("menu.menu.manage.addRoot") }];
+});
+
 const localeSegmentOptions = computed(() =>
   siteLocales.value.map((loc) => ({
     label: loc === "en-us" ? "EN" : loc === "zh-cn" ? "中文" : loc,
@@ -228,6 +327,115 @@ function isImgIcon(icon: string): boolean {
 function menuItemTitle(title: string): string {
   if (!title) return t("menu.menu.manage.untitled");
   return getMenuLanguage(title);
+}
+
+function menuGroupLabel(group: SplitGroupOption): string {
+  const base = group.code ? `${group.name} (${group.code})` : group.name;
+  if (group.readonly) {
+    return `${base} · ${t("menu.menu.manage.readonly")}`;
+  }
+  return base;
+}
+
+function allowMenuDrag(node: Node) {
+  return !currentGroup.value?.readonly && !sortSaving.value;
+}
+
+function allowMenuDrop(draggingNode: Node, dropNode: Node, type: AllowDropType) {
+  if (currentGroup.value?.readonly || sortSaving.value) return false;
+
+  const dragItem = draggingNode.data as MenuItem;
+  const dropItem = dropNode.data as MenuItem;
+  if (dragItem.id === dropItem.id) return false;
+
+  // 不可拖入自身子树
+  if (type === "inner" && isMenuDescendant(dragItem, dropItem.id)) return false;
+
+  return true;
+}
+
+function handleMenuDragStart() {
+  menuTreeSnapshot.value = snapshotMenuTreeState(menuTree.value);
+}
+
+async function handleMenuNodeDrop(
+  _draggingNode: Node,
+  _dropNode: Node,
+  _dropType: Exclude<NodeDropType, "none">,
+) {
+  if (currentGroup.value?.readonly) return;
+
+  await nextTick();
+  const desired = buildMenuTreeSortState(menuTree.value);
+  const updates = diffMenuTreeSortState(menuTreeSnapshot.value, desired);
+  if (updates.length === 0) return;
+
+  sortSaving.value = true;
+  try {
+    for (const update of updates) {
+      const payload: { sort: number; parent_id?: number } = { sort: update.sort };
+      if (update.parent_id !== undefined) payload.parent_id = update.parent_id;
+
+      const res = await updateMenuApi(update.id, payload);
+      if (res.code !== 0) {
+        koiMsgError(res.message || t("msg.fail"));
+        await loadMenus();
+        return;
+      }
+    }
+    koiMsgSuccess(t("msg.success"));
+    await loadMenus();
+  } finally {
+    sortSaving.value = false;
+  }
+}
+
+async function onGroupReorder(oldIndex: number, newIndex: number) {
+  const snapshot = groups.value.map((group) => ({ id: group.id, sort: group.sort }));
+  groups.value = moveArrayItem(groups.value, oldIndex, newIndex);
+
+  const updates = groups.value.map((group, index) => ({
+    id: group.id,
+    sort: group.readonly ? group.sort : index,
+  }));
+  const changed = diffSortUpdates(updates, snapshot);
+  if (changed.length === 0) return;
+
+  sortSaving.value = true;
+  try {
+    for (const update of changed) {
+      const res = await updateMenuGroupApi(update.id, { sort: update.sort });
+      if (res.code !== 0) {
+        koiMsgError(res.message || t("msg.fail"));
+        await loadGroups();
+        return;
+      }
+    }
+    koiMsgSuccess(t("msg.success"));
+  } finally {
+    sortSaving.value = false;
+  }
+}
+
+function handleTreeToolbarAction(cmd: string) {
+  if (cmd === "addRoot") openItemDrawer(null, 0);
+}
+
+function menuItemActions(_item: MenuItem): ActionDropdownItem[] {
+  if (currentGroup.value?.readonly) {
+    return [{ key: "view", label: t("button.view") }];
+  }
+  return [
+    { key: "addChild", label: t("menu.menu.manage.addChild") },
+    { key: "edit", label: t("button.update") },
+    { key: "delete", label: t("button.delete"), danger: true },
+  ];
+}
+
+function handleMenuItemAction(cmd: string, item: MenuItem) {
+  if (cmd === "addChild") openItemDrawer(null, item.id);
+  else if (cmd === "edit" || cmd === "view") openItemDrawer(item.id, 0);
+  else if (cmd === "delete") handleDeleteItem(item);
 }
 
 async function loadSiteLocales() {
@@ -404,15 +612,44 @@ onMounted(async () => {
     min-height: 0;
     padding: 8px;
   }
+
+  &__sortable {
+    display: flex;
+    flex-direction: column;
+  }
 }
 
 .menu-group-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
   padding: 10px 12px;
   margin-bottom: 6px;
   border-radius: 8px;
   cursor: pointer;
   border: 1px solid transparent;
   transition: background 0.15s, border-color 0.15s;
+
+  &__drag {
+    flex-shrink: 0;
+    margin-top: 2px;
+    cursor: grab;
+    color: var(--el-text-color-placeholder);
+
+    &:active {
+      cursor: grabbing;
+    }
+  }
+
+  &__body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__main {
+    flex: 1;
+    min-width: 0;
+  }
 
   &:hover {
     background: var(--el-fill-color-light);
@@ -481,6 +718,12 @@ onMounted(async () => {
   margin-bottom: 12px;
 }
 
+.menu-tree-drag-hint {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+
 .menu-el-tree {
   --el-tree-node-content-height: 40px;
 }
@@ -492,6 +735,16 @@ onMounted(async () => {
   flex: 1;
   min-width: 0;
   padding-right: 8px;
+
+  &__drag {
+    flex-shrink: 0;
+    cursor: grab;
+    color: var(--el-text-color-placeholder);
+
+    &:active {
+      cursor: grabbing;
+    }
+  }
 
   &__icon {
     flex-shrink: 0;
@@ -534,5 +787,33 @@ onMounted(async () => {
     margin-left: auto;
     flex-shrink: 0;
   }
+}
+
+@media (max-width: 767px) {
+  .menu-tree-node {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    padding-top: 4px;
+    padding-bottom: 4px;
+
+    &__title {
+      max-width: 100%;
+    }
+
+    &__path,
+    &__perm {
+      display: none;
+    }
+
+    &__actions {
+      width: 100%;
+      margin-left: 0;
+      margin-top: 4px;
+    }
+  }
+}
+
+:global(.sortable-ghost) {
+  opacity: 0.45;
 }
 </style>

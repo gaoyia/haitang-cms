@@ -145,34 +145,48 @@ pub async fn update(
     }
 
     let mut builder = meta.update();
+    let mut has_meta_update = false;
     if let Some(gid) = input.group_id {
         builder = builder.group_id(gid);
+        has_meta_update = true;
     }
     if let Some(pid) = input.parent_id {
         builder = builder.parent_id(pid);
+        has_meta_update = true;
     }
     if let Some(ref icon) = input.icon {
         builder = builder.icon(icon.as_str());
+        has_meta_update = true;
     }
     if let Some(ref permission) = input.permission {
         builder = builder.permission(permission.as_str());
+        has_meta_update = true;
     }
     if let Some(sort) = input.sort {
         builder = builder.sort(sort);
+        has_meta_update = true;
     }
     if let Some(status) = input.status {
         builder = builder.status(status);
+        has_meta_update = true;
     }
 
-    if let Err(e) = builder.exec(&mut db).await {
-        return Json(ApiResponse::error(500, format!("更新失败: {e}")));
+    let has_i18n_update = input.title.is_some() || input.path.is_some();
+    if !has_meta_update && !has_i18n_update {
+        return Json(ApiResponse::error(400, "无更新内容"));
     }
 
-    meta = MenuItemMeta::get_by_id(&mut db, &id)
-        .await
-        .expect("菜单应存在");
+    if has_meta_update {
+        if let Err(e) = builder.exec(&mut db).await {
+            return Json(ApiResponse::error(500, format!("更新失败: {e}")));
+        }
 
-    if input.title.is_some() || input.path.is_some() {
+        meta = MenuItemMeta::get_by_id(&mut db, &id)
+            .await
+            .expect("菜单应存在");
+    }
+
+    if has_i18n_update {
         let lang = crate::models::locale::resolve_locale(input.lang.as_deref(), &default);
         let title = input.title.as_deref().unwrap_or("");
         let path = input.path.as_deref().unwrap_or("");
