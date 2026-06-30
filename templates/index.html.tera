@@ -70,55 +70,506 @@
 <section class="page-section">
     <div class="container">
         <div class="section-header">
-            <h2>为精致感而生</h2>
-            <p>海棠 CMS 不仅仅是一个内容管理系统，它是为高效编辑团队精心打造的创意工作室。</p>
+            <h2>{% if lang == "en-us" %}Built for refinement{% else %}为精致感而生{% endif %}</h2>
+            <p>{% if lang == "en-us" %}Haitang CMS is more than a content system—it is a creative studio for editorial teams who care about craft.{% else %}海棠 CMS 不仅仅是一个内容管理系统，它是为高效编辑团队精心打造的创意工作室。{% endif %}</p>
         </div>
         <div class="feature-grid">
-            <div class="feature-card feature-span-8">
-                <div class="feature-icon">✦</div>
-                <h3>结构化的优雅</h3>
-                <p>基于 Rocket + Toasty ORM 的后端架构，配合 Tera 模板与 REST API，在保持模块清晰的同时，让内容与展示自然生长。</p>
-            </div>
-            <div class="feature-card feature-span-4 feature-card-accent">
-                <div class="feature-icon">⚡</div>
-                <h3>轻量而快速</h3>
-                <p>Rust 原生性能与 SQLite 本地存储，开发启动快、部署简单，适合中小型内容站点。</p>
-            </div>
-            <div class="feature-card feature-span-4">
-                <div class="feature-icon">🔒</div>
-                <h3>安全发布</h3>
-                <p>管理接口采用 JWT 认证，RBAC 权限模型与分类、菜单、字典等模块协同，保障内容安全可控。</p>
-                <div class="feature-tags">
-                    <span class="tag">JWT</span>
-                    <span class="tag tag-green">RBAC</span>
+            <div class="feature-card feature-span-8 feature-card--split">
+                <div class="feature-card__body">
+                    <span class="material-symbol material-symbol--filled material-symbol--xl" aria-hidden="true">architecture</span>
+                    <h3>{% if lang == "en-us" %}Structured elegance{% else %}结构化的优雅{% endif %}</h3>
+                    <p>{% if lang == "en-us" %}A block-based architecture lets you compose rich layouts without touching code, keeping design consistent across every device.{% else %}直观的块状架构让您无需编写代码即可构建复杂的页面布局，在所有设备上保持设计的统一与完整。{% endif %}</p>
+                </div>
+                <div class="feature-card__media">
+                    <img src="/static/resources/images/home/feature-dashboard.jpg" alt="{% if lang == 'en-us' %}Admin dashboard preview{% else %}管理后台界面预览{% endif %}" loading="lazy" decoding="async">
                 </div>
             </div>
-            <div class="feature-card feature-span-8">
-                <div class="feature-icon">🔗</div>
-                <h3>前后端分离</h3>
-                <p>公开页面使用 jQuery 调用 `/api` 接口动态加载数据；管理后台为独立的 Vue 3 + Vite 应用，通过 `/api/admin` 完成 CRUD。</p>
-                <div class="feature-tags">
-                    <span class="tag">公开 API</span>
-                    <span class="tag">Vue 3</span>
-                    <span class="tag tag-green">Tera</span>
+            <div class="feature-card feature-span-4 feature-card-accent feature-card--bolt">
+                <div>
+                    <span class="material-symbol material-symbol--xl" aria-hidden="true">bolt</span>
+                    <h3>{% if lang == "en-us" %}Lightning fast{% else %}闪电般的速度{% endif %}</h3>
+                    <p>{% if lang == "en-us" %}Rust-native performance and a responsive admin console that keeps up with every creative spark.{% else %}体验瞬间加载的快感。Rust 原生性能与响应迅速的管理控制台，跟上您的每一个创意火花。{% endif %}</p>
+                </div>
+                <div class="feature-card__watermark" aria-hidden="true">
+                    <span class="material-symbol">bolt</span>
                 </div>
             </div>
+            <div class="feature-card feature-span-4 feature-card--secure">
+                <span class="material-symbol material-symbol--xl" aria-hidden="true">verified_user</span>
+                <h3>{% if lang == "en-us" %}Secure publishing{% else %}安全发布{% endif %}</h3>
+                <p>{% if lang == "en-us" %}Enterprise-grade security with JWT authentication, RBAC permissions, and a clear audit trail for peace of mind.{% else %}企业级安全性，JWT 认证与 RBAC 权限模型协同，保障内容安全可控、发布后顾无忧。{% endif %}</p>
+                <div class="feature-secure-badges" aria-hidden="true">
+                    <span>JWT</span>
+                    <span>RBAC</span>
+                    <span>API</span>
+                </div>
+            </div>
+            <div class="feature-card feature-span-8 feature-card--surface feature-card--ecosystem">
+                <div class="feature-chip-row">
+                    <span class="feature-chip">{% if lang == "en-us" %}Public API{% else %}公开 API{% endif %}</span>
+                    <span class="feature-chip">Markdown</span>
+                    <span class="feature-chip">Vue 3</span>
+                    <span class="feature-chip">Tera</span>
+                </div>
+                <div class="feature-card__body">
+                    <h3>{% if lang == "en-us" %}An integrated ecosystem{% else %}集成的生态系统{% endif %}</h3>
+                    <p>{% if lang == "en-us" %}The public site loads data via REST APIs; the admin app is a standalone Vue 3 + Vite workspace connected through `/api/admin`.{% else %}公开页面通过 REST API 动态加载数据；管理后台为独立的 Vue 3 + Vite 应用，通过 `/api/admin` 完成内容工作流。{% endif %}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="testimonial-section">
+    <div class="container">
+        <div class="testimonial-section__head">
+            <div>
+                <p class="testimonial-section__label">{% if lang == "en-us" %}Trusted by creators{% else %}深受创作者信赖{% endif %}</p>
+                <h2 class="testimonial-section__title">{% if lang == "en-us" %}Every story finds its home here.{% else %}在这里，每个故事都有它的归宿。{% endif %}</h2>
+            </div>
+        </div>
+        <div class="testimonial-grid">
+            <article class="testimonial-card">
+                <div class="testimonial-card__author">
+                    <div class="testimonial-card__avatar">
+                        <img src="/static/resources/images/home/avatar-elena.jpg" alt="" loading="lazy" decoding="async">
+                    </div>
+                    <div>
+                        <p class="testimonial-card__name">Elena Moretti</p>
+                        <p class="testimonial-card__role">{% if lang == "en-us" %}Creative Director, Bloom Studio{% else %}创意总监，Bloom Studio{% endif %}</p>
+                    </div>
+                </div>
+                <p class="testimonial-card__quote">{% if lang == "en-us" %}“Haitang CMS is the first platform that truly understands the emotional bond between writers and their workspace. It is beautiful, fast, and remarkably intuitive.”{% else %}「海棠 CMS 是第一个真正理解写作者与创作空间情感联系的平台。它美丽、快捷，而且异常直观。」{% endif %}</p>
+            </article>
+            <article class="testimonial-card">
+                <div class="testimonial-card__author">
+                    <div class="testimonial-card__avatar">
+                        <img src="/static/resources/images/home/avatar-julian.jpg" alt="" loading="lazy" decoding="async">
+                    </div>
+                    <div>
+                        <p class="testimonial-card__name">Julian Thorne</p>
+                        <p class="testimonial-card__role">{% if lang == "en-us" %}Full-stack Engineer{% else %}全栈开发工程师{% endif %}</p>
+                    </div>
+                </div>
+                <p class="testimonial-card__quote">{% if lang == "en-us" %}“As a developer I value the clean API and speed—but as a user I love an interface that breathes. This is structured elegance in practice.”{% else %}「作为一名开发者，我非常看重其清晰的 API 和运行速度。但作为一个普通用户，我爱极了这种会呼吸的界面。这才是真正的结构化优雅。」{% endif %}</p>
+            </article>
+            <article class="testimonial-card">
+                <div class="testimonial-card__author">
+                    <div class="testimonial-card__avatar">
+                        <img src="/static/resources/images/home/avatar-sarah.jpg" alt="" loading="lazy" decoding="async">
+                    </div>
+                    <div>
+                        <p class="testimonial-card__name">Sarah Chen</p>
+                        <p class="testimonial-card__role">{% if lang == "en-us" %}Digital Strategist, Muse Agency{% else %}数字战略家，Muse Agency{% endif %}</p>
+                    </div>
+                </div>
+                <p class="testimonial-card__quote">{% if lang == "en-us" %}“Switching to Haitang felt like moving from a noisy office into a quiet garden. Our team ships more simply because the tool feels good to use.”{% else %}「改用海棠 CMS 感觉就像从嘈杂的办公室搬到了宁静的花园。仅仅因为爱上了这个工具，我们的工作效率就得到了提升。」{% endif %}</p>
+            </article>
         </div>
     </div>
 </section>
 
 <section class="cta-section">
-    <div class="container container-narrow">
-        <h2>准备好开始创作了吗？</h2>
-        <p>从浏览文章到进入管理后台，海棠 CMS 为您提供完整的内容工作流。</p>
-        <a class="btn btn-primary btn-lg" href="/admin">进入管理后台</a>
+    <div class="cta-section__bg" style="background-image: url('/static/resources/images/home/cta-bg.png');" aria-hidden="true"></div>
+    <div class="cta-section__inner">
+        <h2>{% if lang == "en-us" %}Ready to tend your digital garden?{% else %}准备好耕耘您的数字花园了吗？{% endif %}</h2>
+        <p>{% if lang == "en-us" %}From browsing posts to publishing in the admin—Haitang CMS gives you a complete content workflow.{% else %}从浏览文章到进入管理后台，海棠 CMS 为您提供完整的内容工作流。{% endif %}</p>
+        <a class="btn btn-primary btn-lg" href="/admin">{% if lang == "en-us" %}Open admin console{% else %}进入管理后台{% endif %}</a>
+        <p class="cta-section__note">{% if lang == "en-us" %}Self-hosted—your content and data stay under your control.{% else %}自托管部署，内容与数据由您自主掌控。{% endif %}</p>
     </div>
 </section>
 {% endblock content %}
 
 {% block scripts %}
-{% if banners and banners | length > 0 %}
 <script src="/static/resources/js/gsap.min.js"></script>
+<script src="/static/resources/js/ScrollTrigger.min.js"></script>
+<script>
+    (function () {
+        function initHomeScrollAnimations() {
+            if (typeof gsap === "undefined" || typeof ScrollTrigger === "undefined") {
+                return;
+            }
+
+            gsap.registerPlugin(ScrollTrigger);
+
+            var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+            var startCards = "top 72%";
+            var startHead = "top 78%";
+            var durationLg = reduced ? 0.45 : 1.08;
+            var durationMd = reduced ? 0.4 : 0.98;
+            var durationSm = reduced ? 0.35 : 0.88;
+            var staggerMd = reduced ? 0.06 : 0.18;
+            var staggerSm = reduced ? 0.05 : 0.15;
+
+            // 仅位移，不改变透明度，内容始终可见
+            var seriesLift = {
+                from: { y: 28 },
+                to: { y: 0, ease: "power3.out" },
+            };
+            var seriesFeatureLift = {
+                from: { y: 32 },
+                to: { y: 0, ease: "power3.out" },
+            };
+            var seriesFadeUp = {
+                from: { y: 22 },
+                to: { y: 0, ease: "power2.out" },
+            };
+
+            function softenFrom(from) {
+                var next = {};
+                Object.keys(from).forEach(function (key) {
+                    if (typeof from[key] === "number") {
+                        next[key] = from[key] * 0.5;
+                    }
+                });
+                return next;
+            }
+
+            function softOffset(from) {
+                return {
+                    x: from.x ? from.x * 0.4 : 0,
+                    y: from.y ? from.y * 0.4 : 0,
+                };
+            }
+
+            function resetPosition(el) {
+                gsap.set(el, { x: 0, y: 0, scale: 1 });
+            }
+
+            function playShift(el, from, duration, ease, delay) {
+                gsap.killTweensOf(el);
+                gsap.fromTo(
+                    el,
+                    from,
+                    {
+                        x: 0,
+                        y: 0,
+                        duration: duration,
+                        delay: delay || 0,
+                        ease: ease,
+                        overwrite: true,
+                    }
+                );
+            }
+
+            function bindRevealScroll(el, config) {
+                ScrollTrigger.create({
+                    trigger: el,
+                    start: config.start,
+                    onEnter: function () {
+                        playShift(el, config.from, config.duration, config.ease, config.delay);
+                    },
+                    onEnterBack: function () {
+                        playShift(el, config.softState, config.duration, config.ease, config.delay);
+                    },
+                    onLeave: resetPosition.bind(null, el),
+                    onLeaveBack: function () {
+                        gsap.set(el, config.softState);
+                    },
+                });
+            }
+
+            function revealSeries(items, options) {
+                if (!items.length) {
+                    return;
+                }
+
+                var series = options.series || seriesLift;
+                var duration = options.duration || durationMd;
+                var stagger = options.stagger || 0;
+                var start = options.start || startCards;
+                var yStep = options.yStep || 0;
+
+                items.forEach(function (el, index) {
+                    if (options.bindReveal) {
+                        options.bindReveal(el, index, {
+                            start: start,
+                            duration: duration,
+                            delay: stagger * index,
+                            yStep: yStep,
+                        });
+                        return;
+                    }
+
+                    var itemSeries = options.getSeries ? options.getSeries(el, index) : series;
+                    var from = reduced ? softenFrom(itemSeries.from) : gsap.utils.merge({}, itemSeries.from);
+                    if (yStep && !reduced && typeof from.y === "number") {
+                        from.y += index * yStep;
+                    }
+
+                    bindRevealScroll(el, {
+                        start: start,
+                        from: from,
+                        softState: softOffset(from),
+                        duration: duration,
+                        ease: itemSeries.to.ease || "power3.out",
+                        delay: stagger * index,
+                    });
+                });
+            }
+
+            function bindSplitFeatureReveal(card, ctx) {
+                var body = card.querySelector(".feature-card__body");
+                var media = card.querySelector(".feature-card__media");
+                var d = reduced ? ctx.duration * 0.85 : ctx.duration;
+                var bodyFrom = { x: reduced ? -12 : -28 };
+                var mediaFrom = { x: reduced ? 12 : 28 };
+                var bodySoft = { x: reduced ? -5 : -11 };
+                var mediaSoft = { x: reduced ? 5 : 11 };
+
+                function playSplit(fromBody, fromMedia) {
+                    gsap.killTweensOf([body, media]);
+                    if (body) {
+                        gsap.fromTo(
+                            body,
+                            fromBody,
+                            { x: 0, y: 0, duration: d * 0.92, ease: "power3.out", delay: ctx.delay }
+                        );
+                    }
+                    if (media) {
+                        gsap.fromTo(
+                            media,
+                            fromMedia,
+                            { x: 0, y: 0, duration: d, ease: "power3.out", delay: ctx.delay + 0.12 }
+                        );
+                    }
+                }
+
+                ScrollTrigger.create({
+                    trigger: card,
+                    start: ctx.start,
+                    onEnter: function () {
+                        playSplit(bodyFrom, mediaFrom);
+                    },
+                    onEnterBack: function () {
+                        playSplit(bodySoft, mediaSoft);
+                    },
+                    onLeave: function () {
+                        if (body) {
+                            resetPosition(body);
+                        }
+                        if (media) {
+                            resetPosition(media);
+                        }
+                    },
+                    onLeaveBack: function () {
+                        if (body) {
+                            gsap.set(body, bodySoft);
+                        }
+                        if (media) {
+                            gsap.set(media, mediaSoft);
+                        }
+                    },
+                });
+            }
+
+            function bindFeatureBottomRowReveal() {
+                var secure = document.querySelector(".feature-card--secure");
+                var ecosystem = document.querySelector(".feature-card--ecosystem");
+                if (!secure || !ecosystem) {
+                    return;
+                }
+
+                var items = [secure, ecosystem];
+                var fromStates = [
+                    reduced ? { x: -14 } : { x: -32 },
+                    reduced ? { x: 14 } : { x: 32 },
+                ];
+                var softStates = [
+                    reduced ? { x: -6 } : { x: -12 },
+                    reduced ? { x: 6 } : { x: 12 },
+                ];
+                var ease = seriesFeatureLift.to.ease;
+                var step = reduced ? staggerSm : staggerMd;
+
+                function playSequence(states) {
+                    items.forEach(function (el, index) {
+                        playShift(el, states[index], durationLg, ease, step * index);
+                    });
+                }
+
+                ScrollTrigger.create({
+                    trigger: secure,
+                    start: "top 68%",
+                    onEnter: function () {
+                        playSequence(fromStates);
+                    },
+                    onEnterBack: function () {
+                        playSequence(softStates);
+                    },
+                    onLeave: function () {
+                        items.forEach(resetPosition);
+                    },
+                    onLeaveBack: function () {
+                        items.forEach(function (el, index) {
+                            gsap.set(el, softStates[index]);
+                        });
+                    },
+                });
+            }
+
+            // 特性区：首卡左右分步入场，其余上浮；底行两卡左右依次位移
+            gsap.utils.toArray(".section-header").forEach(function (el) {
+                revealSeries(Array.prototype.slice.call(el.children), {
+                    series: seriesLift,
+                    start: startHead,
+                    duration: durationSm,
+                    stagger: staggerSm,
+                });
+            });
+
+            revealSeries(gsap.utils.toArray(".feature-card"), {
+                start: "top 68%",
+                duration: durationLg,
+                stagger: staggerMd,
+                yStep: 4,
+                bindReveal: function (el, index, ctx) {
+                    if (el.classList.contains("feature-card--split")) {
+                        bindSplitFeatureReveal(el, ctx);
+                        return;
+                    }
+                    if (el.classList.contains("feature-card--secure") || el.classList.contains("feature-card--ecosystem")) {
+                        return;
+                    }
+                    var from = reduced ? softenFrom(seriesFeatureLift.from) : gsap.utils.merge({}, seriesFeatureLift.from);
+                    if (ctx.yStep && !reduced) {
+                        from.y += index * ctx.yStep;
+                    }
+                    bindRevealScroll(el, {
+                        start: ctx.start,
+                        from: from,
+                        softState: softOffset(from),
+                        duration: ctx.duration,
+                        ease: seriesFeatureLift.to.ease,
+                        delay: ctx.delay,
+                    });
+                },
+            });
+
+            bindFeatureBottomRowReveal();
+
+            // 评价区：标题先入场，三张卡片再依次左右错开位移
+            function bindTestimonialSectionReveal() {
+                var section = document.querySelector(".testimonial-section");
+                var label = document.querySelector(".testimonial-section__label");
+                var title = document.querySelector(".testimonial-section__title");
+                var cards = gsap.utils.toArray(".testimonial-card");
+                if (!section || !cards.length) {
+                    return;
+                }
+
+                var headItems = [];
+                if (label) {
+                    headItems.push(label);
+                }
+                if (title) {
+                    headItems.push(title);
+                }
+
+                var headFrom = reduced ? { y: 14 } : { y: 28 };
+                var headSoft = reduced ? { y: 6 } : { y: 12 };
+                var cardFromList = [
+                    reduced ? { y: 16, x: -10 } : { y: 40, x: -22 },
+                    reduced ? { y: 20 } : { y: 48 },
+                    reduced ? { y: 16, x: 10 } : { y: 40, x: 22 },
+                ];
+                var cardSoftList = [
+                    reduced ? { y: 7, x: -4 } : { y: 16, x: -9 },
+                    reduced ? { y: 9 } : { y: 18 },
+                    reduced ? { y: 7, x: 4 } : { y: 16, x: 9 },
+                ];
+                var ease = seriesFadeUp.to.ease;
+                var cardStep = reduced ? 0.16 : 0.32;
+                var cardLead = reduced ? 0.22 : 0.42;
+
+                function playAll(headState, cardStates) {
+                    headItems.forEach(function (el, index) {
+                        playShift(el, headState, durationSm, ease, staggerSm * index);
+                    });
+
+                    var cardsStart = headItems.length
+                        ? staggerSm * Math.max(headItems.length - 1, 0) + cardLead
+                        : 0;
+
+                    cards.forEach(function (card, index) {
+                        playShift(
+                            card,
+                            cardStates[index],
+                            durationLg,
+                            ease,
+                            cardsStart + cardStep * index
+                        );
+                    });
+                }
+
+                function resetAll(headState, cardStates) {
+                    headItems.forEach(function (el) {
+                        gsap.set(el, headState);
+                    });
+                    cards.forEach(function (card, index) {
+                        gsap.set(card, cardStates[index]);
+                    });
+                }
+
+                ScrollTrigger.create({
+                    trigger: section,
+                    start: "top 74%",
+                    onEnter: function () {
+                        playAll(headFrom, cardFromList);
+                    },
+                    onEnterBack: function () {
+                        playAll(headSoft, cardSoftList);
+                    },
+                    onLeave: function () {
+                        headItems.concat(cards).forEach(resetPosition);
+                    },
+                    onLeaveBack: function () {
+                        resetAll(headSoft, cardSoftList);
+                    },
+                });
+            }
+
+            bindTestimonialSectionReveal();
+
+            // CTA：统一「上浮淡入」，顺序展开
+            revealSeries(gsap.utils.toArray(".cta-section__inner > *"), {
+                series: seriesLift,
+                start: "top 76%",
+                duration: durationMd,
+                stagger: staggerSm,
+            });
+
+            if (!reduced) {
+                gsap.to(".cta-section__bg", {
+                    scrollTrigger: {
+                        trigger: ".cta-section",
+                        start: "top bottom",
+                        end: "bottom top",
+                        scrub: 0.6,
+                    },
+                    y: 48,
+                    ease: "none",
+                });
+            }
+
+            ScrollTrigger.refresh();
+        }
+
+        function boot() {
+            initHomeScrollAnimations();
+            window.addEventListener("load", function () {
+                ScrollTrigger.refresh();
+            });
+        }
+
+        if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", boot);
+        } else {
+            boot();
+        }
+    })();
+</script>
+{% if banners and banners | length > 0 %}
 <script type="application/json" id="banner-hero-data">{{ banner_heroes_json | safe }}</script>
 <script>
     $(function () {
