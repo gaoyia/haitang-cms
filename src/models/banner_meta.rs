@@ -157,7 +157,7 @@ pub fn default_home_banner_meta_json() -> String {
     serde_json::json!({
         "zh-cn": {
             "badge": "让文字「如风流动」🎐「如星闪耀」✨",
-            "title": "让数字内容 <em>如花绽放</em> 🎉",
+            "title": "让数字内容如<em>「一缕晨光」</em>闪耀荧幕🎉",
             "description": "海棠 CMS 为追求优雅与性能的创作者提供结构化的工作空间。公开站点由 Tera 模板驱动，管理后台由 Vue 3 独立构建。",
             "tags": ["公开 API", "Vue 3", "Tera"],
             "actions": [
@@ -167,7 +167,7 @@ pub fn default_home_banner_meta_json() -> String {
         },
         "en-us": {
             "badge": "Words flow like wind 🎐 stars shine bright ✨",
-            "title": "Let digital content <em>bloom</em> like flowers 🎉",
+            "title": "Let digital content shine on screen like <em>morning light</em> 🎉",
             "description": "Haitang CMS offers a structured workspace for creators who care about elegance and performance. The public site is powered by Tera; the admin app is built with Vue 3.",
             "tags": ["Public API", "Vue 3", "Tera"],
             "actions": [
@@ -184,7 +184,7 @@ pub fn default_home_banner_2_meta_json() -> String {
     serde_json::json!({
         "zh-cn": {
             "badge": "自然 · 清新 · 春季",
-            "title": "内容如 <em>枝头新蕊</em>，在光里徐徐绽开 🌸",
+            "title": "让创意火花如<em>「枝头新蕊」</em>徐徐绽放🌸",
             "description": "用海棠 CMS 记录每一次生长与发布，让创作像春天一样轻盈而有生命力。",
             "tags": ["自然", "清新", "春季"],
             "actions": [
@@ -194,7 +194,7 @@ pub fn default_home_banner_2_meta_json() -> String {
         },
         "en-us": {
             "badge": "Nature · Fresh · Spring",
-            "title": "Content <em>opens like blossoms</em> in the light 🌸",
+            "title": "Let creative sparks unfold slowly like <em>new buds on the branch</em> 🌸",
             "description": "Capture every season of growth and publishing with Haitang CMS—creation that feels as light and alive as spring.",
             "tags": ["Nature", "Fresh", "Spring"],
             "actions": [

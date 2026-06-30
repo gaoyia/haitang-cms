@@ -327,6 +327,10 @@ img {
   overflow: hidden;
 }
 
+.hero-copy {
+  backface-visibility: hidden;
+}
+
 .hero-copy--sparse .hero-title {
   margin-bottom: var(--space-sm);
 }

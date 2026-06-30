@@ -40,7 +40,7 @@
         {% else %}
         <div class="hero-copy">
             <span class="hero-badge">{% if lang == "en-us" %}Words flow like wind 🎐 stars shine bright ✨{% else %}让文字「如风流动」🎐「如星闪耀」✨{% endif %}</span>
-            <h1 class="hero-title">{% if lang == "en-us" %}Let digital content <em>bloom</em> like flowers 🎉{% else %}让数字内容 <em>如花绽放</em> 🎉{% endif %}</h1>
+            <h1 class="hero-title">{% if lang == "en-us" %}Let digital content shine on screen like <em>morning light</em> 🎉{% else %}让数字内容如<em>「一缕晨光」</em>闪耀荧幕🎉{% endif %}</h1>
             <p class="hero-desc">{% if lang == "en-us" %}Haitang CMS offers a structured workspace for creators who care about elegance and performance.{% else %}{{ site_name }} 为追求优雅与性能的创作者提供结构化的工作空间。公开站点由 Tera 模板驱动，管理后台由 Vue 3 独立构建。{% endif %}</p>
             <div class="hero-actions">
                 <a class="btn btn-primary btn-lg" href="{{ locale_prefix }}/categories/news">{% if lang == "en-us" %}Browse News{% else %}浏览新闻{% endif %}</a>
@@ -138,12 +138,63 @@
             }).toArray();
         }
 
-        function clearHeroTweenProps(targets) {
-            if (targets && targets.length) {
-                gsap.set(targets, { clearProps: "opacity,transform" });
+        function resetHeroPanel() {
+            gsap.set($heroCopy[0], { x: 0, y: 0, scale: 1, opacity: 1 });
+        }
+
+        function resetHeroBlocks() {
+            var blocks = $heroCopy.find(heroBlockSel).toArray();
+            if (blocks.length) {
+                gsap.set(blocks, { x: 0, y: 0, scale: 1 });
             }
         }
 
+        // 每次切换轮换预设；透明度仅由面板控制，子元素只做位移/缩放层次
+        var heroAnimTick = 0;
+        var heroAnimPresets = [
+            {
+                leave: function (dir) {
+                    return { opacity: 0, x: -42 * dir, duration: 0.32, ease: "power2.in" };
+                },
+                enterFrom: function (dir) {
+                    return { x: 48 * dir, opacity: 0 };
+                },
+                enterTo: { opacity: 1, x: 0, duration: 0.42, ease: "power3.out" },
+                childFrom: function () {
+                    return { y: 14 };
+                },
+                childTo: { y: 0, duration: 0.32, stagger: 0.07, ease: "power2.out" },
+                childAt: "-=0.32",
+            },
+            {
+                leave: function () {
+                    return { opacity: 0, y: -18, scale: 0.97, duration: 0.28, ease: "power2.in" };
+                },
+                enterFrom: function () {
+                    return { y: 24, opacity: 0, scale: 0.95 };
+                },
+                enterTo: { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: "power3.out" },
+                childFrom: function () {
+                    return { y: 16 };
+                },
+                childTo: { y: 0, duration: 0.3, stagger: 0.08, ease: "power2.out" },
+                childAt: "-=0.3",
+            },
+            {
+                leave: function (dir) {
+                    return { opacity: 0, x: -30 * dir, scale: 0.92, duration: 0.3, ease: "power2.inOut" };
+                },
+                enterFrom: function (dir) {
+                    return { x: 34 * dir, opacity: 0, scale: 1.05 };
+                },
+                enterTo: { opacity: 1, x: 0, scale: 1, duration: 0.44, ease: "power4.out" },
+                childFrom: function () {
+                    return { y: 10, scale: 0.96 };
+                },
+                childTo: { y: 0, scale: 1, duration: 0.28, stagger: 0.06, ease: "power2.out" },
+                childAt: "-=0.28",
+            },
+        ];
         function updateHeroDensityClass() {
             var count = visibleHeroBlocks().length;
             $heroCopy.toggleClass("hero-copy--sparse", count > 0 && count <= 2);
@@ -159,53 +210,6 @@
             }
             return diff > 0 ? 1 : -1;
         }
-
-        // 每次切换轮换预设；各预设组合 opacity / x / y / scale
-        var heroAnimTick = 0;
-        var heroAnimPresets = [
-            {
-                leave: function (dir) {
-                    return { opacity: 0, x: -42 * dir, duration: 0.32, ease: "power2.in" };
-                },
-                enterFrom: function (dir) {
-                    return { x: 48 * dir, opacity: 0 };
-                },
-                enterTo: { opacity: 1, x: 0, duration: 0.42, ease: "power3.out" },
-                childFrom: function (dir) {
-                    return { opacity: 0, x: 16 * dir };
-                },
-                childTo: { opacity: 1, x: 0, duration: 0.32, stagger: 0.07, ease: "power2.out" },
-                childAt: "-=0.28",
-            },
-            {
-                leave: function () {
-                    return { opacity: 0, y: -18, scale: 0.97, duration: 0.28, ease: "power2.in" };
-                },
-                enterFrom: function () {
-                    return { y: 24, opacity: 0, scale: 0.95 };
-                },
-                enterTo: { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: "power3.out" },
-                childFrom: function () {
-                    return { opacity: 0, y: 14 };
-                },
-                childTo: { opacity: 1, y: 0, duration: 0.3, stagger: 0.08, ease: "power2.out" },
-                childAt: "-=0.26",
-            },
-            {
-                leave: function (dir) {
-                    return { opacity: 0, x: -30 * dir, scale: 0.92, duration: 0.3, ease: "power2.inOut" };
-                },
-                enterFrom: function (dir) {
-                    return { x: 34 * dir, opacity: 0, scale: 1.05 };
-                },
-                enterTo: { opacity: 1, x: 0, scale: 1, duration: 0.44, ease: "power4.out" },
-                childFrom: function (dir) {
-                    return { opacity: 0, x: 12 * dir, scale: 0.96 };
-                },
-                childTo: { opacity: 1, x: 0, scale: 1, duration: 0.28, stagger: 0.06, ease: "back.out(1.15)" },
-                childAt: "-=0.24",
-            },
-        ];
 
         function fillHero(idx) {
             if (!$heroCopy.length) return;
@@ -275,13 +279,11 @@
 
             gsap.killTweensOf(panel);
             gsap.killTweensOf(visibleHeroBlocks());
-            gsap.killTweensOf($heroCopy.find(".hero-tag, .hero-actions a"));
 
             var tl = gsap.timeline({
                 onComplete: function () {
-                    clearHeroTweenProps([panel]);
-                    clearHeroTweenProps(visibleHeroBlocks());
-                    clearHeroTweenProps($heroCopy.find(".hero-tag, .hero-actions a").toArray());
+                    resetHeroPanel();
+                    resetHeroBlocks();
                 },
             });
 
@@ -289,37 +291,21 @@
                 .call(function () {
                     fillHero(idx);
                     gsap.set(panel, preset.enterFrom(dir));
+                    var entering = visibleHeroBlocks();
+                    if (entering.length && preset.childFrom) {
+                        gsap.set(entering, preset.childFrom(dir));
+                    }
                 })
                 .to(panel, preset.enterTo);
 
             var entering = visibleHeroBlocks();
-            if (entering.length) {
-                var childTo = $.extend({}, preset.childTo);
+            if (entering.length && preset.childFrom && preset.childTo) {
+                var childTo = $.extend({ immediateRender: false }, preset.childTo);
                 if (entering.length <= 2) {
                     childTo.stagger = 0.04;
-                    childTo.duration = 0.28;
+                    childTo.duration = 0.26;
                 }
                 tl.fromTo(entering, preset.childFrom(dir), childTo, preset.childAt);
-            }
-
-            var tagEls = $heroCopy.find(".hero-tag").toArray();
-            if (tagEls.length > 1) {
-                tl.fromTo(
-                    tagEls,
-                    preset.childFrom(dir),
-                    { opacity: 1, x: 0, y: 0, scale: 1, duration: 0.2, stagger: 0.035, ease: "power2.out" },
-                    "-=0.16"
-                );
-            }
-
-            var btnEls = $heroCopy.find(".hero-actions a").toArray();
-            if (btnEls.length > 1) {
-                tl.fromTo(
-                    btnEls,
-                    preset.childFrom(dir),
-                    { opacity: 1, x: 0, y: 0, scale: 1, duration: 0.24, stagger: 0.05, ease: "power2.out" },
-                    "-=0.12"
-                );
             }
         }
 

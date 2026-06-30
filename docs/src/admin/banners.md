@@ -20,7 +20,7 @@ GET /api/admin/banners?group_id=1&page=1&page_size=10
 {
   "zh-cn": {
     "badge": "让文字「如风流动」🎐「如星闪耀」✨",
-    "title": "让数字内容 <em>如花绽放</em> 🎉",
+    "title": "让数字内容如<em>「一缕晨光」</em>闪耀荧幕🎉",
     "description": "副文案",
     "tags": ["公开 API", "Vue 3"],
     "actions": [

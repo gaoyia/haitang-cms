@@ -357,7 +357,8 @@ pub async fn seed_default_banner_data(db: &mut toasty::Db, storage: &StorageServ
         let should_refresh_meta = existing.meta_json.trim().is_empty()
             || existing.meta_json.trim() == "{}"
             || existing.meta_json.contains("结构化优雅")
-            || existing.meta_json.contains("如花绽放</em> 成艺术");
+            || existing.meta_json.contains("如花绽放</em> 成艺术")
+            || existing.meta_json.contains("让数字内容 <em>如花绽放</em>");
         if should_refresh_meta {
             let _ = existing
                 .clone()
@@ -403,7 +404,11 @@ pub async fn seed_default_banner_data(db: &mut toasty::Db, storage: &StorageServ
 
     let default_meta_2 = default_home_banner_2_meta_json();
     let banner2 = if let Some(existing) = group_banners.iter().find(|b| b.title == BANNER_2_TITLE) {
-        if existing.meta_json.trim().is_empty() || existing.meta_json.trim() == "{}" {
+        let should_refresh_meta = existing.meta_json.trim().is_empty()
+            || existing.meta_json.trim() == "{}"
+            || existing.meta_json.contains("内容如 <em>枝头新蕊</em>")
+            || existing.meta_json.contains("在光里徐徐绽开");
+        if should_refresh_meta {
             let _ = existing
                 .clone()
                 .update()
