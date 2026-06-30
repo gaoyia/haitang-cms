@@ -4,6 +4,7 @@ pub mod banner_groups;
 pub mod banners;
 pub mod categories;
 pub mod dicts;
+pub mod friend_links;
 pub mod menu_groups;
 pub mod menus;
 pub mod posts;
@@ -61,6 +62,11 @@ pub fn routes() -> Vec<Route> {
         banners::create,
         banners::update,
         banners::delete,
+        friend_links::list,
+        friend_links::get,
+        friend_links::create,
+        friend_links::update,
+        friend_links::delete,
         dicts::list,
         dicts::get,
         dicts::create,

@@ -132,6 +132,38 @@
 
     {
 
+      "menuId": 175,
+
+      "menuName": "menu.friendLink.auth",
+
+      "parentId": 0,
+
+      "menuType": "2",
+
+      "path": "/friend-links",
+
+      "name": "friendLinkManagePage",
+
+      "component": "friend-links/index",
+
+      "icon": "koi-picture",
+
+      "isVisible": "1",
+
+      "linkUrl": "",
+
+      "isKeepAlive": "1",
+
+      "isTag": "1",
+
+      "isAffix": "0",
+
+      "redirect": ""
+
+    },
+
+    {
+
       "menuId": 200,
 
       "menuName": "menu.banner.auth",

@@ -1,6 +1,7 @@
 pub mod banners;
 pub mod categories;
 pub mod dicts;
+pub mod friend_links;
 pub mod posts;
 
 use rocket::Route;
@@ -14,6 +15,7 @@ pub fn routes() -> Vec<Route> {
         categories::get,
         categories::get_by_path,
         banners::list_by_code,
+        friend_links::list,
         dicts::list,
         dicts::map,
         dicts::get_by_code,

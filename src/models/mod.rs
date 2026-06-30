@@ -9,6 +9,7 @@ pub mod dict_meta;
 pub mod dict_value;
 pub mod entity_seq;
 pub mod locale;
+pub mod friend_link;
 pub mod menu;
 pub mod menu_group;
 pub mod menu_item;
@@ -55,6 +56,11 @@ pub use dict::{
 };
 pub use dict_meta::DictMeta;
 pub use dict_value::DictValue;
+pub use friend_link::{
+    CreateFriendLink, FriendLink, FriendLinkView, PublicFriendLink, UpdateFriendLink,
+    friend_links_to_views, get_public_friend_links, seed_default_friend_links,
+    validate_friend_link_image_url, validate_friend_link_url,
+};
 pub use menu::{MenuGroupTreeView, all_menu_group_trees, get_db_menu_tree, site_page_context};
 pub use menu_group::{
     CreateMenuGroup, MenuGroup, MenuGroupView, UpdateMenuGroup, admin_sidebar_group_view,

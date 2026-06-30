@@ -11,15 +11,28 @@ export interface SortableEntity {
   sort: number;
 }
 
-/** 按列表顺序生成 sort 值（可带偏移，用于分页表格） */
+/** 按列表顺序生成 sort 值（可带偏移与步长，用于分页表格） */
 export function buildSortUpdates(
   ordered: readonly SortableEntity[],
   offset = 0,
+  step = 1,
 ): { id: number; sort: number }[] {
   return ordered.map((item, index) => ({
     id: item.id,
-    sort: offset + index,
+    sort: (offset + index) * step,
   }));
+}
+
+/** 将 sort 写回列表项（拖拽后乐观更新排序列） */
+export function applySortUpdates<T extends SortableEntity>(
+  items: readonly T[],
+  updates: readonly { id: number; sort: number }[],
+): T[] {
+  const sortMap = new Map(updates.map((item) => [item.id, item.sort]));
+  return items.map((item) => {
+    const sort = sortMap.get(item.id);
+    return sort === undefined ? item : { ...item, sort };
+  });
 }
 
 /** 过滤出 sort 实际发生变化的项 */
@@ -32,7 +45,7 @@ export function diffSortUpdates(
 }
 
 /** 取下一档 sort（追加到末尾） */
-export function nextSortValue(items: readonly SortableEntity[]): number {
+export function nextSortValue(items: readonly SortableEntity[], step = 1): number {
   if (items.length === 0) return 0;
-  return Math.max(...items.map((item) => item.sort)) + 1;
+  return Math.max(...items.map((item) => item.sort)) + step;
 }

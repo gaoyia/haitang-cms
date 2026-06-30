@@ -2,6 +2,7 @@ use serde::Serialize;
 
 use super::admin_sidebar::get_admin_sidebar_tree;
 use super::dict::{get_site_default_locale, get_site_locales, load_dict_map};
+use super::friend_link::get_public_friend_links;
 use super::locale::{html_lang_attr, locale_path, locale_switch_suffix, public_page_title};
 use super::menu_group::{MenuGroup, MenuGroupView, admin_sidebar_group_view};
 use super::menu_item::{MenuView, build_menu_tree, load_merged_menu_items};
@@ -101,6 +102,7 @@ pub async fn site_page_context(
         "current_path": current_path,
         "header_menus": get_public_menu_links(db, "site_header", Some(&resolved_lang)).await,
         "footer_menus": get_public_menu_links(db, "site_footer", Some(&resolved_lang)).await,
+        "friend_links": get_public_friend_links(db).await,
         "dict": dict_map,
         "site_icp": site_icp,
         "site_name": site_name,

@@ -64,6 +64,18 @@
             </nav>
             {% endif %}
         </div>
+        {% if friend_links %}
+        <section class="site-friend-links" aria-label="{% if lang == 'en-us' %}Friend links{% else %}友情链接{% endif %}">
+            <p class="site-friend-links-heading">{% if lang == "en-us" %}Friends{% else %}友情链接{% endif %}</p>
+            <div class="site-friend-links-grid">
+                {% for item in friend_links %}
+                <a class="site-friend-link" href="{{ item.url }}" target="_blank" rel="noopener noreferrer" title="{{ item.title }}">
+                    <img class="site-friend-link-img" src="{{ item.image_url }}" alt="{{ item.title }}" loading="lazy" decoding="async">
+                </a>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
         <div class="site-footer-bottom">
             <p class="footer-copy">
                 {{ site_copyright }}

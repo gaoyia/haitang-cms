@@ -63,6 +63,9 @@ pub async fn run_startup_seeds(db: &mut toasty::Db, storage: &StorageService, ap
 
     seed_admin(db).await;
     seed_default_banner_data(db, storage).await;
+    if let Err(e) = crate::models::seed_default_friend_links(db, storage).await {
+        eprintln!("[种子] 默认友链: {e}");
+    }
     if let Err(e) = seed_default_sample_posts(db, storage).await {
         eprintln!("[种子] 预制示例文章: {e}");
     }

@@ -805,6 +805,62 @@ pub async fn ensure_banner_seed_asset_link(
     Ok(())
 }
 
+const SEED_FRIEND_LINK_FILES: &[&str] = &[
+    "friend-link-zhipu.jpg",
+    "friend-link-vite.jpg",
+    "friend-link-github.jpg",
+    "friend-link-sqlite.jpg",
+    "friend-link-markdown.jpg",
+    "friend-link-element-plus.jpg",
+    "friend-link-rocket.jpg",
+    "friend-link-rust.jpg",
+];
+
+const SEED_FRIEND_LINK_MIME: &str = "image/jpeg";
+
+/// 确保预制友链图片已入库（文件须位于 `uploads/seed/{admin_user_id}/friend-link-*.jpg`）
+pub async fn seed_default_friend_link_assets(
+    db: &mut toasty::Db,
+    storage: &StorageService,
+    admin_user_id: i64,
+) -> Result<std::collections::HashMap<String, Asset>, String> {
+    use std::collections::HashMap;
+
+    let mut map = HashMap::new();
+
+    for filename in SEED_FRIEND_LINK_FILES {
+        let storage_key = format!("seed/{admin_user_id}/{filename}");
+
+        let asset = if let Some(existing) = find_asset_by_storage_key(db, &storage_key).await? {
+            existing
+        } else {
+            let file_path = storage.config.local_dir.join(&storage_key);
+            let size = std::fs::metadata(&file_path)
+                .map_err(|e| format!("友链种子文件不存在（{}）: {e}", file_path.display()))?
+                .len() as i64;
+
+            create_asset_record(
+                db,
+                &storage_key,
+                filename,
+                filename,
+                SEED_FRIEND_LINK_MIME,
+                size,
+                AssetPurpose::FriendLink,
+            )
+            .await?
+        };
+
+        map.insert(filename.to_string(), asset);
+    }
+
+    println!(
+        "[种子] 友链种子资源已就绪（{} 个）",
+        SEED_FRIEND_LINK_FILES.len()
+    );
+    Ok(map)
+}
+
 const SEED_GALLERY_COUNT: usize = 6;
 const SEED_GALLERY_MIME: &str = "image/jpeg";
 

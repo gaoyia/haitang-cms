@@ -265,8 +265,8 @@ class Yu {
     return this.instance.post(url, data);
   }
   // Put请求
-  put<T = Result>(url: string, data?: object): Promise<T> {
-    return this.instance.put(url, data);
+  put<T = Result>(url: string, data?: object, config?: AxiosRequestConfig): Promise<T> {
+    return this.instance.put(url, data, config);
   }
   // Delete请求 /yu/role/1
   delete<T = Result>(url: string): Promise<T> {
