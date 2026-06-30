@@ -1,8 +1,8 @@
 <template>
-  <el-dialog
+  <el-drawer
     v-model="visible"
     :title="editId === null && savedBannerId === null ? t('menu.banner.create') : t('menu.banner.edit')"
-    width="560px"
+    :size="drawerSize"
     :close-on-click-modal="false"
     append-to-body
     destroy-on-close
@@ -37,11 +37,14 @@
         </el-radio-group>
       </el-form-item>
     </el-form>
+
     <template #footer>
-      <el-button @click="visible = false">{{ t("button.cancel") }}</el-button>
-      <el-button type="primary" :loading="saving" @click="handleSave">{{ t("button.confirm") }}</el-button>
+      <div class="banner-drawer-footer">
+        <el-button @click="visible = false">{{ t("button.cancel") }}</el-button>
+        <el-button type="primary" :loading="saving" @click="handleSave">{{ t("button.confirm") }}</el-button>
+      </div>
     </template>
-  </el-dialog>
+  </el-drawer>
 </template>
 
 <script setup lang="ts">
@@ -56,6 +59,7 @@ import {
 } from "@/api/system/banners.ts";
 import { listBannerAssetsApi, type AssetView } from "@/api/system/assets.ts";
 import { koiMsgError, koiMsgSuccess } from "@/utils/koi.ts";
+import { useResponsiveDrawerSize } from "@/composables/useResponsiveDrawerSize.ts";
 
 const props = defineProps<{
   modelValue: boolean;
@@ -71,6 +75,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const drawerSize = useResponsiveDrawerSize("560px");
 const formRef = ref<FormInstance>();
 const imageFieldRef = ref<InstanceType<typeof BannerImageField>>();
 const detailLoading = ref(false);
@@ -97,7 +102,7 @@ const form = reactive({
 
 const rules = computed<FormRules>(() => ({
   title: [{ required: true, message: t("menu.banner.titleRequired"), trigger: "blur" }],
-      imageReady: [
+  imageReady: [
     {
       validator: (_rule, _value, callback) => {
         const id = props.editId ?? savedBannerId.value;
@@ -224,3 +229,11 @@ async function handleSave() {
   });
 }
 </script>
+
+<style scoped lang="scss">
+.banner-drawer-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+</style>

@@ -160,14 +160,14 @@
       </div>
     </KoiCard>
 
-    <BannerGroupDialog
+    <BannerGroupDrawer
       v-model="groupDialogVisible"
       :edit-group="editingGroup"
       :default-sort="nextGroupSort"
       @saved="onGroupSaved"
     />
 
-    <BannerItemDialog
+    <BannerItemDrawer
       v-model="bannerDialogVisible"
       :edit-id="editingBannerId"
       :group-id="selectedGroupId ?? 0"
@@ -199,8 +199,8 @@ import { resolveAssetUrl } from "@/utils/siteAsset.ts";
 import { useTablePage } from "@/composables/useTablePage.ts";
 import { useSortableList } from "@/composables/useSortableList.ts";
 import { buildSortUpdates, diffSortUpdates, moveArrayItem, nextSortValue } from "@/utils/sortOrder.ts";
-import BannerGroupDialog from "./components/BannerGroupDialog.vue";
-import BannerItemDialog from "./components/BannerItemDialog.vue";
+import BannerGroupDrawer from "./components/BannerGroupDrawer.vue";
+import BannerItemDrawer from "./components/BannerItemDrawer.vue";
 import SplitGroupMobileBar from "@/components/SplitGroupMobileBar.vue";
 import ActionsDropdown, { type ActionDropdownItem } from "@/components/ActionsDropdown.vue";
 import { useScreenStore } from "@/hooks/screen/index.ts";

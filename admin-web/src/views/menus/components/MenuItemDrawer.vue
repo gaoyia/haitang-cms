@@ -2,7 +2,7 @@
   <el-drawer
     v-model="visible"
     :title="drawerTitle"
-    size="480px"
+    :size="drawerSize"
     :close-on-click-modal="false"
     append-to-body
     destroy-on-close
@@ -154,6 +154,7 @@ import {
   shouldAutoLocalePrefix,
 } from "@/utils/localePath.ts";
 import KoiSelectIcon from "@/components/KoiSelectIcon/Index.vue";
+import { useResponsiveDrawerSize } from "@/composables/useResponsiveDrawerSize.ts";
 
 export type LocaleForm = Record<string, { title: string; path: string }>;
 
@@ -177,6 +178,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const drawerSize = useResponsiveDrawerSize("480px");
 const formRef = ref<FormInstance>();
 const loading = ref(false);
 const saving = ref(false);

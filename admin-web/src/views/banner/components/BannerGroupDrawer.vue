@@ -1,8 +1,8 @@
 <template>
-  <el-dialog
+  <el-drawer
     v-model="visible"
     :title="isEdit ? t('menu.banner.groupEdit') : t('menu.banner.groupCreate')"
-    width="520px"
+    :size="drawerSize"
     :close-on-click-modal="false"
     append-to-body
     destroy-on-close
@@ -25,11 +25,14 @@
         </el-radio-group>
       </el-form-item>
     </el-form>
+
     <template #footer>
-      <el-button @click="visible = false">{{ t("button.cancel") }}</el-button>
-      <el-button type="primary" :loading="saving" @click="handleSave">{{ t("button.confirm") }}</el-button>
+      <div class="banner-drawer-footer">
+        <el-button @click="visible = false">{{ t("button.cancel") }}</el-button>
+        <el-button type="primary" :loading="saving" @click="handleSave">{{ t("button.confirm") }}</el-button>
+      </div>
     </template>
-  </el-dialog>
+  </el-drawer>
 </template>
 
 <script setup lang="ts">
@@ -42,6 +45,7 @@ import {
   type BannerGroup,
 } from "@/api/system/banners.ts";
 import { koiMsgError, koiMsgSuccess } from "@/utils/koi.ts";
+import { useResponsiveDrawerSize } from "@/composables/useResponsiveDrawerSize.ts";
 
 const props = defineProps<{
   modelValue: boolean;
@@ -55,6 +59,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const drawerSize = useResponsiveDrawerSize("520px");
 const formRef = ref<FormInstance>();
 const saving = ref(false);
 
@@ -135,3 +140,11 @@ async function handleSave() {
   });
 }
 </script>
+
+<style scoped lang="scss">
+.banner-drawer-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+</style>

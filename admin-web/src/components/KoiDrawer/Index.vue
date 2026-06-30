@@ -128,7 +128,7 @@ const baseDrawerSize = computed(() => {
 
   if (isHorizontal) {
     if (windowWidth.value < 600) {
-      return "86%";
+      return "100%";
     }
     if (sizeValue > windowWidth.value) {
       return "86%";
