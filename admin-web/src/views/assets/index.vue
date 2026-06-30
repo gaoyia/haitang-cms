@@ -139,13 +139,13 @@ async function handleDelete(row: AssetView) {
   } catch {
     return;
   }
-  const res = await deleteAssetApi(row.id);
-  if (res.code !== 0) {
-    koiMsgError(res.message || t("menu.assets.deleteBlocked"));
-    return;
+  try {
+    await deleteAssetApi(row.id);
+    koiMsgSuccess(t("msg.success"));
+    await loadAssets();
+  } catch {
+    // 业务错误（如仍被引用）已在 axios 拦截器中提示，此处捕获以免控制台未处理 Promise
   }
-  koiMsgSuccess(t("msg.success"));
-  loadAssets();
 }
 
 onMounted(loadAssets);
