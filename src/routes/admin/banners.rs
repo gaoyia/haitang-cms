@@ -4,8 +4,8 @@ use rocket::serde::json::Json;
 use crate::guards::AdminAuth;
 use crate::models::{
     ApiResponse, Banner, BannerView, CreateBanner, PageResult, UpdateBanner, banner_to_view,
-    banners_to_views, delete_banner_asset_links, filter_banners_by_group, paginate_vec,
-    validate_banner_group_id,
+    banners_to_views, delete_banner_asset_links, filter_banners_by_group, normalize_banner_meta_json,
+    paginate_vec, validate_banner_group_id,
 };
 use crate::routes::page::PageQuery;
 
@@ -75,6 +75,13 @@ pub async fn create(
     let image_url = input.image_url.as_deref().unwrap_or("");
     let link_url = input.link_url.as_deref().unwrap_or("");
     let description = input.description.as_deref().unwrap_or("");
+    let meta_json = match input.meta_json.as_deref() {
+        Some(raw) => match normalize_banner_meta_json(raw) {
+            Ok(v) => v,
+            Err(e) => return Json(ApiResponse::error(400, e)),
+        },
+        None => "{}".to_string(),
+    };
     let sort = input.sort.unwrap_or(0);
     let status = input.status.unwrap_or(1);
 
@@ -84,6 +91,7 @@ pub async fn create(
         .image_url(image_url)
         .link_url(link_url)
         .description(description)
+        .meta_json(&meta_json)
         .sort(sort)
         .status(status)
         .exec(&mut db)
@@ -133,6 +141,12 @@ pub async fn update(
     }
     if let Some(ref description) = input.description {
         builder = builder.description(description.as_str());
+    }
+    if let Some(ref meta_json) = input.meta_json {
+        match normalize_banner_meta_json(meta_json) {
+            Ok(json) => builder = builder.meta_json(json.as_str()),
+            Err(e) => return Json(ApiResponse::error(400, e)),
+        }
     }
     if let Some(sort) = input.sort {
         builder = builder.sort(sort);

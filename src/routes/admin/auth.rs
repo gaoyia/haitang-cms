@@ -7,8 +7,9 @@ use crate::config::AppConfig;
 use crate::guards::auth::JwtConfig;
 use crate::models::{
     ApiResponse, Banner, BannerGroup, Claims, LoginRequest, LoginResponse, LoginUserInfo,
+    default_home_banner_2_meta_json, default_home_banner_meta_json,
     MenuGroup, Role, User, UserRole, all_permission_codes, category_public_path_by_slug,
-    ensure_banner_seed_asset_link, find_banner_group_by_code, seed_default_banner_asset,
+    ensure_banner_seed_asset_link, find_banner_group_by_code, seed_default_banner_assets,
     seed_default_sample_posts, ensure_seed_sample_covers, seed_menu_with_i18n,
     ensure_about_menu_post_links,
 };
@@ -288,6 +289,9 @@ async fn seed_public_menu_category(
 
 /// 种子数据：初始化默认首页轮播图组、示例条目及关联资源
 pub async fn seed_default_banner_data(db: &mut toasty::Db, storage: &StorageService) {
+    const BANNER_1_TITLE: &str = "简约工作台";
+    const BANNER_2_TITLE: &str = "春日枝头";
+
     let group = match find_banner_group_by_code(db, "home_banner").await {
         Ok(g) => g,
         Err(_) => {
@@ -314,10 +318,25 @@ pub async fn seed_default_banner_data(db: &mut toasty::Db, storage: &StorageServ
         }
     };
 
-    let asset = match seed_default_banner_asset(db, storage).await {
-        Ok(a) => a,
+    let assets = match seed_default_banner_assets(db, storage).await {
+        Ok(map) => map,
         Err(e) => {
-            eprintln!("[种子] 默认轮播图资源: {e}");
+            eprintln!("[种子] 轮播图种子资源: {e}");
+            return;
+        }
+    };
+
+    let asset1 = match assets.get("banner-1.png") {
+        Some(a) => a.clone(),
+        None => {
+            eprintln!("[种子] 缺少轮播图资源 banner-1.png");
+            return;
+        }
+    };
+    let asset2 = match assets.get("banner-2.jpg") {
+        Some(a) => a.clone(),
+        None => {
+            eprintln!("[种子] 缺少轮播图资源 banner-2.jpg");
             return;
         }
     };
@@ -327,17 +346,41 @@ pub async fn seed_default_banner_data(db: &mut toasty::Db, storage: &StorageServ
         Err(_) => return,
     };
 
-    let banner = if let Some(existing) = banners.iter().find(|b| b.group_id == group.id) {
-        existing.clone()
+    let group_banners: Vec<_> = banners
+        .iter()
+        .filter(|b| b.group_id == group.id)
+        .cloned()
+        .collect();
+
+    let default_meta_1 = default_home_banner_meta_json();
+    let banner1 = if let Some(existing) = group_banners.iter().find(|b| b.title == BANNER_1_TITLE) {
+        let should_refresh_meta = existing.meta_json.trim().is_empty()
+            || existing.meta_json.trim() == "{}"
+            || existing.meta_json.contains("结构化优雅")
+            || existing.meta_json.contains("如花绽放</em> 成艺术");
+        if should_refresh_meta {
+            let _ = existing
+                .clone()
+                .update()
+                .meta_json(&default_meta_1)
+                .exec(db)
+                .await;
+            Banner::get_by_id(db, &existing.id)
+                .await
+                .unwrap_or_else(|_| existing.clone())
+        } else {
+            existing.clone()
+        }
     } else {
-        println!("[种子] 创建默认轮播图...");
+        println!("[种子] 创建默认轮播图 banner-1...");
 
         match Banner::create()
             .group_id(group.id)
-            .title("简约工作台")
+            .title(BANNER_1_TITLE)
             .image_url("")
             .link_url("")
             .description("明亮极简的工作空间，银色笔记本电脑与红色花卉。")
+            .meta_json(&default_meta_1)
             .sort(0)
             .status(1)
             .exec(db)
@@ -348,14 +391,59 @@ pub async fn seed_default_banner_data(db: &mut toasty::Db, storage: &StorageServ
                 b
             }
             Err(e) => {
-                eprintln!("[种子] 创建默认轮播图失败: {e}");
+                eprintln!("[种子] 创建默认轮播图 banner-1 失败: {e}");
                 return;
             }
         }
     };
 
-    if let Err(e) = ensure_banner_seed_asset_link(db, storage, banner.id, asset.id).await {
-        eprintln!("[种子] 关联默认轮播图资源失败: {e}");
+    if let Err(e) = ensure_banner_seed_asset_link(db, storage, banner1.id, asset1.id).await {
+        eprintln!("[种子] 关联轮播图 banner-1 资源失败: {e}");
+    }
+
+    let default_meta_2 = default_home_banner_2_meta_json();
+    let banner2 = if let Some(existing) = group_banners.iter().find(|b| b.title == BANNER_2_TITLE) {
+        if existing.meta_json.trim().is_empty() || existing.meta_json.trim() == "{}" {
+            let _ = existing
+                .clone()
+                .update()
+                .meta_json(&default_meta_2)
+                .exec(db)
+                .await;
+            Banner::get_by_id(db, &existing.id)
+                .await
+                .unwrap_or_else(|_| existing.clone())
+        } else {
+            existing.clone()
+        }
+    } else {
+        println!("[种子] 创建默认轮播图 banner-2...");
+
+        match Banner::create()
+            .group_id(group.id)
+            .title(BANNER_2_TITLE)
+            .image_url("")
+            .link_url("")
+            .description("春日枝头白花与嫩叶，蓝天作衬，清新自然。")
+            .meta_json(&default_meta_2)
+            .sort(10)
+            .status(1)
+            .exec(db)
+            .await
+        {
+            Ok(b) => {
+                println!("[种子] 默认轮播图 banner-2 已创建");
+                b
+            }
+            Err(e) => {
+                eprintln!("[种子] 创建默认轮播图 banner-2 失败: {e}");
+                return;
+            }
+        }
+    };
+
+    if let Err(e) = ensure_banner_seed_asset_link(db, storage, banner2.id, asset2.id).await {
+        eprintln!("[种子] 关联轮播图 banner-2 资源失败: {e}");
     }
 }
 

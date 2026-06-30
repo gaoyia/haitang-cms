@@ -717,14 +717,65 @@ pub async fn set_banner_image_enabled(
     sync_banner_image_url(db, storage, banner_id).await
 }
 
-const SEED_BANNER_FILENAME: &str = "banner-1.png";
+const SEED_BANNER_FILES: &[(&str, &str)] = &[
+    ("banner-1.png", "image/png"),
+    ("banner-2.jpg", "image/jpeg"),
+];
 
-const SEED_BANNER_ORIGINAL_NAME: &str = "banner-1.png";
-const SEED_BANNER_MIME: &str = "image/png";
+/// 确保预制轮播图资源已入库（文件须位于 `uploads/seed/{admin_user_id}/` 下）
+pub async fn seed_default_banner_assets(
+    db: &mut toasty::Db,
+    storage: &StorageService,
+) -> Result<std::collections::HashMap<String, Asset>, String> {
+    use std::collections::HashMap;
 
-/// 种子轮播图 storage_key：`seed/{admin_user_id}/banner-1.png`
-fn seed_banner_storage_key(admin_user_id: i64) -> String {
-    format!("seed/{admin_user_id}/{SEED_BANNER_FILENAME}")
+    let admin_user_id = find_default_admin_user_id(db).await?;
+    let mut map = HashMap::new();
+
+    for (filename, mime) in SEED_BANNER_FILES {
+        let storage_key = format!("seed/{admin_user_id}/{filename}");
+
+        let asset = if let Some(existing) = find_asset_by_storage_key(db, &storage_key).await? {
+            existing
+        } else {
+            let file_path = storage.config.local_dir.join(&storage_key);
+            let size = std::fs::metadata(&file_path)
+                .map_err(|e| format!("轮播图种子文件不存在（{}）: {e}", file_path.display()))?
+                .len() as i64;
+
+            let created = create_asset_record(
+                db,
+                &storage_key,
+                filename,
+                filename,
+                mime,
+                size,
+                AssetPurpose::Banner,
+            )
+            .await?;
+
+            println!(
+                "[种子] 轮播图资源已入库（{}）",
+                storage.public_url(&storage_key)
+            );
+            created
+        };
+
+        map.insert(filename.to_string(), asset);
+    }
+
+    Ok(map)
+}
+
+/// 确保默认轮播图 banner-1 资源已入库（兼容旧调用）
+pub async fn seed_default_banner_asset(
+    db: &mut toasty::Db,
+    storage: &StorageService,
+) -> Result<Asset, String> {
+    let map = seed_default_banner_assets(db, storage).await?;
+    map.get("banner-1.png")
+        .cloned()
+        .ok_or_else(|| "缺少轮播图种子资源 banner-1.png".to_string())
 }
 
 async fn find_asset_by_storage_key(
@@ -736,41 +787,6 @@ async fn find_asset_by_storage_key(
         .await
         .map_err(|e| format!("查询资源失败: {e}"))?;
     Ok(assets.into_iter().find(|a| a.storage_key == storage_key))
-}
-
-/// 确保默认轮播图资源已入库（文件须已位于 `uploads/seed/{admin_user_id}/banner-1.png`）
-pub async fn seed_default_banner_asset(
-    db: &mut toasty::Db,
-    storage: &StorageService,
-) -> Result<Asset, String> {
-    let admin_user_id = find_default_admin_user_id(db).await?;
-    let storage_key = seed_banner_storage_key(admin_user_id);
-
-    if let Some(asset) = find_asset_by_storage_key(db, &storage_key).await? {
-        return Ok(asset);
-    }
-
-    let file_path = storage.config.local_dir.join(&storage_key);
-    let size = std::fs::metadata(&file_path)
-        .map_err(|e| format!("默认轮播图文件不存在（{}）: {e}", file_path.display()))?
-        .len() as i64;
-
-    let asset = create_asset_record(
-        db,
-        &storage_key,
-        SEED_BANNER_ORIGINAL_NAME,
-        SEED_BANNER_ORIGINAL_NAME,
-        SEED_BANNER_MIME,
-        size,
-        AssetPurpose::Banner,
-    )
-    .await?;
-
-    println!(
-        "[种子] 默认轮播图资源已入库（{}）",
-        storage.public_url(&storage_key)
-    );
-    Ok(asset)
 }
 
 /// 若轮播图尚未关联图片，则绑定默认种子资源并同步 image_url

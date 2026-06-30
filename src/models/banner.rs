@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::BannerGroup;
+use super::banner_meta::{BannerHeroLocale, resolve_banner_hero};
 use super::find_banner_group_by_code;
 
 /// 轮播图模型
@@ -22,6 +23,9 @@ pub struct Banner {
 
     pub description: String,
 
+    /// Hero overlay 多语言文案（JSON：语言码 → badge/title/tags/actions 等）
+    pub meta_json: String,
+
     pub sort: i64,
 
     /// 0 = 禁用, 1 = 启用
@@ -36,6 +40,7 @@ pub struct CreateBanner {
     pub image_url: Option<String>,
     pub link_url: Option<String>,
     pub description: Option<String>,
+    pub meta_json: Option<String>,
     pub sort: Option<i64>,
     pub status: Option<i64>,
 }
@@ -48,11 +53,12 @@ pub struct UpdateBanner {
     pub image_url: Option<String>,
     pub link_url: Option<String>,
     pub description: Option<String>,
+    pub meta_json: Option<String>,
     pub sort: Option<i64>,
     pub status: Option<i64>,
 }
 
-/// 轮播图序列化视图
+/// 轮播图序列化视图（管理端）
 #[derive(Debug, Clone, Serialize)]
 pub struct BannerView {
     pub id: i64,
@@ -62,8 +68,20 @@ pub struct BannerView {
     pub image_url: String,
     pub link_url: String,
     pub description: String,
+    pub meta_json: String,
     pub sort: i64,
     pub status: i64,
+}
+
+/// 公开轮播图（含当前语言 Hero 文案）
+#[derive(Debug, Clone, Serialize)]
+pub struct PublicBannerView {
+    pub id: i64,
+    pub title: String,
+    pub image_url: String,
+    pub link_url: String,
+    pub sort: i64,
+    pub hero: BannerHeroLocale,
 }
 
 impl Banner {
@@ -76,8 +94,30 @@ impl Banner {
             image_url: self.image_url.clone(),
             link_url: self.link_url.clone(),
             description: self.description.clone(),
+            meta_json: if self.meta_json.trim().is_empty() {
+                "{}".to_string()
+            } else {
+                self.meta_json.clone()
+            },
             sort: self.sort,
             status: self.status,
+        }
+    }
+
+    pub fn to_public(&self, lang: &str, fallback_lang: &str) -> PublicBannerView {
+        PublicBannerView {
+            id: self.id,
+            title: self.title.clone(),
+            image_url: self.image_url.clone(),
+            link_url: self.link_url.clone(),
+            sort: self.sort,
+            hero: resolve_banner_hero(
+                &self.meta_json,
+                lang,
+                fallback_lang,
+                &self.title,
+                &self.description,
+            ),
         }
     }
 }
@@ -129,11 +169,13 @@ pub fn group_has_banners(banners: &[Banner], group_id: i64) -> bool {
     banners.iter().any(|b| b.group_id == group_id)
 }
 
-/// 按组 code 加载启用的公开轮播图（已排序）
+/// 按组 code 加载启用的公开轮播图（已排序，含当前语言 Hero）
 pub async fn load_public_banners_by_code(
     db: &mut toasty::Db,
     code: &str,
-) -> Result<Vec<BannerView>, String> {
+    lang: &str,
+    fallback_lang: &str,
+) -> Result<Vec<PublicBannerView>, String> {
     let group = find_banner_group_by_code(db, code).await?;
 
     if group.status != 1 {
@@ -145,12 +187,13 @@ pub async fn load_public_banners_by_code(
         .await
         .map_err(|e| format!("查询轮播图失败: {e}"))?;
 
-    let filtered: Vec<Banner> = filter_banners_by_group(banners, group.id)
+    let filtered = filter_banners_by_group(banners, group.id)
         .into_iter()
         .filter(|b| b.status == 1)
+        .map(|b| b.to_public(lang, fallback_lang))
         .collect();
 
-    banners_to_views(db, filtered).await
+    Ok(filtered)
 }
 
 /// 按组 ID 筛选并排序轮播图

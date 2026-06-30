@@ -1,7 +1,7 @@
 {% extends "base" %}
 
 {% block content %}
-<section class="hero{% if banners and banners | length > 0 %} hero--banner-bg{% endif %}">
+<section class="hero{% if banners and banners | length > 0 %} hero--banner-bg{% endif %}{% if banners and banners | length > 1 %} hero--carousel-multi{% endif %}">
     {% if banners and banners | length > 0 %}
     <div class="hero-bg-carousel" id="home-banner" data-autoplay="5000" aria-hidden="true">
         {% for banner in banners %}
@@ -14,36 +14,53 @@
             >
         </div>
         {% endfor %}
-        {% if banners | length > 1 %}
-        <div class="hero-bg-carousel__controls">
-            <button type="button" class="hero-bg-carousel__btn hero-bg-carousel__prev" aria-label="{% if lang == 'en-us' %}Previous{% else %}上一张{% endif %}">‹</button>
-            <div class="hero-bg-carousel__dots" role="tablist">
-                {% for banner in banners %}
-                <button
-                    type="button"
-                    class="hero-bg-carousel__dot{% if loop.first %} is-active{% endif %}"
-                    aria-label="{% if lang == 'en-us' %}Slide {{ loop.index }}{% else %}第 {{ loop.index }} 张{% endif %}"
-                    data-index="{{ loop.index0 }}"
-                ></button>
-                {% endfor %}
-            </div>
-            <button type="button" class="hero-bg-carousel__btn hero-bg-carousel__next" aria-label="{% if lang == 'en-us' %}Next{% else %}下一张{% endif %}">›</button>
-        </div>
-        {% endif %}
     </div>
     {% else %}
     <div class="hero-bg"></div>
     {% endif %}
     <div class="hero-gradient"></div>
-    <div class="hero-inner">
-        <span class="hero-badge">结构化优雅</span>
-        <h1 class="hero-title">让数字内容 <em>如花绽放</em> 成艺术。</h1>
-        <p class="hero-desc">{{ site_name }} 为追求优雅与性能的创作者提供结构化的工作空间。公开站点由 Tera 模板驱动，管理后台由 Vue 3 独立构建。</p>
+    <div class="hero-inner" id="hero-inner">
+        {% if banners and banners | length > 0 %}
+        {% set hero = banners[0].hero %}
+        <span class="hero-badge{% if not hero.badge %} is-empty{% endif %}" id="hero-badge">{{ hero.badge }}</span>
+        <h1 class="hero-title{% if not hero.title %} is-empty{% endif %}" id="hero-title">{{ hero.title | safe }}</h1>
+        <p class="hero-desc{% if not hero.description %} is-empty{% endif %}" id="hero-desc">{{ hero.description }}</p>
+        <div class="hero-tags{% if not hero.tags or hero.tags | length == 0 %} is-empty{% endif %}" id="hero-tags">
+            {% for tag in hero.tags %}
+            <span class="hero-tag">{{ tag }}</span>
+            {% endfor %}
+        </div>
+        <div class="hero-actions{% if not hero.actions or hero.actions | length == 0 %} is-empty{% endif %}" id="hero-actions">
+            {% for action in hero.actions %}
+            <a class="btn btn-{{ action.variant }} btn-lg" href="{{ action.url }}">{{ action.label }}</a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <span class="hero-badge">{% if lang == "en-us" %}Words flow like wind 🎐 stars shine bright ✨{% else %}让文字「如风流动」🎐「如星闪耀」✨{% endif %}</span>
+        <h1 class="hero-title">{% if lang == "en-us" %}Let digital content <em>bloom</em> like flowers 🎉{% else %}让数字内容 <em>如花绽放</em> 🎉{% endif %}</h1>
+        <p class="hero-desc">{% if lang == "en-us" %}Haitang CMS offers a structured workspace for creators who care about elegance and performance.{% else %}{{ site_name }} 为追求优雅与性能的创作者提供结构化的工作空间。公开站点由 Tera 模板驱动，管理后台由 Vue 3 独立构建。{% endif %}</p>
         <div class="hero-actions">
             <a class="btn btn-primary btn-lg" href="{{ locale_prefix }}/categories/news">{% if lang == "en-us" %}Browse News{% else %}浏览新闻{% endif %}</a>
             <a class="btn btn-secondary btn-lg" href="{{ locale_prefix }}/about">{% if lang == "en-us" %}Learn More{% else %}了解更多{% endif %}</a>
         </div>
+        {% endif %}
     </div>
+    {% if banners and banners | length > 1 %}
+    <div class="hero-bg-carousel__controls" id="home-banner-controls">
+        <button type="button" class="hero-bg-carousel__btn hero-bg-carousel__prev" aria-label="{% if lang == 'en-us' %}Previous{% else %}上一张{% endif %}">‹</button>
+        <div class="hero-bg-carousel__dots" role="tablist">
+            {% for banner in banners %}
+            <button
+                type="button"
+                class="hero-bg-carousel__dot{% if loop.first %} is-active{% endif %}"
+                aria-label="{% if lang == 'en-us' %}Slide {{ loop.index }}{% else %}第 {{ loop.index }} 张{% endif %}"
+                data-index="{{ loop.index0 }}"
+            ></button>
+            {% endfor %}
+        </div>
+        <button type="button" class="hero-bg-carousel__btn hero-bg-carousel__next" aria-label="{% if lang == 'en-us' %}Next{% else %}下一张{% endif %}">›</button>
+    </div>
+    {% endif %}
 </section>
 
 <section class="page-section">
@@ -96,10 +113,79 @@
 {% endblock content %}
 
 {% block scripts %}
-{% if banners and banners | length > 1 %}
+{% if banners and banners | length > 0 %}
+<script type="application/json" id="banner-hero-data">{{ banner_heroes_json | safe }}</script>
 <script>
     $(function () {
+        var heroes = [];
+        try {
+            heroes = JSON.parse($("#banner-hero-data").text() || "[]");
+        } catch (e) {
+            heroes = [];
+        }
+
+        function renderHero(idx) {
+            var item = heroes[idx];
+            if (!item || !item.hero) return;
+            var hero = item.hero;
+
+            var $badge = $("#hero-badge");
+            if (hero.badge) {
+                $badge.text(hero.badge).removeClass("is-empty");
+            } else {
+                $badge.empty().addClass("is-empty");
+            }
+
+            var $title = $("#hero-title");
+            if (hero.title) {
+                $title.html(hero.title).removeClass("is-empty");
+            } else {
+                $title.empty().addClass("is-empty");
+            }
+
+            var $desc = $("#hero-desc");
+            if (hero.description) {
+                $desc.text(hero.description).removeClass("is-empty");
+            } else {
+                $desc.empty().addClass("is-empty");
+            }
+
+            var $tags = $("#hero-tags");
+            $tags.empty();
+            if (hero.tags && hero.tags.length) {
+                hero.tags.forEach(function (tag) {
+                    $tags.append($("<span>", { class: "hero-tag", text: tag }));
+                });
+                $tags.removeClass("is-empty");
+            } else {
+                $tags.addClass("is-empty");
+            }
+
+            var $actions = $("#hero-actions");
+            $actions.empty();
+            if (hero.actions && hero.actions.length) {
+                hero.actions.forEach(function (action) {
+                    var variant = action.variant === "secondary" ? "secondary" : "primary";
+                    $actions.append(
+                        $("<a>", {
+                            class: "btn btn-" + variant + " btn-lg",
+                            href: action.url || "#",
+                            text: action.label || "",
+                        })
+                    );
+                });
+                $actions.removeClass("is-empty");
+            } else {
+                $actions.addClass("is-empty");
+            }
+        }
+
         var $carousel = $("#home-banner");
+        if (!$carousel.length) {
+            return;
+        }
+
+        var $controls = $("#home-banner-controls");
         var $slides = $carousel.find(".hero-bg-slide");
         var current = 0;
         var timer;
@@ -108,7 +194,8 @@
         function show(idx) {
             current = (idx + $slides.length) % $slides.length;
             $slides.removeClass("is-active").eq(current).addClass("is-active");
-            $carousel.find(".hero-bg-carousel__dot").removeClass("is-active").eq(current).addClass("is-active");
+            $controls.find(".hero-bg-carousel__dot").removeClass("is-active").eq(current).addClass("is-active");
+            renderHero(current);
         }
 
         function next() {
@@ -117,24 +204,27 @@
 
         function start() {
             clearInterval(timer);
-            timer = setInterval(next, delay);
+            if ($slides.length > 1) {
+                timer = setInterval(next, delay);
+            }
         }
 
-        $carousel.find(".hero-bg-carousel__next").on("click", function () {
+        $controls.find(".hero-bg-carousel__next").on("click", function () {
             next();
             start();
         });
 
-        $carousel.find(".hero-bg-carousel__prev").on("click", function () {
+        $controls.find(".hero-bg-carousel__prev").on("click", function () {
             show(current - 1);
             start();
         });
 
-        $carousel.on("click", ".hero-bg-carousel__dot", function () {
+        $controls.on("click", ".hero-bg-carousel__dot", function () {
             show(parseInt($(this).data("index"), 10));
             start();
         });
 
+        renderHero(0);
         start();
     });
 </script>

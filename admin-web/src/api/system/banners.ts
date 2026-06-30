@@ -18,6 +18,7 @@ export interface Banner {
   image_url: string;
   link_url: string;
   description: string;
+  meta_json: string;
   sort: number;
   status: number;
 }
@@ -44,6 +45,7 @@ export interface CreateBannerInput {
   image_url?: string;
   link_url?: string;
   description?: string;
+  meta_json?: string;
   sort?: number;
   status?: number;
 }
@@ -54,6 +56,7 @@ export interface UpdateBannerInput {
   image_url?: string;
   link_url?: string;
   description?: string;
+  meta_json?: string;
   sort?: number;
   status?: number;
 }

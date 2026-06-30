@@ -3,6 +3,7 @@ pub mod asset;
 pub mod auth;
 pub mod banner;
 pub mod banner_group;
+pub mod banner_meta;
 pub mod category;
 pub mod dict;
 pub mod dict_meta;
@@ -31,13 +32,18 @@ pub use asset::{
     create_asset_record, delete_asset_record, delete_banner_asset_links,
     ensure_banner_seed_asset_link, link_banner_asset, link_post_asset,
     list_asset_views, post_assets_view, reorder_post_attachments, reorder_post_covers,
-    seed_default_banner_asset, set_banner_image_enabled, unlink_banner_asset, unlink_post_asset,
+    seed_default_banner_asset, seed_default_banner_assets, set_banner_image_enabled,
+    unlink_banner_asset, unlink_post_asset,
 };
 pub use auth::{Claims, LoginRequest, LoginResponse, LoginUserInfo};
 pub use banner::{
-    Banner, BannerView, CreateBanner, UpdateBanner, banner_to_view, banners_to_views,
-    filter_banners_by_group, group_has_banners, load_public_banners_by_code,
+    Banner, BannerView, CreateBanner, PublicBannerView, UpdateBanner, banner_to_view,
+    banners_to_views, filter_banners_by_group, group_has_banners, load_public_banners_by_code,
     validate_banner_group_id,
+};
+pub use banner_meta::{
+    BannerHeroAction, BannerHeroLocale, default_home_banner_2_meta_json,
+    default_home_banner_meta_json, normalize_banner_meta_json, resolve_banner_hero,
 };
 pub use banner_group::{
     BannerGroup, BannerGroupView, CreateBannerGroup, UpdateBannerGroup, find_banner_group_by_code,

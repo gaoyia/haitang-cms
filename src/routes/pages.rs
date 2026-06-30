@@ -266,12 +266,19 @@ async fn render_public_page(
     if page_slug.is_empty()
         && let Some(obj) = ctx.as_object_mut()
     {
-        let banners = load_public_banners_by_code(&mut db, "home_banner")
+        let default_lang = get_site_default_locale(&mut db).await;
+        let banners = load_public_banners_by_code(&mut db, "home_banner", &resolved, &default_lang)
             .await
             .unwrap_or_default();
         obj.insert(
             "banners".to_string(),
-            serde_json::to_value(banners).unwrap_or_else(|_| serde_json::json!([])),
+            serde_json::to_value(&banners).unwrap_or_else(|_| serde_json::json!([])),
+        );
+        obj.insert(
+            "banner_heroes_json".to_string(),
+            serde_json::Value::String(
+                serde_json::to_string(&banners).unwrap_or_else(|_| "[]".to_string()),
+            ),
         );
     }
 

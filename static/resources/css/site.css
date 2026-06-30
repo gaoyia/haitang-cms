@@ -366,9 +366,39 @@ img {
   gap: var(--space-md);
 }
 
-/* 首页 Hero 背景轮播（仅背景层，文案保持原样） */
+.hero-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: var(--space-md);
+}
+
+.hero-tag {
+  display: inline-block;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-secondary);
+  background: var(--color-surface-low);
+  border: 1px solid var(--color-outline-variant);
+  border-radius: 9999px;
+}
+
+.hero-badge.is-empty,
+.hero-title.is-empty,
+.hero-desc.is-empty,
+.hero-tags.is-empty,
+.hero-actions.is-empty {
+  display: none;
+}
+
+/* 首页 Hero 背景轮播（背景与文案随 slide 切换） */
 .hero--banner-bg .hero-gradient {
   z-index: 1;
+}
+
+.hero--carousel-multi .hero-inner {
+  padding-bottom: calc(var(--space-xl) + 44px);
 }
 
 .hero-bg-carousel {
@@ -403,31 +433,36 @@ img {
   left: 50%;
   bottom: var(--space-md);
   transform: translateX(-50%);
-  z-index: 2;
+  z-index: 3;
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
+  gap: 10px;
+  pointer-events: auto;
 }
 
 .hero-bg-carousel__btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 24px;
+  height: 24px;
   padding: 0;
-  border: 1px solid var(--color-outline-variant);
+  border: none;
   border-radius: 9999px;
-  background: rgb(255 255 255 / 88%);
-  color: var(--color-on-surface);
-  font-size: 22px;
+  background: rgb(255 255 255 / 52%);
+  color: var(--color-secondary);
+  font-size: 14px;
+  font-weight: 400;
   line-height: 1;
   cursor: pointer;
-  transition: border-color 0.15s ease, color 0.15s ease;
+  backdrop-filter: blur(6px);
+  opacity: 0.88;
+  transition: opacity 0.15s ease, background-color 0.15s ease, color 0.15s ease;
 }
 
 .hero-bg-carousel__btn:hover {
-  border-color: var(--color-primary);
+  opacity: 1;
+  background: rgb(255 255 255 / 78%);
   color: var(--color-primary);
 }
 

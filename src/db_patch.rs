@@ -12,6 +12,7 @@ pub async fn apply_schema_patches(db: &mut toasty::Db) {
     ensure_post_meta_timestamps(db).await;
     ensure_category_extensions(db).await;
     add_text_column(db, "post_metas", "meta_json", "{}").await;
+    add_text_column(db, "banners", "meta_json", "{}").await;
 }
 
 async fn add_i64_column(db: &mut toasty::Db, table: &str, column: &str) {
