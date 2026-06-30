@@ -6,6 +6,7 @@ export function assetPurposeAccept(purpose: AssetPurpose): string {
     case "cover":
     case "content":
     case "banner":
+    case "friend_link":
       return "image/jpeg,image/png,image/webp,image/gif";
     case "attachment":
       return [
@@ -40,5 +41,5 @@ export function assetPurposeAccept(purpose: AssetPurpose): string {
 }
 
 export function assetPurposeIsImage(purpose: AssetPurpose): boolean {
-  return purpose === "cover" || purpose === "content" || purpose === "banner";
+  return purpose === "cover" || purpose === "content" || purpose === "banner" || purpose === "friend_link";
 }

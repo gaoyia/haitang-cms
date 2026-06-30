@@ -5,13 +5,13 @@
 ## 上传资源
 
 ```
-POST /api/admin/assets?purpose=cover|content|banner|attachment
+POST /api/admin/assets?purpose=cover|content|banner|friend_link|attachment
 Content-Type: multipart/form-data
 ```
 
 | 参数 | 位置 | 类型 | 说明 |
 |------|------|------|------|
-| `purpose` | query | `string` | 必填：`cover`（封面图，仅图片）、`content`（正文插图，仅图片）、`banner`（轮播图，仅图片）、`attachment`（附件，含图片、视频、文档、压缩包等） |
+| `purpose` | query | `string` | 必填：`cover`（封面图，仅图片）、`content`（正文插图，仅图片）、`banner`（轮播图，仅图片）、`friend_link`（友链图，仅图片）、`attachment`（附件，含图片、视频、文档、压缩包等） |
 | `post_id` | query | `i64` | 可选；与 `role` 同时提供时上传后自动关联到文章 |
 | `role` | query | `string` | 可选：`cover` 或 `attachment`（文章） |
 | `banner_id` | query | `i64` | 可选；与 `banner_role` 同时提供时上传后自动关联到轮播图 |

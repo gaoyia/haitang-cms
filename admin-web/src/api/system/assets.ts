@@ -1,7 +1,7 @@
 import axios, { type Result } from "@/utils/axios.ts";
 import type { PageParams, PageResult } from "@/types/page.ts";
 
-export type AssetPurpose = "cover" | "content" | "banner" | "attachment";
+export type AssetPurpose = "cover" | "content" | "banner" | "friend_link" | "attachment";
 export type PostAssetRole = "cover" | "attachment";
 export type BannerAssetRole = "image";
 

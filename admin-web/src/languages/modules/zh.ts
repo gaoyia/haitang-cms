@@ -209,6 +209,7 @@ export default {
       purposeCover: "封面图",
       purposeContent: "正文插图",
       purposeBanner: "轮播图",
+      purposeFriendLink: "友链",
       purposeAttachment: "附件",
       keyword: "文件名",
       keywordPh: "搜索原文件名或存储名",

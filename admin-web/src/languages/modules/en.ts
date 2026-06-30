@@ -209,6 +209,7 @@ export default {
       purposeCover: "Cover",
       purposeContent: "Content image",
       purposeBanner: "Banner",
+      purposeFriendLink: "Friend link",
       purposeAttachment: "Attachment",
       keyword: "Filename",
       keywordPh: "Search upload or storage name",

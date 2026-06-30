@@ -23,7 +23,7 @@ pub struct Asset {
 
     pub size: i64,
 
-    /// cover | content | banner | attachment
+    /// cover | content | banner | friend_link | attachment
     pub purpose: String,
 
     pub created_at: i64,

@@ -168,6 +168,7 @@ const purposeLabel = computed(() => {
     cover: t("menu.assets.purposeCover"),
     content: t("menu.assets.purposeContent"),
     banner: t("menu.assets.purposeBanner"),
+    friend_link: t("menu.assets.purposeFriendLink"),
     attachment: t("menu.assets.purposeAttachment"),
   };
   return map[props.purpose];

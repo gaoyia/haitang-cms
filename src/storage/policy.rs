@@ -9,6 +9,8 @@ pub enum AssetPurpose {
     Content,
     /// 轮播图：仅图片
     Banner,
+    /// 友链图：仅图片
+    FriendLink,
     /// 附件：文档、压缩包、图片、视频等
     Attachment,
 }
@@ -19,8 +21,9 @@ impl AssetPurpose {
             "cover" => Ok(Self::Cover),
             "content" => Ok(Self::Content),
             "banner" => Ok(Self::Banner),
+            "friend_link" => Ok(Self::FriendLink),
             "attachment" => Ok(Self::Attachment),
-            _ => Err("purpose 须为 cover、content、banner 或 attachment".to_string()),
+            _ => Err("purpose 须为 cover、content、banner、friend_link 或 attachment".to_string()),
         }
     }
 
@@ -29,6 +32,7 @@ impl AssetPurpose {
             Self::Cover => "cover",
             Self::Content => "content",
             Self::Banner => "banner",
+            Self::FriendLink => "friend_link",
             Self::Attachment => "attachment",
         }
     }
@@ -38,6 +42,7 @@ impl AssetPurpose {
             Self::Cover => "封面图",
             Self::Content => "正文插图",
             Self::Banner => "轮播图",
+            Self::FriendLink => "友链",
             Self::Attachment => "附件",
         }
     }
@@ -48,7 +53,7 @@ impl AssetPurpose {
         let ext = filename.rsplit('.').next().unwrap_or("").to_lowercase();
 
         match self {
-            Self::Cover | Self::Content | Self::Banner => {
+            Self::Cover | Self::Content | Self::Banner | Self::FriendLink => {
                 if mime.starts_with("image/")
                     || matches!(ext.as_str(), "jpg" | "jpeg" | "png" | "webp" | "gif")
                 {
@@ -165,6 +170,15 @@ mod tests {
     fn banner_accepts_jpeg() {
         assert!(
             AssetPurpose::Banner
+                .validate_file("image/jpeg", "a.jpg")
+                .is_ok()
+        );
+    }
+
+    #[test]
+    fn friend_link_accepts_jpeg() {
+        assert!(
+            AssetPurpose::FriendLink
                 .validate_file("image/jpeg", "a.jpg")
                 .is_ok()
         );

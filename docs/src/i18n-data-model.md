@@ -60,7 +60,7 @@
 
 | 表 | 主键 | 说明 |
 |----|------|------|
-| `assets` | `id` | `storage_key`、`original_name`、`upload_name`、`mime_type`、`size`、`purpose`（`cover` \| `content` \| `banner` \| `attachment`）、`created_at` |
+| `assets` | `id` | `storage_key`、`original_name`、`upload_name`、`mime_type`、`size`、`purpose`（`cover` \| `content` \| `banner` \| `friend_link` \| `attachment`）、`created_at` |
 | `post_assets` | `(post_id, asset_id)` | `role`（`cover` \| `attachment`）、`sort_order` |
 | `banner_assets` | `(banner_id, asset_id)` | `role`（`image`）、`sort_order` |
 

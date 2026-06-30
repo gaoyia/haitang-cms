@@ -19,6 +19,7 @@
             <el-option :label="t('menu.assets.purposeCover')" value="cover" />
             <el-option :label="t('menu.assets.purposeContent')" value="content" />
             <el-option :label="t('menu.assets.purposeBanner')" value="banner" />
+            <el-option :label="t('menu.assets.purposeFriendLink')" value="friend_link" />
             <el-option :label="t('menu.assets.purposeAttachment')" value="attachment" />
           </el-select>
           <el-input
