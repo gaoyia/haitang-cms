@@ -22,26 +22,30 @@
     <div class="hero-inner" id="hero-inner">
         {% if banners and banners | length > 0 %}
         {% set hero = banners[0].hero %}
-        <span class="hero-badge{% if not hero.badge %} is-empty{% endif %}" id="hero-badge">{{ hero.badge }}</span>
-        <h1 class="hero-title{% if not hero.title %} is-empty{% endif %}" id="hero-title">{{ hero.title | safe }}</h1>
-        <p class="hero-desc{% if not hero.description %} is-empty{% endif %}" id="hero-desc">{{ hero.description }}</p>
-        <div class="hero-tags{% if not hero.tags or hero.tags | length == 0 %} is-empty{% endif %}" id="hero-tags">
-            {% for tag in hero.tags %}
-            <span class="hero-tag">{{ tag }}</span>
-            {% endfor %}
-        </div>
-        <div class="hero-actions{% if not hero.actions or hero.actions | length == 0 %} is-empty{% endif %}" id="hero-actions">
-            {% for action in hero.actions %}
-            <a class="btn btn-{{ action.variant }} btn-lg" href="{{ action.url }}">{{ action.label }}</a>
-            {% endfor %}
+        <div class="hero-copy" id="hero-copy">
+            <span class="hero-badge{% if not hero.badge %} is-empty{% endif %}">{{ hero.badge }}</span>
+            <h1 class="hero-title{% if not hero.title %} is-empty{% endif %}">{{ hero.title | safe }}</h1>
+            <p class="hero-desc{% if not hero.description %} is-empty{% endif %}">{{ hero.description }}</p>
+            <div class="hero-tags{% if not hero.tags or hero.tags | length == 0 %} is-empty{% endif %}">
+                {% for tag in hero.tags %}
+                <span class="hero-tag">{{ tag }}</span>
+                {% endfor %}
+            </div>
+            <div class="hero-actions{% if not hero.actions or hero.actions | length == 0 %} is-empty{% endif %}">
+                {% for action in hero.actions %}
+                <a class="btn btn-{{ action.variant }} btn-lg" href="{{ action.url }}">{{ action.label }}</a>
+                {% endfor %}
+            </div>
         </div>
         {% else %}
-        <span class="hero-badge">{% if lang == "en-us" %}Words flow like wind 🎐 stars shine bright ✨{% else %}让文字「如风流动」🎐「如星闪耀」✨{% endif %}</span>
-        <h1 class="hero-title">{% if lang == "en-us" %}Let digital content <em>bloom</em> like flowers 🎉{% else %}让数字内容 <em>如花绽放</em> 🎉{% endif %}</h1>
-        <p class="hero-desc">{% if lang == "en-us" %}Haitang CMS offers a structured workspace for creators who care about elegance and performance.{% else %}{{ site_name }} 为追求优雅与性能的创作者提供结构化的工作空间。公开站点由 Tera 模板驱动，管理后台由 Vue 3 独立构建。{% endif %}</p>
-        <div class="hero-actions">
-            <a class="btn btn-primary btn-lg" href="{{ locale_prefix }}/categories/news">{% if lang == "en-us" %}Browse News{% else %}浏览新闻{% endif %}</a>
-            <a class="btn btn-secondary btn-lg" href="{{ locale_prefix }}/about">{% if lang == "en-us" %}Learn More{% else %}了解更多{% endif %}</a>
+        <div class="hero-copy">
+            <span class="hero-badge">{% if lang == "en-us" %}Words flow like wind 🎐 stars shine bright ✨{% else %}让文字「如风流动」🎐「如星闪耀」✨{% endif %}</span>
+            <h1 class="hero-title">{% if lang == "en-us" %}Let digital content <em>bloom</em> like flowers 🎉{% else %}让数字内容 <em>如花绽放</em> 🎉{% endif %}</h1>
+            <p class="hero-desc">{% if lang == "en-us" %}Haitang CMS offers a structured workspace for creators who care about elegance and performance.{% else %}{{ site_name }} 为追求优雅与性能的创作者提供结构化的工作空间。公开站点由 Tera 模板驱动，管理后台由 Vue 3 独立构建。{% endif %}</p>
+            <div class="hero-actions">
+                <a class="btn btn-primary btn-lg" href="{{ locale_prefix }}/categories/news">{% if lang == "en-us" %}Browse News{% else %}浏览新闻{% endif %}</a>
+                <a class="btn btn-secondary btn-lg" href="{{ locale_prefix }}/about">{% if lang == "en-us" %}Learn More{% else %}了解更多{% endif %}</a>
+            </div>
         </div>
         {% endif %}
     </div>
@@ -114,6 +118,7 @@
 
 {% block scripts %}
 {% if banners and banners | length > 0 %}
+<script src="/static/resources/js/gsap.min.js"></script>
 <script type="application/json" id="banner-hero-data">{{ banner_heroes_json | safe }}</script>
 <script>
     $(function () {
@@ -124,33 +129,112 @@
             heroes = [];
         }
 
-        function renderHero(idx) {
+        var $heroCopy = $("#hero-copy");
+        var heroBlockSel = ".hero-badge, .hero-title, .hero-desc, .hero-tags, .hero-actions";
+
+        function visibleHeroBlocks() {
+            return $heroCopy.find(heroBlockSel).filter(function () {
+                return !$(this).hasClass("is-empty");
+            }).toArray();
+        }
+
+        function clearHeroTweenProps(targets) {
+            if (targets && targets.length) {
+                gsap.set(targets, { clearProps: "opacity,transform" });
+            }
+        }
+
+        function updateHeroDensityClass() {
+            var count = visibleHeroBlocks().length;
+            $heroCopy.toggleClass("hero-copy--sparse", count > 0 && count <= 2);
+        }
+
+        function slideDirection(from, to, len) {
+            var diff = to - from;
+            if (diff === 0) {
+                return 1;
+            }
+            if (Math.abs(diff) === len - 1) {
+                return diff > 0 ? -1 : 1;
+            }
+            return diff > 0 ? 1 : -1;
+        }
+
+        // 每次切换轮换预设；各预设组合 opacity / x / y / scale
+        var heroAnimTick = 0;
+        var heroAnimPresets = [
+            {
+                leave: function (dir) {
+                    return { opacity: 0, x: -42 * dir, duration: 0.32, ease: "power2.in" };
+                },
+                enterFrom: function (dir) {
+                    return { x: 48 * dir, opacity: 0 };
+                },
+                enterTo: { opacity: 1, x: 0, duration: 0.42, ease: "power3.out" },
+                childFrom: function (dir) {
+                    return { opacity: 0, x: 16 * dir };
+                },
+                childTo: { opacity: 1, x: 0, duration: 0.32, stagger: 0.07, ease: "power2.out" },
+                childAt: "-=0.28",
+            },
+            {
+                leave: function () {
+                    return { opacity: 0, y: -18, scale: 0.97, duration: 0.28, ease: "power2.in" };
+                },
+                enterFrom: function () {
+                    return { y: 24, opacity: 0, scale: 0.95 };
+                },
+                enterTo: { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: "power3.out" },
+                childFrom: function () {
+                    return { opacity: 0, y: 14 };
+                },
+                childTo: { opacity: 1, y: 0, duration: 0.3, stagger: 0.08, ease: "power2.out" },
+                childAt: "-=0.26",
+            },
+            {
+                leave: function (dir) {
+                    return { opacity: 0, x: -30 * dir, scale: 0.92, duration: 0.3, ease: "power2.inOut" };
+                },
+                enterFrom: function (dir) {
+                    return { x: 34 * dir, opacity: 0, scale: 1.05 };
+                },
+                enterTo: { opacity: 1, x: 0, scale: 1, duration: 0.44, ease: "power4.out" },
+                childFrom: function (dir) {
+                    return { opacity: 0, x: 12 * dir, scale: 0.96 };
+                },
+                childTo: { opacity: 1, x: 0, scale: 1, duration: 0.28, stagger: 0.06, ease: "back.out(1.15)" },
+                childAt: "-=0.24",
+            },
+        ];
+
+        function fillHero(idx) {
+            if (!$heroCopy.length) return;
             var item = heroes[idx];
             if (!item || !item.hero) return;
             var hero = item.hero;
 
-            var $badge = $("#hero-badge");
+            var $badge = $heroCopy.find(".hero-badge");
             if (hero.badge) {
                 $badge.text(hero.badge).removeClass("is-empty");
             } else {
                 $badge.empty().addClass("is-empty");
             }
 
-            var $title = $("#hero-title");
+            var $title = $heroCopy.find(".hero-title");
             if (hero.title) {
                 $title.html(hero.title).removeClass("is-empty");
             } else {
                 $title.empty().addClass("is-empty");
             }
 
-            var $desc = $("#hero-desc");
+            var $desc = $heroCopy.find(".hero-desc");
             if (hero.description) {
                 $desc.text(hero.description).removeClass("is-empty");
             } else {
                 $desc.empty().addClass("is-empty");
             }
 
-            var $tags = $("#hero-tags");
+            var $tags = $heroCopy.find(".hero-tags");
             $tags.empty();
             if (hero.tags && hero.tags.length) {
                 hero.tags.forEach(function (tag) {
@@ -161,7 +245,7 @@
                 $tags.addClass("is-empty");
             }
 
-            var $actions = $("#hero-actions");
+            var $actions = $heroCopy.find(".hero-actions");
             $actions.empty();
             if (hero.actions && hero.actions.length) {
                 hero.actions.forEach(function (action) {
@@ -178,6 +262,65 @@
             } else {
                 $actions.addClass("is-empty");
             }
+            updateHeroDensityClass();
+        }
+
+        function switchHeroContent(idx, dir) {
+            if (!$heroCopy.length) return;
+
+            var panel = $heroCopy[0];
+            dir = dir || 1;
+            var preset = heroAnimPresets[heroAnimTick % heroAnimPresets.length];
+            heroAnimTick += 1;
+
+            gsap.killTweensOf(panel);
+            gsap.killTweensOf(visibleHeroBlocks());
+            gsap.killTweensOf($heroCopy.find(".hero-tag, .hero-actions a"));
+
+            var tl = gsap.timeline({
+                onComplete: function () {
+                    clearHeroTweenProps([panel]);
+                    clearHeroTweenProps(visibleHeroBlocks());
+                    clearHeroTweenProps($heroCopy.find(".hero-tag, .hero-actions a").toArray());
+                },
+            });
+
+            tl.to(panel, preset.leave(dir))
+                .call(function () {
+                    fillHero(idx);
+                    gsap.set(panel, preset.enterFrom(dir));
+                })
+                .to(panel, preset.enterTo);
+
+            var entering = visibleHeroBlocks();
+            if (entering.length) {
+                var childTo = $.extend({}, preset.childTo);
+                if (entering.length <= 2) {
+                    childTo.stagger = 0.04;
+                    childTo.duration = 0.28;
+                }
+                tl.fromTo(entering, preset.childFrom(dir), childTo, preset.childAt);
+            }
+
+            var tagEls = $heroCopy.find(".hero-tag").toArray();
+            if (tagEls.length > 1) {
+                tl.fromTo(
+                    tagEls,
+                    preset.childFrom(dir),
+                    { opacity: 1, x: 0, y: 0, scale: 1, duration: 0.2, stagger: 0.035, ease: "power2.out" },
+                    "-=0.16"
+                );
+            }
+
+            var btnEls = $heroCopy.find(".hero-actions a").toArray();
+            if (btnEls.length > 1) {
+                tl.fromTo(
+                    btnEls,
+                    preset.childFrom(dir),
+                    { opacity: 1, x: 0, y: 0, scale: 1, duration: 0.24, stagger: 0.05, ease: "power2.out" },
+                    "-=0.12"
+                );
+            }
         }
 
         var $carousel = $("#home-banner");
@@ -191,15 +334,27 @@
         var timer;
         var delay = parseInt($carousel.data("autoplay"), 10) || 5000;
 
-        function show(idx) {
-            current = (idx + $slides.length) % $slides.length;
-            $slides.removeClass("is-active").eq(current).addClass("is-active");
-            $controls.find(".hero-bg-carousel__dot").removeClass("is-active").eq(current).addClass("is-active");
-            renderHero(current);
+        function show(idx, animateHero) {
+            var target = (idx + $slides.length) % $slides.length;
+            if (target === current) {
+                return;
+            }
+
+            $slides.removeClass("is-active").eq(target).addClass("is-active");
+            if ($controls.length) {
+                $controls.find(".hero-bg-carousel__dot").removeClass("is-active").eq(target).addClass("is-active");
+            }
+
+            if (animateHero && $slides.length > 1) {
+                switchHeroContent(target, slideDirection(current, target, $slides.length));
+            } else {
+                fillHero(target);
+            }
+            current = target;
         }
 
         function next() {
-            show(current + 1);
+            show(current + 1, true);
         }
 
         function start() {
@@ -209,22 +364,23 @@
             }
         }
 
+        updateHeroDensityClass();
+
         $controls.find(".hero-bg-carousel__next").on("click", function () {
             next();
             start();
         });
 
         $controls.find(".hero-bg-carousel__prev").on("click", function () {
-            show(current - 1);
+            show(current - 1, true);
             start();
         });
 
         $controls.on("click", ".hero-bg-carousel__dot", function () {
-            show(parseInt($(this).data("index"), 10));
+            show(parseInt($(this).data("index"), 10), true);
             start();
         });
 
-        renderHero(0);
         start();
     });
 </script>
