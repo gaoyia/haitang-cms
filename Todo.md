@@ -18,8 +18,17 @@
 | 状态 | 功能 | 目标 | 待定点 | 验收 |
 |------|------|------|--------|------|
 | ❌ | 文章置顶 | 文章支持置顶；分类/列表中置顶项排在非置顶之前 | `post_meta` 增加 `pinned` / `pin_sort`；排序：置顶 → `sort` / 发布时间；管理端开关；公开 API 与 Tera 同步 | 同分类内置顶始终最前；取消置顶后恢复默认顺序 |
+| ✅ | 文章 Meta + I18n 多语言 | 同一逻辑 ID 下按语言维护标题、摘要、正文、SEO 路径、标签 | `post_meta` + `post_i18n`；管理端 `PostFormDrawer` 语言 Tab；公开 `/<lang>/posts/<key>` 与 `?lang=` API；`pick_i18n_row` fallback | 中英文可分别编辑与访问；文档 P2 ✅（见 `docs/src/i18n-data-model.md`） |
 | ❌ | 文章 HTML 编辑器 | 除 Markdown 外支持富文本 / HTML 正文 | `content_format`（`markdown` \| `html`）；管理端接入 HTML 编辑器；公开站 DOMPurify 消毒渲染 | 后台可保存 HTML 文章；公开页正确渲染且无 XSS |
-| ❌ | 文章 `meta_json` 迁入多语言 | 招聘、关于等模板字段按语言独立存储 | 从 `PostMeta` 迁至 `PostI18n`；后端 API、管理端 `PostFormDrawer`、Tera 模板、种子与迁移 | 各语言 Tab 可独立维护模板字段；历史数据迁移完成 |
+| ❌ | 文章 `meta_json` 迁入多语言 | 招聘/关于模板字段（薪资、联系方式等）按语言独立存储 | **尚未实现**：`meta_json` 仍在 `PostMeta`，管理端仅一套 `recruitmentMeta`/`aboutMeta`；需迁至 `PostI18n` 并改 API、模板与迁移 | 各语言 Tab 可独立维护模板扩展字段；公开 API 按 `lang` 返回对应 `meta_json` |
+
+---
+
+## 轮播 · Banner
+
+| 状态 | 功能 | 目标 | 待定点 | 验收 |
+|------|------|------|--------|------|
+| ✅ | Hero 多语言文案 | 轮播图 `meta_json` 按语言码存储角标、标题、描述、标签与按钮；公开首页随语言切换 Hero | `banner_meta.rs` 解析与 fallback；管理端 `BannerItemDrawer` 按语言 Tab 编辑；公开 API / Tera 轮播切换；种子与文档 | 中英文 Hero 可分别配置；切换语言后首页文案正确；格式 `让…如<em>「…」</em>…` 见管理端提示 |
 
 ---
 
@@ -70,7 +79,7 @@
 
 | 状态 | 功能 | 目标 | 待定点 | 验收 |
 |------|------|------|--------|------|
-| ⚠️ | 友情链接 | 公开站展示友链，管理端 CRUD | 已有 `friend_link` 上传类型与种子图标；待做数据表、API、管理页、页脚渲染 | 后台可维护；公开页正确展示 |
+| ✅ | 友情链接 | 公开站页脚展示友链，管理端 CRUD | `FriendLink` 模型；管理 API `/api/admin/friend-links`；公开 API `/api/friend-links`；页脚 `base.html.tera`；管理页 `friend-links/index`（含拖拽排序、资源库选图）；development 种子 8 条 | 后台可维护；公开页页脚展示启用友链；文档见 `docs/src/admin/friend-links.md` |
 
 ---
 
