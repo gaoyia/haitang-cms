@@ -5,8 +5,8 @@
     </el-form-item>
 
     <el-form-item :label="t('menu.banner.heroTitle')">
-      <el-input v-model="locale.title" :placeholder="t('menu.banner.heroTitlePh')" />
-      <p class="field-hint">{{ t("menu.banner.heroTitleHint") }}</p>
+      <el-input v-model="locale.title" :placeholder="t('menu.banner.heroTitlePh', emTagParams)" />
+      <p class="field-hint">{{ t("menu.banner.heroTitleHint", emTagParams) }}</p>
     </el-form-item>
 
     <el-form-item :label="t('menu.banner.heroDesc')">
@@ -90,6 +90,8 @@ const locale = computed({
 });
 
 const { t } = useI18n();
+/** 占位符传入 em 标签，避免 i18n 文案内写 HTML 触发 intlify XSS 警告 */
+const emTagParams = { emOpen: "<em>", emClose: "</em>" };
 const tagInput = ref("");
 
 function addTag() {
