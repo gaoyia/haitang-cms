@@ -82,6 +82,7 @@ pub use post::{
     CreatePost, PostDetailView, PostMeta, PostView, UpdatePost,
     count_posts_by_category, create_post, delete_post, is_post_publicly_visible, post_detail_view,
     post_to_view, post_to_view_with_storage, posts_to_views, ensure_seed_sample_covers,
+    sort_post_metas_for_list,
     seed_default_sample_posts, update_post,
 };
 pub use response::{ApiResponse, PageResult, paginate_vec};

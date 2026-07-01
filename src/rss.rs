@@ -4,7 +4,7 @@ use serde::Serialize;
 
 use crate::models::dict::load_dict_map;
 use crate::models::locale::{encode_uri_path, locale_path, normalize_lang};
-use crate::models::post::{PostMeta, PostView, is_post_publicly_visible, post_to_view_with_storage};
+use crate::models::post::{PostMeta, PostView, is_post_publicly_visible, post_to_view_with_storage, sort_post_metas_for_list};
 use crate::models::asset::now_unix;
 use crate::storage::StorageService;
 
@@ -53,17 +53,20 @@ pub async fn build_posts_rss_feed(
     let feed_url = format!("{origin}{}", encode_uri_path(&locale_path(&lang, "rss")));
 
     let now = now_unix();
-    let posts = PostMeta::all()
+    let mut posts: Vec<PostMeta> = PostMeta::all()
         .exec(db)
         .await
-        .map_err(|e| format!("查询文章失败: {e}"))?;
+        .map_err(|e| format!("查询文章失败: {e}"))?
+        .into_iter()
+        .filter(|m| is_post_publicly_visible(m, now))
+        .collect();
+    sort_post_metas_for_list(&mut posts);
 
     let mut items = Vec::new();
-    for meta in posts.into_iter().filter(|m| is_post_publicly_visible(m, now)) {
+    for meta in posts {
         let view = post_to_view_with_storage(db, &meta, Some(&lang), storage).await?;
         items.push(rss_item_from_post(&view, origin, &lang));
     }
-    items.sort_by(|a, b| b.pub_date.cmp(&a.pub_date));
 
     let (channel_title, channel_description) = if lang == "en-us" {
         (

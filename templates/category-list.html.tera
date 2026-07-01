@@ -48,9 +48,7 @@
                 return;
             }
 
-            var posts = res.data.slice().sort(function (a, b) {
-                return (b.display_time || 0) - (a.display_time || 0);
-            });
+            var posts = ArchiveList.sortPostsForList(res.data);
 
             $.each(posts, function (i, post) {
                 $list.append(ArchiveList.renderArchiveCard(post, {

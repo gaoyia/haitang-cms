@@ -40,7 +40,10 @@ pub struct PostMeta {
     /// 前台展示时间
     pub display_time: i64,
 
-    /// 扩展字段 JSON（如招聘岗位薪资、地点等）
+    /// 是否置顶：0 否，1 是
+    pub pinned: i64,
+
+    /// 扩展字段 JSON（如招聘岗位薪资、地点等；历史列，新数据固定 `{}`）
     pub meta_json: String,
 }
 
@@ -84,6 +87,8 @@ pub struct CreatePost {
     /// 计划发布时间（Unix 秒）；缺省或 0 时，已发布用当前时间，草稿为 0
     pub publish_time: Option<i64>,
     pub meta_json: Option<String>,
+    /// 是否置顶：0 否，1 是
+    pub pinned: Option<i64>,
 }
 
 /// 更新文章
@@ -102,6 +107,8 @@ pub struct UpdatePost {
     /// 计划发布时间（Unix 秒）；缺省或 0 时，已发布用当前时间，草稿为 0
     pub publish_time: Option<i64>,
     pub meta_json: Option<String>,
+    /// 是否置顶：0 否，1 是
+    pub pinned: Option<i64>,
 }
 
 /// 校验并规范化文章 meta_json（须为 JSON 对象）
@@ -116,6 +123,21 @@ pub fn normalize_post_meta_json(raw: &str) -> Result<String, String> {
         return Err("meta_json 必须是 JSON 对象".to_string());
     }
     Ok(value.to_string())
+}
+
+/// 规范化置顶标记（仅 0 / 1）
+pub fn normalize_pinned(raw: Option<i64>) -> i64 {
+    if raw == Some(1) { 1 } else { 0 }
+}
+
+/// 文章列表排序：置顶优先，同组内按展示时间新→旧；时间相同按 id 降序
+pub fn sort_post_metas_for_list(metas: &mut [PostMeta]) {
+    metas.sort_by(|a, b| {
+        b.pinned
+            .cmp(&a.pinned)
+            .then(b.display_time.cmp(&a.display_time))
+            .then(b.id.cmp(&a.id))
+    });
 }
 
 /// 文章视图（已 merge 当前语言）
@@ -138,6 +160,7 @@ pub struct PostView {
     pub published_at: i64,
     pub publish_time: i64,
     pub display_time: i64,
+    pub pinned: i64,
     #[serde(default)]
     pub covers: Vec<super::asset::AssetView>,
     #[serde(default)]
@@ -158,6 +181,7 @@ pub struct PostDetailView {
     pub published_at: i64,
     pub publish_time: i64,
     pub display_time: i64,
+    pub pinned: i64,
     pub translations: HashMap<String, PostI18nPayload>,
     #[serde(default)]
     pub covers: Vec<super::asset::AssetView>,
@@ -402,6 +426,7 @@ pub async fn create_post(
     let publish_time = resolve_publish_time(input.publish_time, status, now);
     let published_at = resolve_published_at(status, publish_time, now, 0);
     let meta_json = normalize_post_meta_json(input.meta_json.as_deref().unwrap_or("{}"))?;
+    let pinned = normalize_pinned(input.pinned);
 
     let meta = PostMeta::create()
         .category_id(category_id)
@@ -411,6 +436,7 @@ pub async fn create_post(
         .published_at(published_at)
         .publish_time(publish_time)
         .display_time(display_time)
+        .pinned(pinned)
         .meta_json("{}")
         .exec(db)
         .await
@@ -497,6 +523,7 @@ async fn post_to_view_inner(
         published_at: meta.published_at,
         publish_time: meta.publish_time,
         display_time: meta.display_time,
+        pinned: meta.pinned,
         covers,
         attachments,
         list_template,
@@ -510,7 +537,7 @@ pub async fn posts_to_views(
     mut metas: Vec<PostMeta>,
     lang: Option<&str>,
 ) -> Result<Vec<PostView>, String> {
-    metas.sort_by_key(|m| std::cmp::Reverse(m.display_time));
+    sort_post_metas_for_list(&mut metas);
     let mut views = Vec::new();
     for meta in metas {
         views.push(post_to_view(db, &meta, lang).await?);
@@ -548,6 +575,7 @@ pub async fn post_detail_view(db: &mut toasty::Db, id: i64) -> Result<PostDetail
         published_at: meta.published_at,
         publish_time: meta.publish_time,
         display_time: meta.display_time,
+        pinned: meta.pinned,
         translations,
         covers: vec![],
         attachments: vec![],
@@ -631,6 +659,7 @@ pub async fn update_post(
     let old_display_time = meta.display_time;
     let old_publish_time = meta.publish_time;
     let old_published_at = meta.published_at;
+    let old_pinned = meta.pinned;
     let now = super::asset::now_unix();
     let mut next_status = meta.status;
     let mut next_publish_time = meta.publish_time;
@@ -673,6 +702,14 @@ pub async fn update_post(
         let display_time = resolve_display_time(Some(display_time), now);
         if old_display_time != display_time {
             builder = builder.display_time(display_time);
+            meta_changed = true;
+            touch_updated = true;
+        }
+    }
+    if let Some(pinned) = input.pinned {
+        let pinned = normalize_pinned(Some(pinned));
+        if old_pinned != pinned {
+            builder = builder.pinned(pinned);
             meta_changed = true;
             touch_updated = true;
         }
@@ -842,6 +879,7 @@ mod tests {
             published_at: 0,
             publish_time: 100,
             display_time: 100,
+            pinned: 0,
             meta_json: "{}".to_string(),
         };
         assert!(is_post_publicly_visible(&meta, 100));
@@ -851,6 +889,58 @@ mod tests {
             &PostMeta { status: 0, ..meta.clone() },
             200
         ));
+    }
+
+    #[test]
+    fn sort_post_metas_for_list_pins_first_then_display_time() {
+        let mut metas = vec![
+            PostMeta {
+                id: 1,
+                category_id: 1,
+                status: 1,
+                created_at: 0,
+                updated_at: 0,
+                published_at: 0,
+                publish_time: 0,
+                display_time: 200,
+                pinned: 0,
+                meta_json: "{}".to_string(),
+            },
+            PostMeta {
+                id: 2,
+                category_id: 1,
+                status: 1,
+                created_at: 0,
+                updated_at: 0,
+                published_at: 0,
+                publish_time: 0,
+                display_time: 100,
+                pinned: 1,
+                meta_json: "{}".to_string(),
+            },
+            PostMeta {
+                id: 3,
+                category_id: 1,
+                status: 1,
+                created_at: 0,
+                updated_at: 0,
+                published_at: 0,
+                publish_time: 0,
+                display_time: 300,
+                pinned: 1,
+                meta_json: "{}".to_string(),
+            },
+        ];
+        sort_post_metas_for_list(&mut metas);
+        assert_eq!(metas.iter().map(|m| m.id).collect::<Vec<_>>(), vec![3, 2, 1]);
+    }
+
+    #[test]
+    fn normalize_pinned_only_accepts_one() {
+        assert_eq!(normalize_pinned(None), 0);
+        assert_eq!(normalize_pinned(Some(0)), 0);
+        assert_eq!(normalize_pinned(Some(1)), 1);
+        assert_eq!(normalize_pinned(Some(2)), 0);
     }
 
     #[test]
@@ -1030,6 +1120,7 @@ async fn seed_default_news_post(db: &mut toasty::Db) -> Result<(), String> {
             display_time: None,
             publish_time: None,
             meta_json: None,
+            pinned: None,
         },
         &default_lang,
     )
@@ -1101,6 +1192,7 @@ async fn seed_default_gallery_post(
             display_time: None,
             publish_time: None,
             meta_json: None,
+            pinned: None,
         },
         &default_lang,
     )
@@ -1195,6 +1287,7 @@ async fn seed_default_recruitment_post(db: &mut toasty::Db) -> Result<(), String
             display_time: None,
             publish_time: None,
             meta_json: Some(meta_json.to_string()),
+            pinned: None,
         },
         &default_lang,
     )
@@ -1264,6 +1357,7 @@ async fn seed_default_about_post(db: &mut toasty::Db) -> Result<(), String> {
             display_time: None,
             publish_time: None,
             meta_json: Some(meta_json.to_string()),
+            pinned: None,
         },
         &default_lang,
     )

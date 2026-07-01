@@ -28,7 +28,11 @@ GET /api/posts?lang=zh-cn&category_id=1
 | `attachments` | 附件资源列表 |
 | `list_template` | 所属分类列表模板 |
 | `detail_template` | 所属分类详情模板 |
+| `display_time` | 前台展示时间（Unix 秒） |
+| `pinned` | 是否置顶：`0` 否，`1` 是 |
 | `publish_time` | 计划发布时间；仅 `status = 1` 且 `publish_time <= 当前时间` 的文章会出现在列表与详情 API 中 |
+
+列表默认按 `pinned DESC, display_time DESC` 排序（置顶优先，同组内展示时间新的在前）。
 
 ---
 

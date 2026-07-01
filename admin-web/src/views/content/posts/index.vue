@@ -62,6 +62,14 @@
             {{ formatUnixTime(row.display_time) }}
           </template>
         </el-table-column>
+        <el-table-column :label="t('menu.content.post.manage.pinned')" width="88" align="center">
+          <template #default="{ row }">
+            <el-tag v-if="row.pinned === 1" type="warning" size="small" effect="plain">
+              {{ t("menu.content.post.manage.pinnedYes") }}
+            </el-tag>
+            <span v-else class="post-pinned-dash">—</span>
+          </template>
+        </el-table-column>
         <el-table-column :label="t('menu.content.post.manage.publishTime')" width="168" align="center">
           <template #default="{ row }">
             {{ formatUnixTime(row.publish_time) }}
@@ -382,6 +390,10 @@ onMounted(async () => {
 
 .post-table {
   width: 100%;
+}
+
+.post-pinned-dash {
+  color: var(--el-text-color-placeholder);
 }
 
 .title-with-public-url {

@@ -40,7 +40,7 @@
 
 | 表 | 主键 | 说明 |
 |----|------|------|
-| `post_meta` | `id` | `category_id`、`status`、`created_at`、`updated_at`、`published_at`、`publish_time`、`display_time` |
+| `post_meta` | `id` | `category_id`、`status`、`created_at`、`updated_at`、`published_at`、`publish_time`、`display_time`、`pinned` |
 | `post_i18n` | `(post_id, lang)` | `title`、`description`、`content`（Markdown 源码）、`route_path`、`tags`、`meta_json` |
 
 时间字段（均在 `post_meta`，Unix 秒）：
@@ -51,7 +51,9 @@
 | `updated_at` | 除「仅改状态」外的任意内容变更时刷新（分类、翻译、`display_time`、`publish_time` 等） |
 | `published_at` | 首次实际公开时间；未到计划发布时间或未发布过为 0 |
 | `publish_time` | 计划发布时间；`status = 1` 且留空时等于保存时刻；到达该时间后访客可见 |
-| `display_time` | 前台展示时间，可手动编辑；留空保存时使用服务端当前时间；列表按此字段降序 |
+| `display_time` | 前台展示时间，可手动编辑；留空保存时使用服务端当前时间；列表按置顶优先、同组内按此字段降序 |
+
+| `pinned` | 是否置顶：`0` 否，`1` 是；列表排序等价于 `ORDER BY pinned DESC, display_time DESC` |
 
 `post_i18n.meta_json`：JSON 对象字符串，默认 `{}`；招聘模板可存 `salary`、`location`、`employment_type`、`department`；关于我们模板可存 `highlight`、`founded`、`location`、`contact`（详情页「联系我们」区块展示地址，并预留地图空位）。公开 API 与 `PostView` 按请求语言返回对应 i18n 行的 `meta_json`。
 

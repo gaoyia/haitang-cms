@@ -74,6 +74,17 @@
             </el-radio-group>
           </el-form-item>
         </el-col>
+
+        <el-col :xs="24" :sm="12" :lg="6">
+          <el-form-item :label="t('menu.content.post.manage.pinned')">
+            <el-switch
+              v-model="form.pinned"
+              :active-value="1"
+              :inactive-value="0"
+            />
+            <p class="post-field-hint">{{ t("menu.content.post.manage.pinnedHint") }}</p>
+          </el-form-item>
+        </el-col>
       </el-row>
 
       <el-divider content-position="left">{{ t("menu.content.post.manage.sectionAssets") }}</el-divider>
@@ -482,6 +493,7 @@ function validateAllSeoSlugs(): boolean {
 const form = reactive({
   category_id: undefined as number | undefined,
   status: 0,
+  pinned: 0,
   display_time: 0,
   publish_time: 0,
   i18n: {} as PostLocaleForm,
@@ -530,6 +542,7 @@ function hasLocaleContent(row: PostLocaleFormRow): boolean {
 function resetForm() {
   form.category_id = undefined;
   form.status = 0;
+  form.pinned = 0;
   form.display_time = 0;
   form.publish_time = 0;
   form.i18n = emptyI18n();
@@ -552,6 +565,7 @@ async function loadDetail() {
     const detail = res.data;
     form.category_id = detail.category_id || undefined;
     form.status = detail.status;
+    form.pinned = detail.pinned ? 1 : 0;
     form.display_time = detail.display_time;
     form.publish_time = detail.publish_time;
     postCovers.value = detail.covers ?? [];
@@ -614,6 +628,7 @@ async function handleSave() {
     const metaPayload = {
       category_id: form.category_id,
       status: form.status,
+      pinned: form.pinned,
       display_time: form.display_time > 0 ? form.display_time : 0,
       publish_time: form.publish_time > 0 ? form.publish_time : 0,
     };

@@ -47,6 +47,16 @@
     }).join("");
   }
 
+  /** 列表排序：置顶优先，同组内按展示时间新→旧 */
+  function sortPostsForList(posts) {
+    return posts.slice().sort(function (a, b) {
+      var pinA = a.pinned ? 1 : 0;
+      var pinB = b.pinned ? 1 : 0;
+      if (pinB !== pinA) return pinB - pinA;
+      return (b.display_time || 0) - (a.display_time || 0);
+    });
+  }
+
   /**
    * 渲染默认归档卡片
    * @param {object} post
@@ -106,6 +116,7 @@
     formatDisplayTime: formatDisplayTime,
     coverUrl: coverUrl,
     postDetailUrl: postDetailUrl,
+    sortPostsForList: sortPostsForList,
     renderArchiveCard: renderArchiveCard,
   };
 })(window);

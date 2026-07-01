@@ -68,6 +68,7 @@ POST /api/admin/posts
 | `status` | `i64` | 否 | `0` 草稿，`1` 已发布 |
 | `display_time` | `i64` | 否 | 前台展示时间（Unix 秒）；缺省或 `0` 时使用服务端当前时间 |
 | `publish_time` | `i64` | 否 | 计划发布时间（Unix 秒）；`status = 1` 且缺省或 `0` 时立即发布；未来时间用于定时发布 |
+| `pinned` | `i64` | 否 | 是否置顶：`0` 否，`1` 是；列表按置顶优先、同组内按 `display_time` 降序 |
 | `meta_json` | `string` | 否 | 该语言下的扩展字段 JSON 对象；招聘/关于模板使用，默认 `{}` |
 
 ## 更新文章

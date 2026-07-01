@@ -3,6 +3,7 @@ use rocket::serde::json::Json;
 
 use crate::models::{
     ApiResponse, PostMeta, PostView, is_post_publicly_visible, post_to_view_with_storage,
+    sort_post_metas_for_list,
 };
 use crate::models::asset::now_unix;
 use crate::routes::lang::LangQuery;
@@ -36,6 +37,8 @@ pub async fn list(
                         .is_none_or(|cid| meta.category_id == cid)
                 })
                 .collect();
+            let mut visible = visible;
+            sort_post_metas_for_list(&mut visible);
             let mut views = Vec::new();
             for meta in visible {
                 match post_to_view_with_storage(
@@ -50,7 +53,6 @@ pub async fn list(
                     Err(e) => return Json(ApiResponse::error(500, e)),
                 }
             }
-            views.sort_by_key(|v| std::cmp::Reverse(v.display_time));
             Json(ApiResponse::success(views))
         }
         Err(e) => Json(ApiResponse::error(500, format!("查询失败: {e}"))),
