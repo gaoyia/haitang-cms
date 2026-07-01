@@ -68,6 +68,7 @@ POST /api/admin/posts
 | `status` | `i64` | 否 | `0` 草稿，`1` 已发布 |
 | `display_time` | `i64` | 否 | 前台展示时间（Unix 秒）；缺省或 `0` 时使用服务端当前时间 |
 | `publish_time` | `i64` | 否 | 计划发布时间（Unix 秒）；`status = 1` 且缺省或 `0` 时立即发布；未来时间用于定时发布 |
+| `meta_json` | `string` | 否 | 该语言下的扩展字段 JSON 对象；招聘/关于模板使用，默认 `{}` |
 
 ## 更新文章
 
@@ -75,7 +76,7 @@ POST /api/admin/posts
 PUT /api/admin/posts/:id
 ```
 
-可同时更新 `post_meta`（`category_id`、`status`）与指定 `lang` 的 i18n 字段（含 `tags`）。字段与创建接口相同，均为可选。
+可同时更新 `post_meta`（`category_id`、`status`）与指定 `lang` 的 i18n 字段（含 `tags`、`meta_json`）。字段与创建接口相同，均为可选。
 
 ## 删除文章
 

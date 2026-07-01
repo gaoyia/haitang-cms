@@ -63,6 +63,9 @@ pub struct PostI18n {
 
     /// 该语言下的标签，逗号分隔（已规范化，便于 SEO keywords）
     pub tags: String,
+
+    /// 该语言下的扩展字段 JSON（招聘/关于模板等）
+    pub meta_json: String,
 }
 
 /// 创建文章
@@ -155,7 +158,6 @@ pub struct PostDetailView {
     pub published_at: i64,
     pub publish_time: i64,
     pub display_time: i64,
-    pub meta_json: String,
     pub translations: HashMap<String, PostI18nPayload>,
     #[serde(default)]
     pub covers: Vec<super::asset::AssetView>,
@@ -170,6 +172,7 @@ pub struct PostI18nPayload {
     pub content: String,
     pub route_path: String,
     pub tags: String,
+    pub meta_json: String,
 }
 
 pub fn normalize_tags(raw: &str) -> String {
@@ -408,7 +411,7 @@ pub async fn create_post(
         .published_at(published_at)
         .publish_time(publish_time)
         .display_time(display_time)
-        .meta_json(&meta_json)
+        .meta_json("{}")
         .exec(db)
         .await
         .map_err(|e| format!("创建文章失败: {e}"))?;
@@ -421,6 +424,7 @@ pub async fn create_post(
         .content(content)
         .route_path(&route_path)
         .tags(&tags)
+        .meta_json(&meta_json)
         .exec(db)
         .await
         .map_err(|e| format!("创建文章翻译失败: {e}"))?;
@@ -497,7 +501,7 @@ async fn post_to_view_inner(
         attachments,
         list_template,
         detail_template,
-        meta_json: meta.meta_json.clone(),
+        meta_json: i18n.meta_json.clone(),
     })
 }
 
@@ -530,6 +534,7 @@ pub async fn post_detail_view(db: &mut toasty::Db, id: i64) -> Result<PostDetail
                     content: r.content,
                     route_path: r.route_path,
                     tags: r.tags,
+                    meta_json: r.meta_json,
                 },
             )
         })
@@ -543,7 +548,6 @@ pub async fn post_detail_view(db: &mut toasty::Db, id: i64) -> Result<PostDetail
         published_at: meta.published_at,
         publish_time: meta.publish_time,
         display_time: meta.display_time,
-        meta_json: meta.meta_json.clone(),
         translations,
         covers: vec![],
         attachments: vec![],
@@ -558,6 +562,7 @@ pub struct PostI18nUpsert<'a> {
     pub content: &'a str,
     pub route_path: &'a str,
     pub tags: &'a str,
+    pub meta_json: &'a str,
 }
 
 pub async fn upsert_post_i18n(
@@ -572,10 +577,12 @@ pub async fn upsert_post_i18n(
         content,
         route_path,
         tags,
+        meta_json,
     } = input;
     let lang = super::locale::normalize_lang(lang);
     let tags = normalize_tags(tags);
     let route_path = normalize_post_route_path(&lang, route_path)?;
+    let meta_json = normalize_post_meta_json(meta_json)?;
     ensure_unique_post_route_path(db, &lang, &route_path, Some(post_id)).await?;
     match PostI18n::get_by_post_id_and_lang(db, &post_id, &lang).await {
         Ok(mut row) => {
@@ -585,6 +592,7 @@ pub async fn upsert_post_i18n(
                 .content(content)
                 .route_path(&route_path)
                 .tags(&tags)
+                .meta_json(&meta_json)
                 .exec(db)
                 .await
                 .map_err(|e| format!("更新文章翻译失败: {e}"))?;
@@ -598,6 +606,7 @@ pub async fn upsert_post_i18n(
                 .content(content)
                 .route_path(&route_path)
                 .tags(&tags)
+                .meta_json(&meta_json)
                 .exec(db)
                 .await
                 .map_err(|e| format!("创建文章翻译失败: {e}"))?;
@@ -626,7 +635,6 @@ pub async fn update_post(
     let mut next_status = meta.status;
     let mut next_publish_time = meta.publish_time;
 
-    let old_meta_json = meta.meta_json.clone();
     let mut builder = meta.update();
     let mut meta_changed = false;
     let mut touch_updated = false;
@@ -674,14 +682,6 @@ pub async fn update_post(
         builder = builder.published_at(published_at);
         meta_changed = true;
     }
-    if let Some(ref json) = input.meta_json {
-        let meta_json = normalize_post_meta_json(json)?;
-        if old_meta_json != meta_json {
-            builder = builder.meta_json(meta_json.as_str());
-            meta_changed = true;
-            touch_updated = true;
-        }
-    }
     if touch_updated {
         builder = builder.updated_at(now);
     }
@@ -704,6 +704,7 @@ pub async fn update_post(
         || input.content.is_some()
         || input.route_path.is_some()
         || input.tags.is_some()
+        || input.meta_json.is_some()
     {
         let resolved_lang = lang.clone().unwrap_or_else(|| default_lang.to_string());
         let rows = post_i18n_rows(db, id).await?;
@@ -734,6 +735,14 @@ pub async fn update_post(
             .as_deref()
             .or_else(|| existing.map(|e| e.tags.as_str()))
             .unwrap_or("");
+        let meta_json = if let Some(ref json) = input.meta_json {
+            normalize_post_meta_json(json)?
+        } else {
+            existing
+                .map(|e| e.meta_json.as_str())
+                .unwrap_or("{}")
+                .to_string()
+        };
 
         upsert_post_i18n(
             db,
@@ -745,6 +754,7 @@ pub async fn update_post(
                 content,
                 route_path,
                 tags,
+                meta_json: &meta_json,
             },
         )
         .await?;
@@ -886,6 +896,7 @@ mod tests {
             content: String::new(),
             route_path: route_path.to_string(),
             tags: String::new(),
+            meta_json: "{}".to_string(),
         }
     }
 
@@ -1039,6 +1050,7 @@ async fn seed_default_news_post(db: &mut toasty::Db) -> Result<(), String> {
                 We welcome your feedback through the admin console.",
             route_path: "site-launch",
             tags: "announcement,site",
+            meta_json: "{}",
         },
     )
     .await?;
@@ -1106,6 +1118,7 @@ async fn seed_default_gallery_post(
                 and seasonal blooms. May these images bring a gentle reminder of the turning seasons.",
             route_path: "spring-garden",
             tags: "photography,nature,spring",
+            meta_json: "{}",
         },
     )
     .await?;
@@ -1153,6 +1166,7 @@ async fn seed_default_recruitment_post(db: &mut toasty::Db) -> Result<(), String
     println!("[种子] 创建预制招聘岗位...");
 
     let meta_json = r#"{"salary":"15K-25K","location":"北京","employment_type":"全职","department":"研发"}"#;
+    let meta_json_en = r#"{"salary":"15K-25K USD","location":"Beijing","employment_type":"Full-time","department":"Engineering"}"#;
 
     let meta = create_post(
         db,
@@ -1204,6 +1218,7 @@ async fn seed_default_recruitment_post(db: &mut toasty::Db) -> Result<(), String
                 - CMS or multilingual site experience is a plus",
             route_path: "rust-backend-engineer",
             tags: "Rust,backend,full-time",
+            meta_json: meta_json_en,
         },
     )
     .await?;
@@ -1223,6 +1238,7 @@ async fn seed_default_about_post(db: &mut toasty::Db) -> Result<(), String> {
     println!("[种子] 创建预制关于我们文章...");
 
     let meta_json = r#"{"highlight":"结构化优雅","founded":"2024","location":"北京","contact":"hello@example.com"}"#;
+    let meta_json_en = r#"{"highlight":"Structured elegance","founded":"2024","location":"Beijing","contact":"hello@example.com"}"#;
 
     let meta = create_post(
         db,
@@ -1269,6 +1285,7 @@ async fn seed_default_about_post(db: &mut toasty::Db) -> Result<(), String> {
                 Structured elegance — balancing efficiency with a warm, refined experience.",
             route_path: "about-haitang-cms",
             tags: "CMS,Rust,intro",
+            meta_json: meta_json_en,
         },
     )
     .await?;

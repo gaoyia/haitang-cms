@@ -31,6 +31,7 @@ export interface PostI18nPayload {
   content: string;
   route_path: string;
   tags: string;
+  meta_json: string;
 }
 
 export interface PostDetailView {
@@ -45,7 +46,6 @@ export interface PostDetailView {
   translations: Record<string, PostI18nPayload>;
   covers?: AssetView[];
   attachments?: AssetView[];
-  meta_json?: string;
 }
 
 export interface CreatePostInput {

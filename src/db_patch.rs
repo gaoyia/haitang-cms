@@ -13,6 +13,7 @@ pub async fn apply_schema_patches(db: &mut toasty::Db) {
     ensure_category_extensions(db).await;
     add_text_column(db, "post_metas", "meta_json", "{}").await;
     add_text_column(db, "banners", "meta_json", "{}").await;
+    ensure_post_i18n_meta_json(db).await;
 }
 
 async fn add_i64_column(db: &mut toasty::Db, table: &str, column: &str) {
@@ -117,4 +118,37 @@ async fn ensure_category_extensions(db: &mut toasty::Db) {
     add_text_column(db, "category_metas", "list_template", "default").await;
     add_text_column(db, "category_metas", "detail_template", "default").await;
     add_text_column(db, "category_i18ns", "route_path", "").await;
+}
+
+/// 文章扩展字段迁入 post_i18ns，并从 post_metas 回填历史数据
+async fn ensure_post_i18n_meta_json(db: &mut toasty::Db) {
+    add_text_column(db, "post_i18ns", "meta_json", "{}").await;
+
+    let copy = toasty::sql::statement(
+        "UPDATE post_i18ns SET meta_json = (
+            SELECT meta_json FROM post_metas WHERE post_metas.id = post_i18ns.post_id
+        )
+        WHERE post_id IN (
+            SELECT id FROM post_metas
+            WHERE meta_json IS NOT NULL AND meta_json != '' AND meta_json != '{}'
+        )
+        AND (meta_json IS NULL OR meta_json = '' OR meta_json = '{}')",
+    )
+    .exec(db)
+    .await;
+
+    match copy {
+        Ok(_) => println!("[数据库] 已将 post_metas.meta_json 回填至 post_i18ns"),
+        Err(e) => eprintln!("[警告] 回填 post_i18ns.meta_json 失败: {e}"),
+    }
+
+    let clear = toasty::sql::statement(
+        "UPDATE post_metas SET meta_json = '{}' WHERE meta_json != '{}'",
+    )
+    .exec(db)
+    .await;
+
+    if let Err(e) = clear {
+        eprintln!("[警告] 清空 post_metas.meta_json 失败: {e}");
+    }
 }

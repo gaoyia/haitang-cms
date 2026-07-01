@@ -10,7 +10,7 @@
 | 全局字典 | `dict_value.lang = ""`（空串哨兵） |
 | 默认语言 | 字典项 `site_default_locale`，缺翻译时 fallback |
 | URL | `route_path` 存完整路径，如 `/zh-cn/posts/hello`；**同一 `(lang, route_path)` 非空时全局唯一**（管理端写入校验） |
-| 开发库重置 | 删除 `db/haitang.sqlite` 后 `cargo run` 自动建表；**development** 下每次启动会幂等写入种子（字典、菜单、轮播图、admin 等）；**production** 仅在库中尚无用户时写入一次初始数据。启动时 `db_patch` 在任何环境下都会为已有库补列（如 `assets.upload_name`、`post_metas.meta_json` 等），与种子无关。首次安装且尚无文章时会写入预制内容：新闻「站点上线公告」、画廊「春日花园」、招聘「Rust 后端工程师」（加入我们分类，`recruitment` 模板）、关于我们「关于海棠 CMS」（`about` 模板） |
+| 开发库重置 | 删除 `db/haitang.sqlite` 后 `cargo run` 自动建表；**development** 下每次启动会幂等写入种子（字典、菜单、轮播图、admin 等）；**production** 仅在库中尚无用户时写入一次初始数据。启动时 `db_patch` 在任何环境下都会为已有库补列（如 `assets.upload_name`、`post_i18ns.meta_json` 等），与种子无关。首次安装且尚无文章时会写入预制内容：新闻「站点上线公告」、画廊「春日花园」、招聘「Rust 后端工程师」（加入我们分类，`recruitment` 模板）、关于我们「关于海棠 CMS」（`about` 模板） |
 
 ## 表结构
 
@@ -40,8 +40,8 @@
 
 | 表 | 主键 | 说明 |
 |----|------|------|
-| `post_meta` | `id` | `category_id`、`status`、`created_at`、`updated_at`、`published_at`、`publish_time`、`display_time`、`meta_json` |
-| `post_i18n` | `(post_id, lang)` | `title`、`description`、`content`（Markdown 源码）、`route_path`、`tags` |
+| `post_meta` | `id` | `category_id`、`status`、`created_at`、`updated_at`、`published_at`、`publish_time`、`display_time` |
+| `post_i18n` | `(post_id, lang)` | `title`、`description`、`content`（Markdown 源码）、`route_path`、`tags`、`meta_json` |
 
 时间字段（均在 `post_meta`，Unix 秒）：
 
@@ -52,7 +52,10 @@
 | `published_at` | 首次实际公开时间；未到计划发布时间或未发布过为 0 |
 | `publish_time` | 计划发布时间；`status = 1` 且留空时等于保存时刻；到达该时间后访客可见 |
 | `display_time` | 前台展示时间，可手动编辑；留空保存时使用服务端当前时间；列表按此字段降序 |
-| `meta_json` | JSON 对象字符串，默认 `{}`；招聘模板可存 `salary`、`location`、`employment_type`、`department`；关于我们模板可存 `highlight`、`founded`、`location`、`contact`（详情页「联系我们」区块展示地址，并预留地图空位） |
+
+`post_i18n.meta_json`：JSON 对象字符串，默认 `{}`；招聘模板可存 `salary`、`location`、`employment_type`、`department`；关于我们模板可存 `highlight`、`founded`、`location`、`contact`（详情页「联系我们」区块展示地址，并预留地图空位）。公开 API 与 `PostView` 按请求语言返回对应 i18n 行的 `meta_json`。
+
+> 历史版本曾将 `meta_json` 存于 `post_meta`；`db_patch` 启动时会将其回填至各语言 `post_i18n` 行并清空 `post_meta.meta_json`。
 
 正文 Markdown 的编辑与公开渲染选型见 [Markdown 内容选型](./markdown.md)。
 

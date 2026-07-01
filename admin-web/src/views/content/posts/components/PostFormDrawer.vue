@@ -76,82 +76,6 @@
         </el-col>
       </el-row>
 
-      <template v-if="isRecruitmentCategory">
-        <el-divider content-position="left">{{ t("menu.content.post.manage.sectionRecruitmentMeta") }}</el-divider>
-        <el-row :gutter="16" class="post-meta-row">
-          <el-col :xs="24" :sm="12" :lg="6">
-            <el-form-item :label="t('menu.content.post.manage.recruitmentSalary')">
-              <el-input
-                v-model="form.recruitmentMeta.salary"
-                :placeholder="t('menu.content.post.manage.recruitmentSalaryPh')"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :xs="24" :sm="12" :lg="6">
-            <el-form-item :label="t('menu.content.post.manage.recruitmentLocation')">
-              <el-input
-                v-model="form.recruitmentMeta.location"
-                :placeholder="t('menu.content.post.manage.recruitmentLocationPh')"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :xs="24" :sm="12" :lg="6">
-            <el-form-item :label="t('menu.content.post.manage.recruitmentEmploymentType')">
-              <el-input
-                v-model="form.recruitmentMeta.employment_type"
-                :placeholder="t('menu.content.post.manage.recruitmentEmploymentTypePh')"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :xs="24" :sm="12" :lg="6">
-            <el-form-item :label="t('menu.content.post.manage.recruitmentDepartment')">
-              <el-input
-                v-model="form.recruitmentMeta.department"
-                :placeholder="t('menu.content.post.manage.recruitmentDepartmentPh')"
-              />
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </template>
-
-      <template v-if="isAboutCategory">
-        <el-divider content-position="left">{{ t("menu.content.post.manage.sectionAboutMeta") }}</el-divider>
-        <el-row :gutter="16" class="post-meta-row">
-          <el-col :xs="24" :sm="12" :lg="6">
-            <el-form-item :label="t('menu.content.post.manage.aboutHighlight')">
-              <el-input
-                v-model="form.aboutMeta.highlight"
-                :placeholder="t('menu.content.post.manage.aboutHighlightPh')"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :xs="24" :sm="12" :lg="6">
-            <el-form-item :label="t('menu.content.post.manage.aboutFounded')">
-              <el-input
-                v-model="form.aboutMeta.founded"
-                :placeholder="t('menu.content.post.manage.aboutFoundedPh')"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :xs="24" :sm="12" :lg="6">
-            <el-form-item :label="t('menu.content.post.manage.aboutLocation')">
-              <el-input
-                v-model="form.aboutMeta.location"
-                :placeholder="t('menu.content.post.manage.aboutLocationPh')"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :xs="24" :sm="12" :lg="6">
-            <el-form-item :label="t('menu.content.post.manage.aboutContact')">
-              <el-input
-                v-model="form.aboutMeta.contact"
-                :placeholder="t('menu.content.post.manage.aboutContactPh')"
-              />
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </template>
-
       <el-divider content-position="left">{{ t("menu.content.post.manage.sectionAssets") }}</el-divider>
       <el-form-item label=" " class="post-form-drawer__assets-note-item">
         <p class="post-form-drawer__assets-note">
@@ -188,6 +112,83 @@
               :placeholder="t('menu.content.post.manage.descriptionPh')"
             />
           </el-form-item>
+
+          <template v-if="isRecruitmentCategory">
+            <el-divider content-position="left">{{ t("menu.content.post.manage.sectionRecruitmentMeta") }}</el-divider>
+            <el-row :gutter="16" class="post-meta-row">
+              <el-col :xs="24" :sm="12" :lg="6">
+                <el-form-item :label="t('menu.content.post.manage.recruitmentSalary')">
+                  <el-input
+                    v-model="form.i18n[loc].recruitmentMeta.salary"
+                    :placeholder="t('menu.content.post.manage.recruitmentSalaryPh')"
+                  />
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="12" :lg="6">
+                <el-form-item :label="t('menu.content.post.manage.recruitmentLocation')">
+                  <el-input
+                    v-model="form.i18n[loc].recruitmentMeta.location"
+                    :placeholder="t('menu.content.post.manage.recruitmentLocationPh')"
+                  />
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="12" :lg="6">
+                <el-form-item :label="t('menu.content.post.manage.recruitmentEmploymentType')">
+                  <el-input
+                    v-model="form.i18n[loc].recruitmentMeta.employment_type"
+                    :placeholder="t('menu.content.post.manage.recruitmentEmploymentTypePh')"
+                  />
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="12" :lg="6">
+                <el-form-item :label="t('menu.content.post.manage.recruitmentDepartment')">
+                  <el-input
+                    v-model="form.i18n[loc].recruitmentMeta.department"
+                    :placeholder="t('menu.content.post.manage.recruitmentDepartmentPh')"
+                  />
+                </el-form-item>
+              </el-col>
+            </el-row>
+          </template>
+
+          <template v-if="isAboutCategory">
+            <el-divider content-position="left">{{ t("menu.content.post.manage.sectionAboutMeta") }}</el-divider>
+            <el-row :gutter="16" class="post-meta-row">
+              <el-col :xs="24" :sm="12" :lg="6">
+                <el-form-item :label="t('menu.content.post.manage.aboutHighlight')">
+                  <el-input
+                    v-model="form.i18n[loc].aboutMeta.highlight"
+                    :placeholder="t('menu.content.post.manage.aboutHighlightPh')"
+                  />
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="12" :lg="6">
+                <el-form-item :label="t('menu.content.post.manage.aboutFounded')">
+                  <el-input
+                    v-model="form.i18n[loc].aboutMeta.founded"
+                    :placeholder="t('menu.content.post.manage.aboutFoundedPh')"
+                  />
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="12" :lg="6">
+                <el-form-item :label="t('menu.content.post.manage.aboutLocation')">
+                  <el-input
+                    v-model="form.i18n[loc].aboutMeta.location"
+                    :placeholder="t('menu.content.post.manage.aboutLocationPh')"
+                  />
+                </el-form-item>
+              </el-col>
+              <el-col :xs="24" :sm="12" :lg="6">
+                <el-form-item :label="t('menu.content.post.manage.aboutContact')">
+                  <el-input
+                    v-model="form.i18n[loc].aboutMeta.contact"
+                    :placeholder="t('menu.content.post.manage.aboutContactPh')"
+                  />
+                </el-form-item>
+              </el-col>
+            </el-row>
+          </template>
+
           <el-form-item :label="t('menu.content.post.manage.tags')">
             <div class="post-tags-field">
               <el-input-tag
@@ -292,9 +293,11 @@ import { breakpointsEnum } from "@/hooks/screen/index.ts";
 /** 宽度 < 768px 时表单改为标签在上、字段纵向排列 */
 const isFormStacked = useBreakpoints(breakpointsEnum).smaller("sm");
 
-export type PostLocaleFormRow = Omit<PostI18nPayload, "tags" | "route_path"> & {
+export type PostLocaleFormRow = Omit<PostI18nPayload, "tags" | "route_path" | "meta_json"> & {
   tagList: string[];
   seoSlug: string;
+  recruitmentMeta: RecruitmentPostMeta;
+  aboutMeta: AboutPostMeta;
 };
 export type PostLocaleForm = Record<string, PostLocaleFormRow>;
 
@@ -376,10 +379,43 @@ const isAboutCategory = computed(() => {
   return cat?.detail_template === "about";
 });
 
-function resolveMetaJsonPayload(): string {
-  if (isRecruitmentCategory.value) return buildRecruitmentMetaJson(form.recruitmentMeta);
-  if (isAboutCategory.value) return buildAboutMetaJson(form.aboutMeta);
+function resolveMetaJsonForLocale(loc: string): string {
+  if (isRecruitmentCategory.value) return buildRecruitmentMetaJson(form.i18n[loc].recruitmentMeta);
+  if (isAboutCategory.value) return buildAboutMetaJson(form.i18n[loc].aboutMeta);
   return "{}";
+}
+
+function hasTemplateMeta(row: PostLocaleFormRow): boolean {
+  if (isRecruitmentCategory.value) {
+    const m = row.recruitmentMeta;
+    return !!(m.salary?.trim() || m.location?.trim() || m.employment_type?.trim() || m.department?.trim());
+  }
+  if (isAboutCategory.value) {
+    const m = row.aboutMeta;
+    return !!(m.highlight?.trim() || m.founded?.trim() || m.location?.trim() || m.contact?.trim());
+  }
+  return false;
+}
+
+function shouldUpsertLocale(loc: string): boolean {
+  if (loc === props.defaultLocale && !isEdit.value) return false;
+  const row = form.i18n[loc];
+  return hasLocaleContent(row) || hasTemplateMeta(row);
+}
+
+function localeI18nPayload(loc: string, row: PostLocaleFormRow) {
+  const payload = {
+    title: row.title.trim(),
+    description: row.description.trim() || undefined,
+    content: row.content.trim() || undefined,
+    route_path: buildRoutePath(loc, row.seoSlug) || undefined,
+    tags: serializeTags(row.tagList),
+    lang: loc,
+  };
+  if (isRecruitmentCategory.value || isAboutCategory.value) {
+    return { ...payload, meta_json: resolveMetaJsonForLocale(loc) };
+  }
+  return payload;
 }
 
 /** 当前语言下访客实际使用的公开路径 */
@@ -448,8 +484,6 @@ const form = reactive({
   status: 0,
   display_time: 0,
   publish_time: 0,
-  recruitmentMeta: emptyRecruitmentMeta() as RecruitmentPostMeta,
-  aboutMeta: emptyAboutMeta() as AboutPostMeta,
   i18n: {} as PostLocaleForm,
 });
 
@@ -470,7 +504,15 @@ const publishTimeDate = computed({
 function emptyI18n(): PostLocaleForm {
   const map: PostLocaleForm = {};
   for (const loc of props.siteLocales) {
-    map[loc] = { title: "", description: "", content: "", tagList: [], seoSlug: "" };
+    map[loc] = {
+      title: "",
+      description: "",
+      content: "",
+      tagList: [],
+      seoSlug: "",
+      recruitmentMeta: emptyRecruitmentMeta(),
+      aboutMeta: emptyAboutMeta(),
+    };
   }
   return map;
 }
@@ -490,8 +532,6 @@ function resetForm() {
   form.status = 0;
   form.display_time = 0;
   form.publish_time = 0;
-  form.recruitmentMeta = emptyRecruitmentMeta();
-  form.aboutMeta = emptyAboutMeta();
   form.i18n = emptyI18n();
   sessionPostId.value = null;
   postCovers.value = [];
@@ -514,8 +554,6 @@ async function loadDetail() {
     form.status = detail.status;
     form.display_time = detail.display_time;
     form.publish_time = detail.publish_time;
-    form.recruitmentMeta = parseRecruitmentMeta(detail.meta_json);
-    form.aboutMeta = parseAboutMeta(detail.meta_json);
     postCovers.value = detail.covers ?? [];
     postAttachments.value = detail.attachments ?? [];
     for (const loc of props.siteLocales) {
@@ -527,6 +565,8 @@ async function loadDetail() {
           content: tr.content,
           tagList: parseTags(tr.tags),
           seoSlug: parseSeoSlug(loc, tr.route_path),
+          recruitmentMeta: parseRecruitmentMeta(tr.meta_json),
+          aboutMeta: parseAboutMeta(tr.meta_json),
         };
       }
     }
@@ -576,7 +616,6 @@ async function handleSave() {
       status: form.status,
       display_time: form.display_time > 0 ? form.display_time : 0,
       publish_time: form.publish_time > 0 ? form.publish_time : 0,
-      meta_json: resolveMetaJsonPayload(),
     };
 
     const updateTargetId = props.editId ?? sessionPostId.value;
@@ -591,6 +630,9 @@ async function handleSave() {
         route_path: buildRoutePath(props.defaultLocale, primary.seoSlug) || undefined,
         tags: serializeTags(primary.tagList) || undefined,
         lang: props.defaultLocale,
+        ...(isRecruitmentCategory.value || isAboutCategory.value
+          ? { meta_json: resolveMetaJsonForLocale(props.defaultLocale) }
+          : {}),
       });
       if (createRes.code !== 0 || !createRes.data) {
         koiMsgError(createRes.message || t("msg.fail"));
@@ -609,17 +651,9 @@ async function handleSave() {
         }
       }
       for (const loc of props.siteLocales) {
-        if (loc === props.defaultLocale) continue;
+        if (!shouldUpsertLocale(loc)) continue;
         const row = form.i18n[loc];
-        if (!hasLocaleContent(row)) continue;
-        const res = await updatePostApi(newId, {
-          title: row.title.trim(),
-          description: row.description.trim() || undefined,
-          content: row.content.trim() || undefined,
-          route_path: buildRoutePath(loc, row.seoSlug) || undefined,
-          tags: serializeTags(row.tagList),
-          lang: loc,
-        });
+        const res = await updatePostApi(newId, localeI18nPayload(loc, row));
         if (res.code !== 0) {
           koiMsgError(res.message || t("msg.fail"));
           return;
@@ -632,16 +666,9 @@ async function handleSave() {
         return;
       }
       for (const loc of props.siteLocales) {
+        if (!shouldUpsertLocale(loc)) continue;
         const row = form.i18n[loc];
-        if (!hasLocaleContent(row)) continue;
-        const res = await updatePostApi(updateTargetId, {
-          title: row.title.trim(),
-          description: row.description.trim() || undefined,
-          content: row.content.trim() || undefined,
-          route_path: buildRoutePath(loc, row.seoSlug) || undefined,
-          tags: serializeTags(row.tagList),
-          lang: loc,
-        });
+        const res = await updatePostApi(updateTargetId, localeI18nPayload(loc, row));
         if (res.code !== 0) {
           koiMsgError(res.message || t("msg.fail"));
           return;

@@ -20,7 +20,7 @@
 | ❌ | 文章置顶 | 文章支持置顶；分类/列表中置顶项排在非置顶之前 | `post_meta` 增加 `pinned` / `pin_sort`；排序：置顶 → `sort` / 发布时间；管理端开关；公开 API 与 Tera 同步 | 同分类内置顶始终最前；取消置顶后恢复默认顺序 |
 | ✅ | 文章 Meta + I18n 多语言 | 同一逻辑 ID 下按语言维护标题、摘要、正文、SEO 路径、标签 | `post_meta` + `post_i18n`；管理端 `PostFormDrawer` 语言 Tab；公开 `/<lang>/posts/<key>` 与 `?lang=` API；`pick_i18n_row` fallback | 中英文可分别编辑与访问；文档 P2 ✅（见 `docs/src/i18n-data-model.md`） |
 | ❌ | 文章 HTML 编辑器 | 除 Markdown 外支持富文本 / HTML 正文 | `content_format`（`markdown` \| `html`）；管理端接入 HTML 编辑器；公开站 DOMPurify 消毒渲染 | 后台可保存 HTML 文章；公开页正确渲染且无 XSS |
-| ❌ | 文章 `meta_json` 迁入多语言 | 招聘/关于模板字段（薪资、联系方式等）按语言独立存储 | **尚未实现**：`meta_json` 仍在 `PostMeta`，管理端仅一套 `recruitmentMeta`/`aboutMeta`；需迁至 `PostI18n` 并改 API、模板与迁移 | 各语言 Tab 可独立维护模板扩展字段；公开 API 按 `lang` 返回对应 `meta_json` |
+| ✅ | 文章 `meta_json` 迁入多语言 | 招聘/关于模板字段（薪资、联系方式等）按语言独立存储 | `post_i18n.meta_json`；`db_patch` 从 `post_metas` 回填；管理端各语言 Tab 独立 `recruitmentMeta`/`aboutMeta`；公开 API 按 `lang` 返回 | 各语言 Tab 可独立维护模板扩展字段；公开 API 按 `lang` 返回对应 `meta_json` |
 
 ---
 
